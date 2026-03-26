@@ -65,8 +65,8 @@
   .meter-fill { height: 100%; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
   .meter-marker { position: absolute; top: -5px; width: 2px; height: 16px; background: var(--ink-light); left: 50%; }
   .meter-labels { display: flex; justify-content: space-between; margin-top: 5px; font-family: var(--font-mono); font-size: 10px; color: var(--ink-light); }
-  .score-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
-  @media(max-width:600px){ .score-grid { grid-template-columns: 1fr 1fr; } }
+  .score-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  @media(max-width:860px){ .score-grid { grid-template-columns: 1fr 1fr; } }
   .score-card { background: var(--card-bg); border: 1px solid var(--rule); padding: 18px 20px; }
   .score-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
   .score-card-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-light); }
@@ -168,6 +168,15 @@
           <option value="balkon" selected>Balkon</option>
           <option value="terrasse">Terrasse</option>
           <option value="garten">Garten / Sitzplatz</option>
+        </select>
+      </div>
+      <div class="field">
+        <div class="field-label">Zustand / Renovation</div>
+        <select id="condition">
+          <option value="neuwertig">Neuwertig / kürzlich renoviert</option>
+          <option value="gut" selected>Guter Zustand</option>
+          <option value="mittel">Normaler Unterhalt</option>
+          <option value="renovationsbed">Renovationsbedürftig</option>
         </select>
       </div>
       <div class="field">
@@ -423,6 +432,28 @@ function makeScoreCard(label, valueStr, detail, scoreOf5, pillClass) {
   </div>`;
 }
 
+
+// ─── PARSE AMENITY SUMMARY ────────────────────────────────────────
+// Backend format: "Schulen: Name1 100m, Name2 200m
+Einkauf: ..."
+function parseAmenitySummary(summary) {
+  if (!summary) return {};
+  const MAP = { 'Schulen':'Bildung', 'Einkauf':'Einkauf', 'Gastro':'Gastro', 'Parks':'Parks', 'Gesundheit':'Gesundheit' };
+  const groups = {};
+  summary.split('\n').forEach(line => {
+    const colonIdx = line.indexOf(':');
+    if (colonIdx < 0) return;
+    const key = line.substring(0, colonIdx).trim();
+    const gname = MAP[key] || key;
+    const items = line.substring(colonIdx+1).split(',').map(s => {
+      const m = s.trim().match(/^(.+?)\s+(\d+)m?$/);
+      return m ? { name:m[1].trim(), dist:parseInt(m[2]) } : null;
+    }).filter(Boolean);
+    if (items.length) groups[gname] = items;
+  });
+  return groups;
+}
+
 // ─── MAIN ANALYSIS ────────────────────────────────────────────────
 async function runAnalysis() {
   clearError();
@@ -462,25 +493,30 @@ async function runAnalysis() {
     for (const [k,v] of Object.entries(CRIME)) { if (labelLower.includes(k)) { crime=v; break; } }
 
     // Analyse-Daten speichern
-    window._lastAnalysis = { address:label, rooms, area, price, type:document.getElementById('type').value, year, floor, outdoor };
+    const condition = document.getElementById('condition').value;
+    window._lastAnalysis = { address:label, rooms, area, price, type:document.getElementById('type').value, year, floor, outdoor, condition };
 
-    // ── SCHRITT 2: Overpass (~2s) + API parallel starten ───────
+    // ── SCHRITT 2: API-Call (macht alles: Preise + Overpass + Solar) 
     setStatus('Umgebung & Marktpreise werden abgerufen…');
 
-    // Beide parallel starten
-    const overpassPromise = fetchOverpass(lat, lon);
     const apiPromise = fetch('/api/report', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify(window._lastAnalysis)
     }).then(r=>r.json());
 
-    // Auf Overpass warten (meist schneller)
-    const op = await overpassPromise;
-    const noise  = op?.noise || null;
-    const oev    = op?.oev   || { dist:null, name:'–', count:0 };
-    const amenities = op?.amenities || {};
-    const dotColors = op?.dotColors || {};
+    // Warte auf API (enthält Overpass-Daten vom Backend)
+    const apiData = await apiPromise;
+    if (apiData.error) throw new Error(apiData.error);
+    const meta = apiData.meta || {};
+
+    // Overpass-Daten aus Backend-Meta
+    const noise  = meta.noiseDay || null;
+    const oev    = { dist:meta.oevDist||null, name:meta.oevName||'–', count:meta.oevCount||0 };
+    // Amenities aus amenitySummary parsen (Backend-Format: "Schulen: x 200m, y 300m
+Einkauf: ...")
+    const amenities = parseAmenitySummary(meta.amenitySummary || '');
+    const dotColors = { Bildung:'#378ADD', Einkauf:'#2D7A4F', Gastro:'#C8371A', Parks:'#639922', Gesundheit:'#7F77DD' };
 
     setStatus('Kacheln werden erstellt…');
 
@@ -504,7 +540,8 @@ async function runAnalysis() {
       makeScoreCard('Lärmsituation', noise ? `${noise}dB` : 'N/A', noise ? 'Strassenlärm (OSM)' : 'Keine Daten', noiseS.score, noiseS.pill) +
       makeScoreCard('Besonnung', '…', 'Wird geladen (swisstopo)', 3, 'load') +
       makeScoreCard('Sicherheit', `${crime.hzahl}/1000`, `${crime.label} · PKS`, crimeS.score, crimeS.pill) +
-      makeScoreCard('Aussenraum', OUTDOOR_LABEL[outdoor], `Etage ${floor} · Faktor ×${OUTDOOR_F[outdoor]}`, outdoor==='none'?2:outdoor==='balkon'?3:outdoor==='terrasse'?4:5, outdoor==='none'?'bad':outdoor==='balkon'?'mid':'good');
+      makeScoreCard('Aussenraum', OUTDOOR_LABEL[outdoor], `Etage ${floor} · Faktor ×${OUTDOOR_F[outdoor]}`, outdoor==='none'?2:outdoor==='balkon'?3:outdoor==='terrasse'?4:5, outdoor==='none'?'bad':outdoor==='balkon'?'mid':'good') +
+      makeScoreCard('Zustand', {neuwertig:'Neuwertig',gut:'Gut',mittel:'Mittel',renovationsbed:'Renov.bed.'}[condition]||condition, {neuwertig:'Kürzlich renoviert',gut:'Guter Unterhalt',mittel:'Normaler Unterhalt',renovationsbed:'Renovationsbedürftig'}[condition]||'', {neuwertig:5,gut:4,mittel:3,renovationsbed:1}[condition]||3, {neuwertig:'good',gut:'good',mittel:'mid',renovationsbed:'bad'}[condition]||'mid');
 
     // POI
     let poiHtml = '<div class="poi-title">Umgebung <em style="font-style:italic;color:var(--ink-light);font-size:0.8em">(800m Radius)</em></div>';
@@ -553,11 +590,7 @@ async function runAnalysis() {
     document.getElementById('results').classList.add('visible');
     document.getElementById('results').scrollIntoView({ behavior:'smooth', block:'start' });
 
-    // ── SCHRITT 4: API-Antwort verarbeiten ──────────────────────
-    const apiData = await apiPromise;
-    if (apiData.error) throw new Error(apiData.error);
-    const meta = apiData.meta || {};
-
+    // ── SCHRITT 4: Preise & Report aus API-Antwort ─────────────
     const delta      = meta.delta || 0;
     const expected   = meta.expected || 0;
     const priceSource= meta.priceSource || 'Modell';
