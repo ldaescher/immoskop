@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     if (geoData.results?.length) {
       const attrs = geoData.results[0].attrs;
       label = attrs.label.replace(/<[^>]+>/g, '');
-      const e = attrs.y, n = attrs.x;
+      const e = attrs.x, n = attrs.y;
       const E = (e - 2600000) / 1000000;
       const N = (n - 1200000) / 1000000;
       const lonDeg = 2.6779094 + 4.728982*E + 0.791484*E*N + 0.1306*E*N*N - 0.0436*E*E*E;
