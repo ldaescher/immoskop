@@ -424,7 +424,7 @@ function makeScoreCard(label, valueStr, detail, scoreOf5, pillClass) {
   return `<div class="score-card">
     <div class="score-card-top">
       <div class="score-card-label">${label}</div>
-      <span class="score-pill pill-${pillClass}">${['','★','★★','★★★','★★★★','★★★★★'][scoreOf5]||'–'}</span>
+      <span class="score-pill pill-${pillClass}">${['','★','★★','★★★','★★★★','★★★★★'][scoreOf5]||'-'}</span>
     </div>
     <div class="score-value">${valueStr}</div>
     <div class="score-detail">${detail}</div>
@@ -479,7 +479,7 @@ async function runAnalysis() {
 
   try {
     // ── SCHRITT 1: Geocode (~0.5s) ──────────────────────────────
-    setStatus('Adresse wird geocodiert…');
+    setStatus('Adresse wird geocodiert...');
     let coords = selectedCoords;
     if (!coords || !addressInput.toLowerCase().includes((coords.label||'').toLowerCase().substring(0,8))) {
       coords = await geocodeAddress(addressInput);
@@ -496,7 +496,7 @@ async function runAnalysis() {
     window._lastAnalysis = { address:label, rooms, area, price, type:document.getElementById('type').value, year, floor, outdoor, condition };
 
     // ── SCHRITT 2: API-Call (macht alles: Preise + Overpass + Solar) 
-    setStatus('Umgebung & Marktpreise werden abgerufen…');
+    setStatus('Umgebung & Marktpreise werden abgerufen...');
 
     const apiPromise = fetch('/api/report', {
       method:'POST',
@@ -511,22 +511,21 @@ async function runAnalysis() {
 
     // Overpass-Daten aus Backend-Meta
     const noise  = meta.noiseDay || null;
-    const oev    = { dist:meta.oevDist||null, name:meta.oevName||'–', count:meta.oevCount||0 };
-    // Amenities aus amenitySummary parsen (Backend-Format: "Schulen: x 200m, y 300m
-Einkauf: usw.")
+    const oev    = { dist:meta.oevDist||null, name:meta.oevName||'-', count:meta.oevCount||0 };
+    // Amenities aus amenitySummary parsen (Backend-Format: "Schulen: x 200m / Einkauf: usw.")
     const amenities = parseAmenitySummary(meta.amenitySummary || '');
     const dotColors = { Bildung:'#378ADD', Einkauf:'#2D7A4F', Gastro:'#C8371A', Parks:'#639922', Gesundheit:'#7F77DD' };
 
-    setStatus('Kacheln werden erstellt…');
+    setStatus('Kacheln werden erstellt...');
 
     // ── SCHRITT 3: Kacheln sofort zeigen (ohne Preise) ──────────
     document.getElementById('verdict-address').textContent = label;
-    document.getElementById('verdict-main').textContent = 'Marktpreise werden geladen…';
+    document.getElementById('verdict-main').textContent = 'Marktpreise werden geladen...';
     document.getElementById('verdict-sub').textContent = '';
     document.getElementById('verdict-range').textContent = '';
     document.getElementById('verdict-source').textContent = '';
     const badge = document.getElementById('verdict-badge');
-    badge.textContent = '…'; badge.className = 'verdict-badge badge-loading';
+    badge.textContent = '...'; badge.className = 'verdict-badge badge-loading';
     document.getElementById('meter-fill').style.width = '50%';
 
     const noiseS = noiseScore(noise);
@@ -534,10 +533,10 @@ Einkauf: usw.")
     const crimeS = crimeScore(crime.hzahl);
 
     document.getElementById('score-grid').innerHTML =
-      makeScoreCard('Preisbewertung', '…', 'Marktpreise werden geladen', 3, 'load') +
+      makeScoreCard('Preisbewertung', '...', 'Marktpreise werden geladen', 3, 'load') +
       makeScoreCard('ÖV-Anbindung', oev.dist ? `${oev.dist}m` : 'N/A', `${oev.name} · ${oev.count} Haltestellen`, oevS.score, oevS.pill) +
       makeScoreCard('Lärmsituation', noise ? `${noise}dB` : 'N/A', noise ? 'Strassenlärm (OSM)' : 'Keine Daten', noiseS.score, noiseS.pill) +
-      makeScoreCard('Besonnung', '…', 'Wird geladen (swisstopo)', 3, 'load') +
+      makeScoreCard('Besonnung', '...', 'Wird geladen (swisstopo)', 3, 'load') +
       makeScoreCard('Sicherheit', `${crime.hzahl}/1000`, `${crime.label} · PKS`, crimeS.score, crimeS.pill) +
       makeScoreCard('Aussenraum', OUTDOOR_LABEL[outdoor], `Etage ${floor} · Faktor ×${OUTDOOR_F[outdoor]}`, outdoor==='none'?2:outdoor==='balkon'?3:outdoor==='terrasse'?4:5, outdoor==='none'?'bad':outdoor==='balkon'?'mid':'good') +
       makeScoreCard('Zustand', {neuwertig:'Neuwertig',gut:'Gut',mittel:'Mittel',renovationsbed:'Renov.bed.'}[condition]||condition, {neuwertig:'Kürzlich renoviert',gut:'Guter Unterhalt',mittel:'Normaler Unterhalt',renovationsbed:'Renovationsbedürftig'}[condition]||'', {neuwertig:5,gut:4,mittel:3,renovationsbed:1}[condition]||3, {neuwertig:'good',gut:'good',mittel:'mid',renovationsbed:'bad'}[condition]||'mid');
@@ -565,16 +564,16 @@ Einkauf: usw.")
     // Checklist
     const checkItems = [
       'Lärmprobe zu Stosszeiten (Morgen/Abend)',
-      noise && noise>58 ? '⚠ Lärm hoch — Fenster & Verglasung prüfen' : 'Fensterverglasung & Schalldämmung kontrollieren',
+      noise && noise>58 ? '⚠ Lärm hoch - Fenster & Verglasung prüfen' : 'Fensterverglasung & Schalldämmung kontrollieren',
       outdoor==='garten' ? 'Gartenfläche & Nutzungsrecht klären' : outdoor==='terrasse' ? 'Terrassenzustand und Abdichtung prüfen' : 'Balkonzustand & Abdichtung kontrollieren',
-      floor===0 && outdoor==='none' ? '⚠ EG ohne Aussenraum — Privatsphäre & Licht prüfen' : `Etage ${floor} — Lift vorhanden?`,
+      floor===0 && outdoor==='none' ? '⚠ EG ohne Aussenraum - Privatsphäre & Licht prüfen' : `Etage ${floor} - Lift vorhanden?`,
       'Heizungsart & Energieklasse erfragen',
       'Zustand Küche, Bäder, Böden dokumentieren',
-      oev.dist && oev.dist>500 ? `⚠ ÖV weit (${oev.dist}m) — Frequenz prüfen` : `Nächste Haltestelle: ${oev.name} (${oev.dist||'–'}m)`,
+      oev.dist && oev.dist>500 ? `⚠ ÖV weit (${oev.dist}m) - Frequenz prüfen` : `Nächste Haltestelle: ${oev.name} (${oev.dist||'-'}m)`,
       'Waschküche, Keller, Veloabstellplatz',
       'Bisherigen Mietzins beim Vermieter erfragen',
       'Nebenkosten-Abrechnung letzter 2 Jahre',
-      crime.hzahl>60 ? '⚠ Kriminalität erhöht — Quartier zu verschiedenen Zeiten besuchen' : 'Quartier zu verschiedenen Tageszeiten besuchen',
+      crime.hzahl>60 ? '⚠ Kriminalität erhöht - Quartier zu verschiedenen Zeiten besuchen' : 'Quartier zu verschiedenen Tageszeiten besuchen',
       'Mobilfunkempfang & Glasfaser prüfen',
     ];
     document.getElementById('checklist-section').innerHTML = `
@@ -585,7 +584,7 @@ Einkauf: usw.")
       ['swisstopo Geocoder','OpenStreetMap Overpass','BFS PKS','RealAdvisor Marktpreise'].map(s=>`<span class="source-tag">${s}</span>`).join('');
 
     // Resultate sofort zeigen
-    setStatus('Umgebungsdaten geladen — Marktpreise folgen…');
+    setStatus('Umgebungsdaten geladen - Marktpreise folgen...');
     document.getElementById('results').classList.add('visible');
     document.getElementById('results').scrollIntoView({ behavior:'smooth', block:'start' });
 
@@ -600,14 +599,14 @@ Einkauf: usw.")
     const deltaAbs = Math.abs(delta);
     let verdictText, verdictSub, badgeClass, badgeText, meterColor, meterPct;
     if (deltaAbs<=5) {
-      verdictText='Im Marktbereich'; verdictSub=`Referenz: CHF ${expected.toLocaleString('de-CH')}${isKauf?'':'/Mt.'} — Abweichung ${delta>0?'+':''}${delta}%`;
+      verdictText='Im Marktbereich'; verdictSub=`Referenz: CHF ${expected.toLocaleString('de-CH')}${isKauf?'':'/Mt.'} - Abweichung ${delta>0?'+':''}${delta}%`;
       badgeClass='badge-fair'; badgeText='✓ Fair'; meterColor='#2D7A4F'; meterPct=50;
     } else if (delta>0) {
-      verdictText=`${delta}% über Marktpreis`; verdictSub=`Referenz CHF ${expected.toLocaleString('de-CH')}${isKauf?'':'/Mt.'} — CHF ${(price-expected).toLocaleString('de-CH')} zu viel`;
+      verdictText=`${delta}% über Marktpreis`; verdictSub=`Referenz CHF ${expected.toLocaleString('de-CH')}${isKauf?'':'/Mt.'} - CHF ${(price-expected).toLocaleString('de-CH')} zu viel`;
       badgeClass=delta>15?'badge-over':'badge-warn'; badgeText=delta>15?'⚠ Überteuert':'~ Leicht überteuert';
       meterColor=delta>15?'#C8371A':'#A07020'; meterPct=Math.min(50+delta*1.5,94);
     } else {
-      verdictText=`${deltaAbs}% unter Marktpreis`; verdictSub=`Referenz CHF ${expected.toLocaleString('de-CH')}${isKauf?'':'/Mt.'} — günstiges Angebot`;
+      verdictText=`${deltaAbs}% unter Marktpreis`; verdictSub=`Referenz CHF ${expected.toLocaleString('de-CH')}${isKauf?'':'/Mt.'} - günstiges Angebot`;
       badgeClass='badge-under'; badgeText='↓ Günstig'; meterColor='#2D7A4F'; meterPct=Math.max(50+delta*1.5,6);
     }
 
@@ -625,7 +624,7 @@ Einkauf: usw.")
     const pricePill  = delta>10?'bad':delta<-10?'good':'mid';
     const solarS     = solarScore(solarKwh);
     const cards      = document.getElementById('score-grid').children;
-    if (cards[0]) cards[0].outerHTML = makeScoreCard('Preisbewertung', `CHF ${pricePerQm}/m²`, `Referenz: CHF ${expected?(expected/area).toFixed(1):'–'}/m² · ${priceSource}`, priceScore, pricePill);
+    if (cards[0]) cards[0].outerHTML = makeScoreCard('Preisbewertung', `CHF ${pricePerQm}/m²`, `Referenz: CHF ${expected?(expected/area).toFixed(1):'-'}/m² · ${priceSource}`, priceScore, pricePill);
     if (cards[3]) document.getElementById('score-grid').children[3].outerHTML = makeScoreCard('Besonnung', solarKwh?`${Math.round(solarKwh)} kWh`:'N/A', solarKwh?'Jahressumme Fassade (swisstopo)':'Keine Daten', solarS.score, solarS.pill);
 
     setStatus('Analyse vollständig.', true);
