@@ -434,8 +434,7 @@ function makeScoreCard(label, valueStr, detail, scoreOf5, pillClass) {
 
 
 // ─── PARSE AMENITY SUMMARY ────────────────────────────────────────
-// Backend format: "Schulen: Name1 100m, Name2 200m
-Einkauf: ..."
+// Backend format: "Schulen: Name1 100m, Name2 200m / Einkauf: usw."
 function parseAmenitySummary(summary) {
   if (!summary) return {};
   const MAP = { 'Schulen':'Bildung', 'Einkauf':'Einkauf', 'Gastro':'Gastro', 'Parks':'Parks', 'Gesundheit':'Gesundheit' };
@@ -514,7 +513,7 @@ async function runAnalysis() {
     const noise  = meta.noiseDay || null;
     const oev    = { dist:meta.oevDist||null, name:meta.oevName||'–', count:meta.oevCount||0 };
     // Amenities aus amenitySummary parsen (Backend-Format: "Schulen: x 200m, y 300m
-Einkauf: ...")
+Einkauf: usw.")
     const amenities = parseAmenitySummary(meta.amenitySummary || '');
     const dotColors = { Bildung:'#378ADD', Einkauf:'#2D7A4F', Gastro:'#C8371A', Parks:'#639922', Gesundheit:'#7F77DD' };
 
