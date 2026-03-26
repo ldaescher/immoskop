@@ -32,32 +32,27 @@ export default async function handler(req, res) {
 
   if (!lat) return res.status(400).json({ error: 'Adresse konnte nicht geocodiert werden.' });
 
-  // ── 2. NOISE – mehrere Layernamen versuchen ─────────────────────
+ // ── 2. NOISE (BAFU) ─────────────────────────────────────────────
 let noiseDay = null;
 try {
   const lv95e = lv03y + 2000000;
   const lv95n = lv03x + 1000000;
   const d = 500;
   const bbox = `${lv95e-d},${lv95n-d},${lv95e+d},${lv95n+d}`;
-  const layers = [
-    'ch.bafu.laerm-strassenlarm_tag',
-    'ch.bafu.laerm-strassenlarm',
-    'ch.bafu.laerm-sonbase_strassenlarm_lr_tag',
-    'ch.bafu.laerm-strassenlaerm_tag',
-  ];
-  for (const layer of layers) {
-    const url = `https://wms.geo.admin.ch/?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=${layer}&QUERY_LAYERS=${layer}&CRS=EPSG:2056&BBOX=${bbox}&WIDTH=101&HEIGHT=101&I=50&J=50&INFO_FORMAT=application/json`;
-    const r = await fetch(url, { signal: AbortSignal.timeout(5000) });
-    const txt = await r.text();
-    console.log('NOISE layer', layer, '→', txt.substring(0, 120));
-    if (!txt.startsWith('<')) {
-      const d2 = JSON.parse(txt);
-      const features = d2.features || [];
-      if (features.length) {
-        const props = features[0].properties || {};
-        const val = props.lr_tag || props.Lr_Tag || props.db_tag || props.klasse || props.value;
-        if (val) { noiseDay = parseFloat(val); console.log('NOISE found:', noiseDay, 'from', layer); break; }
-      }
+  const url = `https://wms.geo.admin.ch/?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=ch.bafu.laerm-strassenlaerm_tag&QUERY_LAYERS=ch.bafu.laerm-strassenlaerm_tag&CRS=EPSG:2056&BBOX=${bbox}&WIDTH=101&HEIGHT=101&I=50&J=50&INFO_FORMAT=application/json`;
+  const r = await fetch(url, { signal: AbortSignal.timeout(6000) });
+  const txt = await r.text();
+  console.log('NOISE response:', txt.substring(0, 400));
+  if (!txt.startsWith('<')) {
+    const data = JSON.parse(txt);
+    const features = data.features || [];
+    console.log('NOISE features:', features.length);
+    if (features.length) {
+      const props = features[0].properties || {};
+      console.log('NOISE props:', JSON.stringify(props).substring(0, 300));
+      const val = props.lr_tag || props.Lr_Tag || props.lr_nacht || props.klasse || props.value;
+      noiseDay = val ? parseFloat(val) : null;
+      console.log('NOISE value:', noiseDay);
     }
   }
 } catch(e) { console.log('NOISE error:', e.message); }
