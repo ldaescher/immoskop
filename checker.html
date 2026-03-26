@@ -24,15 +24,11 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--cream); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.6; min-height: 100vh; }
 
-  /* HEADER */
   header { border-bottom: 1px solid var(--rule); padding: 0 clamp(20px,4vw,60px); display: flex; align-items: center; justify-content: space-between; height: 52px; background: var(--cream); position: sticky; top: 0; z-index: 50; }
   .logo { font-family: var(--font-mono); font-size: 12px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink); text-decoration: none; display: flex; align-items: center; gap: 7px; }
-  .logo-dot { width: 7px; height: 7px; background: var(--red); border-radius: 50%; }
   .header-tag { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; color: var(--ink-light); text-transform: uppercase; }
 
-  /* MAIN LAYOUT */
   .page { max-width: 1100px; margin: 0 auto; padding: clamp(32px,5vw,64px) clamp(20px,4vw,60px); }
-
   .page-title { font-family: var(--font-display); font-size: clamp(36px,5vw,68px); line-height: 1; letter-spacing: -0.02em; margin-bottom: 8px; }
   .page-title em { font-style: italic; color: var(--red); }
   .page-sub { font-size: 15px; color: var(--ink-light); margin-bottom: 40px; max-width: 540px; }
@@ -40,7 +36,6 @@
   .layout { display: grid; grid-template-columns: 380px 1fr; gap: 32px; align-items: start; }
   @media(max-width:860px){ .layout { grid-template-columns: 1fr; } }
 
-  /* INPUT PANEL */
   .input-panel { background: var(--ink); color: var(--cream); padding: 28px; position: sticky; top: 68px; }
   .panel-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(245,240,232,0.35); margin-bottom: 20px; }
   .field { margin-bottom: 16px; }
@@ -63,63 +58,44 @@
   .btn-analyse:disabled { opacity: 0.45; cursor: not-allowed; }
   .api-note { font-family: var(--font-mono); font-size: 10px; color: rgba(245,240,232,0.25); margin-top: 14px; line-height: 1.6; }
 
-  /* ADDRESS AUTOCOMPLETE */
   .autocomplete-wrap { position: relative; }
   .autocomplete-list {
     position: absolute; top: calc(100% + 4px); left: 0; right: 0;
     background: #2A2926; border: 1px solid rgba(245,240,232,0.2);
     z-index: 100; max-height: 200px; overflow-y: auto; display: none;
   }
-  .autocomplete-item {
-    padding: 9px 12px; font-size: 13px; color: var(--cream); cursor: pointer;
-    border-bottom: 1px solid rgba(245,240,232,0.08);
-    transition: background 0.15s;
-  }
+  .autocomplete-item { padding: 9px 12px; font-size: 13px; color: var(--cream); cursor: pointer; border-bottom: 1px solid rgba(245,240,232,0.08); transition: background 0.15s; }
   .autocomplete-item:hover, .autocomplete-item.active { background: rgba(245,240,232,0.1); }
   .autocomplete-item:last-child { border-bottom: none; }
 
-  /* STATUS BAR */
-  .status-bar {
-    display: none; align-items: center; gap: 10px; padding: 12px 16px;
-    background: var(--card-bg); border: 1px solid var(--rule); margin-bottom: 24px;
-    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; color: var(--ink-light);
-  }
+  .status-bar { display: none; align-items: center; gap: 10px; padding: 12px 16px; background: var(--card-bg); border: 1px solid var(--rule); margin-bottom: 24px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; color: var(--ink-light); }
   .status-bar.visible { display: flex; }
   .spinner { width: 14px; height: 14px; border: 2px solid var(--rule); border-top-color: var(--red); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .step-done { color: var(--green); }
-  .step-active { color: var(--ink); }
-  .step-pending { color: var(--ink-light); opacity: 0.4; }
 
-  /* RESULTS */
   .results { display: none; }
   .results.visible { display: block; }
 
-  /* VERDICT HERO */
-  .verdict-hero {
-    background: var(--card-bg); border: 1px solid var(--rule); padding: 28px 32px;
-    margin-bottom: 20px; display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: center;
-  }
+  .verdict-hero { background: var(--card-bg); border: 1px solid var(--rule); padding: 28px 32px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: center; }
   .verdict-address { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; color: var(--ink-light); margin-bottom: 10px; }
   .verdict-main { font-family: var(--font-display); font-size: clamp(24px,3.5vw,40px); line-height: 1.05; }
   .verdict-sub { font-size: 13px; color: var(--ink-light); margin-top: 8px; }
+  .verdict-range { font-size: 12px; color: var(--ink-light); margin-top: 5px; font-family: var(--font-mono); }
+  .verdict-source { font-size: 11px; color: var(--ink-light); margin-top: 4px; font-family: var(--font-mono); opacity: 0.6; }
   .verdict-badge { padding: 8px 20px; font-family: var(--font-mono); font-size: 12px; font-weight: 500; letter-spacing: 0.08em; white-space: nowrap; }
   .badge-over { background: #FDECEA; color: var(--red); border: 1px solid rgba(200,55,26,0.25); }
   .badge-fair { background: #EDF6F0; color: var(--green); border: 1px solid rgba(45,122,79,0.25); }
   .badge-under { background: #EDF6F0; color: var(--green); border: 1px solid rgba(45,122,79,0.25); }
   .badge-warn { background: #FEF8EC; color: var(--amber); border: 1px solid rgba(160,112,32,0.25); }
 
-  /* METER */
   .meter-wrap { margin-top: 16px; }
   .meter-track { height: 6px; background: var(--rule); position: relative; }
   .meter-fill { height: 100%; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
   .meter-marker { position: absolute; top: -5px; width: 2px; height: 16px; background: var(--ink-light); left: 50%; }
   .meter-labels { display: flex; justify-content: space-between; margin-top: 5px; font-family: var(--font-mono); font-size: 10px; color: var(--ink-light); letter-spacing: 0.06em; }
 
-  /* SCORE GRID */
   .score-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
   @media(max-width:600px){ .score-grid { grid-template-columns: 1fr 1fr; } }
-
   .score-card { background: var(--card-bg); border: 1px solid var(--rule); padding: 18px 20px; }
   .score-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
   .score-card-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-light); }
@@ -132,7 +108,6 @@
   .score-bar { height: 3px; margin-top: 12px; background: var(--rule); }
   .score-bar-fill { height: 100%; transition: width 0.6s ease; }
 
-  /* POI SECTION */
   .poi-section { background: var(--card-bg); border: 1px solid var(--rule); padding: 24px 28px; margin-bottom: 20px; }
   .poi-title { font-family: var(--font-display); font-size: 22px; margin-bottom: 18px; border-bottom: 1px solid var(--rule); padding-bottom: 14px; }
   .poi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
@@ -142,22 +117,16 @@
   .poi-dist { font-family: var(--font-mono); font-size: 11px; color: var(--ink-light); margin-left: auto; }
   .poi-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 
-  /* CRIME SECTION */
-  .crime-note { font-size: 12px; color: var(--ink-light); margin-top: 10px; font-style: italic; }
-
-  /* CHECKLIST */
   .checklist-section { background: var(--ink); color: var(--cream); padding: 24px 28px; margin-bottom: 20px; }
   .checklist-title { font-family: var(--font-display); font-size: 22px; margin-bottom: 16px; }
   .checklist-items { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   @media(max-width:600px){ .checklist-items { grid-template-columns: 1fr; } }
   .checklist-item { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: rgba(245,240,232,0.8); line-height: 1.5; }
-  .check-icon { width: 16px; height: 16px; border: 1px solid rgba(245,240,232,0.25); flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; }
+  .check-icon { width: 16px; height: 16px; border: 1px solid rgba(245,240,232,0.25); flex-shrink: 0; margin-top: 2px; }
 
-  /* SOURCES FOOTER */
   .sources-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
   .source-tag { font-family: var(--font-mono); font-size: 10px; padding: 4px 10px; border: 1px solid var(--rule); color: var(--ink-light); letter-spacing: 0.06em; }
 
-  /* ERROR */
   .error-box { background: #FDECEA; border: 1px solid rgba(200,55,26,0.25); padding: 16px 20px; font-size: 14px; color: var(--red); display: none; margin-bottom: 20px; }
   .error-box.visible { display: block; }
 </style>
@@ -189,7 +158,6 @@
 
   <div class="layout">
 
-    <!-- INPUT PANEL -->
     <div class="input-panel">
       <div class="panel-label">Inserat-Daten</div>
 
@@ -230,6 +198,17 @@
         </div>
       </div>
 
+      <!-- NEU: Aussenraum -->
+      <div class="field">
+        <div class="field-label">Aussenraum</div>
+        <select id="outdoor">
+          <option value="none">Kein Aussenraum</option>
+          <option value="balkon" selected>Balkon</option>
+          <option value="terrasse">Terrasse</option>
+          <option value="garten">Garten / Sitzplatz</option>
+        </select>
+      </div>
+
       <div class="field">
         <div class="field-label" id="price-label">Mietzins CHF/Mt.</div>
         <input type="number" id="price" value="2400" min="100">
@@ -248,10 +227,10 @@
       </div>
 
       <button class="btn-analyse" id="btn-analyse" onclick="runAnalysis()">Analyse starten →</button>
-      <div class="api-note">Datenquellen: swisstopo, BAFU, OpenTransportData, OpenStreetMap, BFS PKS — alle kostenlos & öffentlich</div>
+      <div class="api-note">Datenquellen: swisstopo, BAFU, OpenTransportData, OpenStreetMap, BFS PKS, RealAdvisor — alle kostenlos & öffentlich</div>
     </div>
 
-    <!-- RESULTS SIDE -->
+    <!-- RESULTS -->
     <div>
       <div class="status-bar" id="status-bar">
         <div class="spinner" id="spinner"></div>
@@ -262,12 +241,13 @@
 
       <div class="results" id="results">
 
-        <!-- VERDICT -->
         <div class="verdict-hero">
           <div>
             <div class="verdict-address" id="verdict-address"></div>
             <div class="verdict-main" id="verdict-main"></div>
             <div class="verdict-sub" id="verdict-sub"></div>
+            <div class="verdict-range" id="verdict-range"></div>
+            <div class="verdict-source" id="verdict-source"></div>
             <div class="meter-wrap">
               <div class="meter-track">
                 <div class="meter-fill" id="meter-fill"></div>
@@ -279,24 +259,15 @@
           <div class="verdict-badge" id="verdict-badge"></div>
         </div>
 
-        <!-- SCORE CARDS -->
         <div class="score-grid" id="score-grid"></div>
-
-        <!-- POI -->
         <div class="poi-section" id="poi-section"></div>
-
-        <!-- CHECKLIST -->
         <div class="checklist-section" id="checklist-section"></div>
-
-        <!-- SOURCES -->
         <div class="sources-row" id="sources-row"></div>
 
-        <!-- COMPREHENSIVE REPORT BUTTON -->
         <button id="btn-report" onclick="generateReport()" style="width:100%;margin-top:24px;padding:16px;background:var(--ink);color:var(--cream);border:none;font-family:var(--font-body);font-size:14px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;transition:background 0.2s;" onmouseover="this.style.background='#C8371A'" onmouseout="this.style.background='var(--ink)'">
           Vollständigen KI-Report generieren →
         </button>
 
-        <!-- REPORT OUTPUT -->
         <div id="report-section" style="display:none;margin-top:20px;background:#fff;border:1px solid var(--rule);padding:32px 36px;">
           <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-light);margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--rule)">Immoskop — Vollständige Inserat-Analyse</div>
           <div id="report-content" style="font-size:15px;line-height:1.75;color:var(--ink)"></div>
@@ -308,20 +279,15 @@
 </div>
 
 <script>
-// ─── CONSTANTS ───────────────────────────────────────────────────
-const BASE_QM = {
-  '80':22.5,'81':21,'82':19.5,'83':17.5,'84':18,'85':20,
-  '86':18.5,'87':17,'88':19,'89':16.5,
-  '30':17,'31':16.5,'32':16,'40':18.5,'41':17.8,'42':17,
-  '10':23,'12':25,'13':22,'60':18,'61':17.5,'62':17,
-  '50':16,'51':15.5,'70':19,'71':18,'default':17
-};
-const YEAR_F = {'2020':1.18,'2010':1.07,'2000':1,'1990':0.92,'1980':0.85,'alt':0.77};
+// ─── Aussenraum-Faktoren ──────────────────────────────────────────
+const OUTDOOR_F = { none: 0.95, balkon: 1.0, terrasse: 1.05, garten: 1.10 };
 
-let selectedCoords = null; // { lat, lon, label, municipality }
+let selectedCoords = null;
 let acTimer = null;
+// Globale API-Resultate (werden nach generateReport() befüllt)
+window._apiMeta = null;
 
-// ─── ADDRESS AUTOCOMPLETE ─────────────────────────────────────────
+// ─── AUTOCOMPLETE ─────────────────────────────────────────────────
 async function onAddressInput(val) {
   clearTimeout(acTimer);
   const list = document.getElementById('autocomplete-list');
@@ -342,10 +308,8 @@ async function onAddressInput(val) {
         div.textContent = label;
         div.onclick = () => {
           document.getElementById('address').value = label;
-          // swisstopo uses LV95 (E,N) → convert to WGS84 approx
-          const e = attrs.y, n = attrs.x; // note: swisstopo swaps x/y
-          const lv95ToWGS = lv95ToWgs84(e, n);
-          selectedCoords = { lat: lv95ToWGS.lat, lon: lv95ToWGS.lon, label, municipality: attrs.featureId || '' };
+          const coords = lv95ToWgs84(attrs.y, attrs.x);
+          selectedCoords = { lat: coords.lat, lon: coords.lon, label };
           list.style.display = 'none';
         };
         list.appendChild(div);
@@ -355,7 +319,6 @@ async function onAddressInput(val) {
   }, 280);
 }
 
-// LV95 → WGS84 approximation (sufficient for CH)
 function lv95ToWgs84(e, n) {
   const E = (e - 2600000) / 1000000;
   const N = (n - 1200000) / 1000000;
@@ -374,361 +337,283 @@ document.getElementById('type').addEventListener('change', function() {
   document.getElementById('price').value = isKauf ? '850000' : '2400';
 });
 
-// ─── STATUS HELPERS ───────────────────────────────────────────────
+// ─── STATUS ───────────────────────────────────────────────────────
 function setStatus(msg, done=false) {
   document.getElementById('status-bar').classList.add('visible');
   document.getElementById('status-text').textContent = msg;
-  if (done) {
-    document.getElementById('spinner').style.display = 'none';
-  }
+  if (done) document.getElementById('spinner').style.display = 'none';
 }
 function hideStatus() { document.getElementById('status-bar').classList.remove('visible'); }
-function showError(msg) {
-  const b = document.getElementById('error-box');
-  b.textContent = msg;
-  b.classList.add('visible');
-}
+function showError(msg) { const b = document.getElementById('error-box'); b.textContent = msg; b.classList.add('visible'); }
 function clearError() { document.getElementById('error-box').classList.remove('visible'); }
 
-// ─── GEOCODE (if not already selected via autocomplete) ────────────
+// ─── GEOCODE ──────────────────────────────────────────────────────
 async function geocodeAddress(address) {
   const url = `https://api3.geo.admin.ch/rest/services/api/SearchServer?searchText=${encodeURIComponent(address)}&type=locations&limit=1&origins=address`;
   const r = await fetch(url);
   const d = await r.json();
-  if (!d.results || !d.results.length) throw new Error('Adresse nicht gefunden. Bitte genauer eingeben.');
+  if (!d.results?.length) throw new Error('Adresse nicht gefunden.');
   const attrs = d.results[0].attrs;
   const label = attrs.label.replace(/<[^>]+>/g,'');
   const coords = lv95ToWgs84(attrs.y, attrs.x);
   return { lat: coords.lat, lon: coords.lon, label };
 }
 
-// ─── NOISE: BAFU via WMS GetFeatureInfo ───────────────────────────
-async function fetchNoise(lat, lon) {
-  // Use BAFU road noise layer from geo.admin.ch
+// ─── OVERPASS (ÖV + Amenities) ────────────────────────────────────
+async function fetchOverpass(lat, lon) {
   try {
-    // Convert WGS84 to approximate pixel coords for a small bbox
-    const delta = 0.001;
-    const bbox = `${lon-delta},${lat-delta},${lon+delta},${lat+delta}`;
-    const url = `https://wms.geo.admin.ch/?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=ch.bafu.laerm-strassenlarm_tag&QUERY_LAYERS=ch.bafu.laerm-strassenlarm_tag&CRS=EPSG:4326&BBOX=${bbox}&WIDTH=101&HEIGHT=101&I=50&J=50&INFO_FORMAT=application/json`;
-    const r = await fetch(url);
-    const d = await r.json();
-    const features = d.features || d.results || [];
-    if (features.length && features[0].properties) {
-      const props = features[0].properties;
-      // Field name varies; try common ones
-      const db = props.db_tag || props.laeq_tag || props.value || props.LDEN || null;
-      if (db !== null) return { day: parseFloat(db), source: 'BAFU WMS' };
-    }
-    return null;
-  } catch(e) { return null; }
-}
-
-// ─── OEV: nearest stop from OpenTransportData ─────────────────────
-async function fetchOEV(lat, lon) {
-  try {
-    // Overpass query for public transport stops within 600m
-    const query = `[out:json][timeout:8];(node["public_transport"="stop_position"](around:600,${lat},${lon});node["highway"="bus_stop"](around:600,${lat},${lon});node["railway"="tram_stop"](around:600,${lat},${lon});node["railway"="station"](around:600,${lat},${lon}););out body;`;
-    const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
-    const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
-    const d = await r.json();
-    const elements = d.elements || [];
-    if (!elements.length) return { dist: 999, name: 'Keine Haltestelle gefunden', count: 0 };
-
-    // Find nearest
-    let nearest = null, minDist = Infinity;
-    elements.forEach(el => {
-      const dist = haversine(lat, lon, el.lat, el.lon);
-      if (dist < minDist) { minDist = dist; nearest = el; }
-    });
-    const name = nearest.tags?.name || nearest.tags?.['uic_name'] || 'Haltestelle';
-    return { dist: Math.round(minDist), name, count: elements.length };
-  } catch(e) { return { dist: 200, name: 'Haltestelle (Schätzung)', count: 1, estimated: true }; }
-}
-
-// ─── AMENITIES via Overpass ────────────────────────────────────────
-async function fetchAmenities(lat, lon) {
-  try {
-    const radius = 800;
-    const query = `[out:json][timeout:10];(
-      node["amenity"="school"](around:${radius},${lat},${lon});
-      node["amenity"="kindergarten"](around:${radius},${lat},${lon});
-      node["shop"="supermarket"](around:${radius},${lat},${lon});
-      node["shop"="convenience"](around:${radius},${lat},${lon});
-      node["amenity"="restaurant"](around:500,${lat},${lon});
-      node["amenity"="cafe"](around:500,${lat},${lon});
-      node["leisure"="park"](around:${radius},${lat},${lon});
-      node["leisure"="fitness_centre"](around:${radius},${lat},${lon});
-      node["amenity"="pharmacy"](around:${radius},${lat},${lon});
-      node["amenity"="doctors"](around:${radius},${lat},${lon});
+    const query = `[out:json][timeout:15];(
+      node["public_transport"="stop_position"](around:800,${lat},${lon});
+      node["highway"="bus_stop"](around:800,${lat},${lon});
+      node["railway"="tram_stop"](around:800,${lat},${lon});
+      node["railway"="station"](around:800,${lat},${lon});
+      node["amenity"="school"](around:800,${lat},${lon});
+      node["amenity"="kindergarten"](around:800,${lat},${lon});
+      node["shop"="supermarket"](around:800,${lat},${lon});
+      node["amenity"="restaurant"](around:600,${lat},${lon});
+      node["amenity"="cafe"](around:600,${lat},${lon});
+      node["leisure"="park"](around:800,${lat},${lon});
+      node["amenity"="pharmacy"](around:800,${lat},${lon});
     );out body;`;
-    const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
-    const r = await fetch(url, { signal: AbortSignal.timeout(10000) });
-    const d = await r.json();
-    const elements = d.elements || [];
+    const r = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`, {
+      signal: AbortSignal.timeout(14000),
+      headers: { 'Accept': 'application/json' }
+    });
+    const text = await r.text();
+    if (!text.startsWith('{')) return null;
+    const data = JSON.parse(text);
+    const elements = data.elements || [];
 
-    const groups = {
-      Bildung: { types: ['school','kindergarten'], items: [] },
-      Einkauf: { types: ['supermarket','convenience'], items: [] },
-      Gastro:  { types: ['restaurant','cafe'], items: [] },
-      Freizeit:{ types: ['park','fitness_centre'], items: [] },
-      Gesundheit: { types: ['pharmacy','doctors'], items: [] },
-    };
+    const groups = { Bildung:[], Einkauf:[], Gastro:[], Parks:[], Gesundheit:[] };
+    let minOevDist = Infinity, nearestOev = null, oevCount = 0;
 
     elements.forEach(el => {
-      const t = el.tags?.amenity || el.tags?.shop || el.tags?.leisure;
-      const name = el.tags?.name || t;
-      const dist = Math.round(haversine(lat, lon, el.lat, el.lon));
-      Object.entries(groups).forEach(([gname, g]) => {
-        if (g.types.includes(t) && g.items.length < 3) {
-          g.items.push({ name, dist });
-        }
-      });
+      if (!el.lat) return;
+      const dist = haversine(lat, lon, el.lat, el.lon);
+      const amenity = el.tags?.amenity || el.tags?.shop || el.tags?.leisure;
+
+      if (el.tags?.public_transport==='stop_position' || el.tags?.highway==='bus_stop' || el.tags?.railway==='tram_stop' || el.tags?.railway==='station') {
+        oevCount++;
+        if (dist < minOevDist) { minOevDist = dist; nearestOev = el; }
+      }
+      const name = el.tags?.name || amenity;
+      const d = Math.round(dist);
+      if (['school','kindergarten'].includes(amenity) && groups.Bildung.length < 3) groups.Bildung.push({name,dist:d});
+      if (amenity==='supermarket' && groups.Einkauf.length < 3) groups.Einkauf.push({name,dist:d});
+      if (['restaurant','cafe'].includes(amenity) && groups.Gastro.length < 3) groups.Gastro.push({name,dist:d});
+      if (amenity==='park' && groups.Parks.length < 2) groups.Parks.push({name,dist:d});
+      if (amenity==='pharmacy' && groups.Gesundheit.length < 2) groups.Gesundheit.push({name,dist:d});
     });
 
-    // Sort by dist
-    Object.values(groups).forEach(g => g.items.sort((a,b) => a.dist - b.dist));
-    return groups;
-  } catch(e) { return null; }
-}
-
-// ─── CRIME DATA: PKS via opendata.swiss CSV (Kanton Zürich) ────────
-// We use hardcoded relative crime index per municipality (Häufigkeitszahl per 1000 Einw.)
-// In production this would be fetched from opendata.swiss CSV
-const CRIME_INDEX = {
-  'zürich': { hzahl: 98, label: 'Zürich' },
-  'bern': { hzahl: 72, label: 'Bern' },
-  'basel': { hzahl: 85, label: 'Basel' },
-  'genf': { hzahl: 110, label: 'Genf' },
-  'winterthur': { hzahl: 62, label: 'Winterthur' },
-  'luzern': { hzahl: 58, label: 'Luzern' },
-  'st. gallen': { hzahl: 54, label: 'St. Gallen' },
-  'lausanne': { hzahl: 95, label: 'Lausanne' },
-  'kilchberg': { hzahl: 18, label: 'Kilchberg' },
-  'küsnacht': { hzahl: 16, label: 'Küsnacht' },
-  'thalwil': { hzahl: 22, label: 'Thalwil' },
-  'default': { hzahl: 38, label: 'Diese Gemeinde' }
-};
-
-function getCrimeData(label) {
-  const lower = (label || '').toLowerCase();
-  for (const [key, val] of Object.entries(CRIME_INDEX)) {
-    if (lower.includes(key)) return val;
-  }
-  return CRIME_INDEX.default;
-}
-
-// ─── SOLAR: swisstopo sonneneinstrahlung ───────────────────────────
-async function fetchSolar(lat, lon) {
-  try {
-    // swisstopo solar layer
-    const delta = 0.0005;
-    const bbox = `${lon-delta},${lat-delta},${lon+delta},${lat+delta}`;
-    const url = `https://wms.geo.admin.ch/?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=ch.bfe.solarenergie-eignung-fassaden&QUERY_LAYERS=ch.bfe.solarenergie-eignung-fassaden&CRS=EPSG:4326&BBOX=${bbox}&WIDTH=11&HEIGHT=11&I=5&J=5&INFO_FORMAT=application/json`;
-    const r = await fetch(url, { signal: AbortSignal.timeout(6000) });
-    const d = await r.json();
-    const features = d.features || d.results || [];
-    if (features.length) {
-      const props = features[0].properties || {};
-      const kwh = props.gstrahlung || props.stromertrag || props.eignung || null;
-      if (kwh) return { kwh: parseFloat(kwh), source: 'swisstopo BFE' };
-    }
-    return null;
+    return {
+      oev: { dist: minOevDist < Infinity ? Math.round(minOevDist) : null, name: nearestOev?.tags?.name || 'Haltestelle', count: oevCount },
+      amenities: groups
+    };
   } catch(e) { return null; }
 }
 
 // ─── HAVERSINE ────────────────────────────────────────────────────
 function haversine(lat1, lon1, lat2, lon2) {
-  const R = 6371000;
-  const dLat = (lat2-lat1)*Math.PI/180;
-  const dLon = (lon2-lon1)*Math.PI/180;
+  const R = 6371000, dLat=(lat2-lat1)*Math.PI/180, dLon=(lon2-lon1)*Math.PI/180;
   const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-// ─── PRICE ESTIMATE ───────────────────────────────────────────────
-function estimatePrice(plz, area, year, floor, features=[]) {
-  const prefix = (plz || '').substring(0,2);
-  let base = (BASE_QM[prefix] || BASE_QM['default']);
-  base *= (YEAR_F[year] || 1);
-  base *= (1 + (floor||0) * 0.015);
-  return Math.round(base * area);
-}
-
 // ─── SCORE HELPERS ────────────────────────────────────────────────
 function oevScore(dist) {
-  if (dist < 80)  return { score: 5, label: 'Ausgezeichnet', pill: 'good' };
-  if (dist < 200) return { score: 4, label: 'Sehr gut', pill: 'good' };
-  if (dist < 400) return { score: 3, label: 'Gut', pill: 'mid' };
-  if (dist < 700) return { score: 2, label: 'Mässig', pill: 'mid' };
-  return { score: 1, label: 'Schlecht', pill: 'bad' };
+  if (!dist) return {score:3,label:'Keine Daten',pill:'mid'};
+  if (dist<80)  return {score:5,label:'Ausgezeichnet',pill:'good'};
+  if (dist<200) return {score:4,label:'Sehr gut',pill:'good'};
+  if (dist<400) return {score:3,label:'Gut',pill:'mid'};
+  if (dist<700) return {score:2,label:'Mässig',pill:'mid'};
+  return {score:1,label:'Schlecht',pill:'bad'};
 }
 function noiseScore(db) {
-  if (!db) return { score: 3, label: 'Keine Daten', pill: 'mid' };
-  if (db < 45) return { score: 5, label: 'Sehr ruhig', pill: 'good' };
-  if (db < 52) return { score: 4, label: 'Ruhig', pill: 'good' };
-  if (db < 58) return { score: 3, label: 'Moderat', pill: 'mid' };
-  if (db < 65) return { score: 2, label: 'Laut', pill: 'bad' };
-  return { score: 1, label: 'Sehr laut', pill: 'bad' };
+  if (!db) return {score:3,label:'Keine Daten',pill:'mid'};
+  if (db<45) return {score:5,label:'Sehr ruhig',pill:'good'};
+  if (db<52) return {score:4,label:'Ruhig',pill:'good'};
+  if (db<58) return {score:3,label:'Moderat',pill:'mid'};
+  if (db<65) return {score:2,label:'Laut',pill:'bad'};
+  return {score:1,label:'Sehr laut',pill:'bad'};
 }
 function solarScore(kwh) {
-  if (!kwh) return { score: 3, label: 'Keine Daten', pill: 'mid' };
-  if (kwh > 1100) return { score: 5, label: 'Sehr sonnig', pill: 'good' };
-  if (kwh > 900)  return { score: 4, label: 'Sonnig', pill: 'good' };
-  if (kwh > 700)  return { score: 3, label: 'Mässig', pill: 'mid' };
-  return { score: 2, label: 'Wenig Sonne', pill: 'bad' };
+  if (!kwh) return {score:3,label:'Keine Daten',pill:'mid'};
+  if (kwh>1100) return {score:5,label:'Sehr sonnig',pill:'good'};
+  if (kwh>900)  return {score:4,label:'Sonnig',pill:'good'};
+  if (kwh>700)  return {score:3,label:'Mässig',pill:'mid'};
+  return {score:2,label:'Wenig Sonne',pill:'bad'};
 }
-function crimeScore(hzahl) {
-  if (hzahl < 25)  return { score: 5, label: 'Sehr sicher', pill: 'good' };
-  if (hzahl < 45)  return { score: 4, label: 'Sicher', pill: 'good' };
-  if (hzahl < 65)  return { score: 3, label: 'Durchschnittlich', pill: 'mid' };
-  if (hzahl < 85)  return { score: 2, label: 'Erhöht', pill: 'bad' };
-  return { score: 1, label: 'Hoch', pill: 'bad' };
+function crimeScore(h) {
+  if (h<25) return {score:5,label:'Sehr sicher',pill:'good'};
+  if (h<45) return {score:4,label:'Sicher',pill:'good'};
+  if (h<65) return {score:3,label:'Durchschnittlich',pill:'mid'};
+  if (h<85) return {score:2,label:'Erhöht',pill:'bad'};
+  return {score:1,label:'Hoch',pill:'bad'};
 }
 
 function makeScoreCard(label, valueStr, detail, scoreOf5, pillClass) {
-  const pct = (scoreOf5 / 5 * 100).toFixed(0);
-  const barColor = pillClass === 'good' ? '#2D7A4F' : pillClass === 'mid' ? '#A07020' : '#C8371A';
-  return `
-    <div class="score-card">
-      <div class="score-card-top">
-        <div class="score-card-label">${label}</div>
-        <span class="score-pill pill-${pillClass}">${['','★','★★','★★★','★★★★','★★★★★'][scoreOf5]}</span>
-      </div>
-      <div class="score-value">${valueStr}</div>
-      <div class="score-detail">${detail}</div>
-      <div class="score-bar"><div class="score-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
-    </div>`;
-}
-
-// ─── CHECKLIST GENERATOR ─────────────────────────────────────────
-function makeChecklist(data) {
-  const items = [
-    'Lärmprobe zu Stosszahlen (Morgen/Abend)',
-    data.noise && data.noise.day > 58 ? '⚠ Lärmmessung laut — Fenster/Verglasung prüfen' : 'Fensterverglasung & Dämmung kontrollieren',
-    'Heizungsart & Energieklasse erfragen',
-    'Tatsächliche Sonneneinstrahlung je Zimmer',
-    'Zustand Küche, Bäder, Böden dokumentieren',
-    data.oev && data.oev.dist > 500 ? '⚠ ÖV weit — Anschluss & Frequenz prüfen' : `Nächste Haltestelle: ${data.oev?.name || '–'} (${data.oev?.dist || '–'}m)`,
-    'Waschküche, Keller, Veloabstellplatz',
-    'Bisherigen Mietzins beim Vermieter erfragen',
-    'Verwaltungsgesellschaft / Vermieter googeln',
-    'Nebenkosten-Abrechnung letzter 2 Jahre',
-    data.crime && data.crime.hzahl > 60 ? '⚠ Kriminalität erhöht — Quartier tagsüber besuchen' : 'Quartier zu verschiedenen Tageszeiten besuchen',
-    'Mobilfunkempfang (Swisscom) & Glasfaser prüfen',
-  ];
-  return items.map(i => `<div class="checklist-item"><div class="check-icon"></div>${i}</div>`).join('');
+  const pct = (scoreOf5/5*100).toFixed(0);
+  const barColor = pillClass==='good' ? '#2D7A4F' : pillClass==='mid' ? '#A07020' : '#C8371A';
+  return `<div class="score-card">
+    <div class="score-card-top">
+      <div class="score-card-label">${label}</div>
+      <span class="score-pill pill-${pillClass}">${['','★','★★','★★★','★★★★','★★★★★'][scoreOf5]}</span>
+    </div>
+    <div class="score-value">${valueStr}</div>
+    <div class="score-detail">${detail}</div>
+    <div class="score-bar"><div class="score-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
+  </div>`;
 }
 
 // ─── MAIN ANALYSIS ────────────────────────────────────────────────
 async function runAnalysis() {
   clearError();
   document.getElementById('results').classList.remove('visible');
+  document.getElementById('report-section').style.display = 'none';
   document.getElementById('btn-analyse').disabled = true;
+  document.getElementById('spinner').style.display = '';
 
   const addressInput = document.getElementById('address').value.trim();
   if (!addressInput) { showError('Bitte eine Adresse eingeben.'); document.getElementById('btn-analyse').disabled=false; return; }
 
-  setStatus('Adresse wird geocodiert…');
-
   try {
-    // 1. Geocode
+    setStatus('Adresse wird geocodiert…');
     let coords = selectedCoords;
-    if (!coords || !addressInput.toLowerCase().includes(coords.label.toLowerCase().substring(0,8))) {
+    if (!coords || !addressInput.toLowerCase().includes((coords.label||'').toLowerCase().substring(0,8))) {
       coords = await geocodeAddress(addressInput);
     }
     const { lat, lon, label } = coords;
-
-    // Extract PLZ from label
     const plzMatch = label.match(/\b(\d{4})\b/);
     const plz = plzMatch ? plzMatch[1] : '8000';
 
-    setStatus('Lärmdaten werden abgerufen (BAFU)…');
-    const [noiseData, oevData, solarData, amenitiesData] = await Promise.all([
-      fetchNoise(lat, lon),
-      (setStatus('ÖV-Haltestellen werden gesucht…'), fetchOEV(lat, lon)),
-      (setStatus('Sonnenenergie-Daten werden abgerufen…'), fetchSolar(lat, lon)),
-      (setStatus('Umgebung wird analysiert (OSM)…'), fetchAmenities(lat, lon)),
-    ]);
+    setStatus('Umgebung wird analysiert (OSM)…');
+    const overpassData = await fetchOverpass(lat, lon);
+    const oev = overpassData?.oev || { dist: null, name: '–', count: 0 };
+    const amenities = overpassData?.amenities || {};
+    // meta values (from API/backend) take priority for noise and oev
 
-    setStatus('Kriminalitätsdaten werden abgerufen (PKS)…');
-    const crimeData = getCrimeData(label);
+    // Crime (statisch)
+    const CRIME_INDEX = {
+      'zürich':{hzahl:98,label:'Zürich'},'bern':{hzahl:72,label:'Bern'},'basel':{hzahl:85,label:'Basel'},
+      'genf':{hzahl:110,label:'Genf'},'winterthur':{hzahl:62,label:'Winterthur'},'luzern':{hzahl:58,label:'Luzern'},
+      'lausanne':{hzahl:95,label:'Lausanne'},'kilchberg':{hzahl:18,label:'Kilchberg'},
+      'küsnacht':{hzahl:16,label:'Küsnacht'},'thalwil':{hzahl:22,label:'Thalwil'},
+      'zollikon':{hzahl:20,label:'Zollikon'},'uster':{hzahl:45,label:'Uster'},
+      'st. gallen':{hzahl:54,label:'St. Gallen'}
+    };
+    const labelLower = label.toLowerCase();
+    let crime = {hzahl:38,label:'diese Gemeinde'};
+    for (const [k,v] of Object.entries(CRIME_INDEX)) { if (labelLower.includes(k)) { crime=v; break; } }
 
-    setStatus('Preisvergleich wird berechnet…');
-
-    // Price
+    // Formular-Werte
     const price   = parseInt(document.getElementById('price').value) || 2400;
     const area    = parseInt(document.getElementById('area').value) || 75;
     const year    = document.getElementById('year').value;
     const floor   = parseInt(document.getElementById('floor').value) || 0;
+    const outdoor = document.getElementById('outdoor').value;
     const isKauf  = document.getElementById('type').value === 'kauf';
-    const expected = isKauf ? estimatePrice(plz, area, year, floor) * 220 : estimatePrice(plz, area, year, floor);
-    const delta   = Math.round((price - expected) / expected * 100);
-    const priceQm = (price / area).toFixed(1);
+    const rooms   = document.getElementById('rooms').value;
 
-    // RENDER ─────────────────────────────────────────────────────
+    // Analyse-Daten für Report speichern
+    window._lastAnalysis = { address: label, rooms, area, price, type: document.getElementById('type').value, year, floor, outdoor };
+
+    setStatus('Marktpreise werden abgerufen…');
+
+    // API-Call für Preise + Solar + Noise + Report-Vorbereitung
+    const apiRes = await fetch('/api/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(window._lastAnalysis)
+    });
+    const apiData = await apiRes.json();
+    if (apiData.error) throw new Error(apiData.error);
+
+    // Meta aus API verwenden (Supabase-Preise, Solar, Noise)
+    const meta = apiData.meta || {};
+    window._apiMeta = meta;
+    window._lastReport = apiData.report;
+
+    // Preise aus API (konsistent mit Report)
+    const expected    = meta.expected || 0;
+    const delta       = meta.delta || 0;
+    const pricePerQm  = (price / area).toFixed(1);
+    const priceRange  = meta.priceRangeText || '';
+    const priceSource = meta.priceSource || 'Modell';
+    const noiseDay    = meta.noiseDay;
+    const solarKwh    = meta.solarKwh;
+
     setStatus('Analyse vollständig.', true);
     setTimeout(hideStatus, 1200);
 
-    // Verdict
+    // ── VERDICT ──────────────────────────────────────────────────
     document.getElementById('verdict-address').textContent = label;
     let verdictText, verdictSub, badgeClass, badgeText, meterColor, meterPct;
 
     if (Math.abs(delta) <= 5) {
       verdictText = 'Im Marktbereich';
-      verdictSub = `Referenzpreis: CHF ${expected.toLocaleString('de-CH')} — Abweichung ${delta > 0 ? '+':''}${delta}%`;
-      badgeClass = 'badge-fair'; badgeText = '✓ Fair';
-      meterColor = '#2D7A4F'; meterPct = 50;
+      verdictSub = `Referenzpreis: CHF ${expected.toLocaleString('de-CH')}${isKauf?'':'/Mt.'} — Abweichung ${delta>0?'+':''}${delta}%`;
+      badgeClass='badge-fair'; badgeText='✓ Fair'; meterColor='#2D7A4F'; meterPct=50;
     } else if (delta > 0) {
       verdictText = `${delta}% über Marktpreis`;
-      verdictSub = `Referenz CHF ${expected.toLocaleString('de-CH')} — Sie zahlen CHF ${(price-expected).toLocaleString('de-CH')} zu viel`;
-      badgeClass = delta > 15 ? 'badge-over' : 'badge-warn';
-      badgeText = delta > 15 ? '⚠ Überteuert' : '~ Leicht überteuert';
-      meterColor = delta > 15 ? '#C8371A' : '#A07020';
-      meterPct = Math.min(50 + delta * 1.5, 94);
+      verdictSub = `Referenz CHF ${expected.toLocaleString('de-CH')}${isKauf?'':'/Mt.'} — CHF ${(price-expected).toLocaleString('de-CH')} zu viel`;
+      badgeClass = delta>15 ? 'badge-over' : 'badge-warn';
+      badgeText  = delta>15 ? '⚠ Überteuert' : '~ Leicht überteuert';
+      meterColor = delta>15 ? '#C8371A' : '#A07020'; meterPct = Math.min(50+delta*1.5, 94);
     } else {
       verdictText = `${Math.abs(delta)}% unter Marktpreis`;
-      verdictSub = `Referenz CHF ${expected.toLocaleString('de-CH')} — gutes Angebot`;
-      badgeClass = 'badge-under'; badgeText = '↓ Günstig';
-      meterColor = '#2D7A4F'; meterPct = Math.max(50 + delta * 1.5, 6);
+      verdictSub = `Referenz CHF ${expected.toLocaleString('de-CH')}${isKauf?'':'/Mt.'} — günstiges Angebot`;
+      badgeClass='badge-under'; badgeText='↓ Günstig'; meterColor='#2D7A4F'; meterPct=Math.max(50+delta*1.5,6);
     }
 
     document.getElementById('verdict-main').textContent = verdictText;
     document.getElementById('verdict-sub').textContent = verdictSub;
+    document.getElementById('verdict-range').textContent = priceRange;
+    document.getElementById('verdict-source').textContent = `Quelle: ${priceSource}${meta.streetData ? ` · ${meta.streetData.name} (${meta.streetData.percentile}. Perzentile)` : ''}`;
     const badge = document.getElementById('verdict-badge');
     badge.textContent = badgeText; badge.className = 'verdict-badge ' + badgeClass;
     const mf = document.getElementById('meter-fill');
-    mf.style.width = meterPct + '%'; mf.style.background = meterColor;
+    mf.style.width = meterPct+'%'; mf.style.background = meterColor;
 
-    // Score cards
-    const oev = oevData || { dist: 300, name: 'Schätzung', count: 1 };
-    const noise = noiseData;
-    const solar = solarData;
-    const crime = crimeData;
-    const priceS = { score: Math.max(1, Math.min(5, Math.round(3 - delta/10))), label: delta > 10 ? 'Teuer' : delta < -10 ? 'Günstig' : 'Fair', pill: delta > 10 ? 'bad' : delta < -10 ? 'good' : 'mid' };
-
+    // ── SCORE CARDS ──────────────────────────────────────────────
+    const priceScore = Math.max(1, Math.min(5, Math.round(3-delta/10)));
+    const pricePill  = delta>10 ? 'bad' : delta<-10 ? 'good' : 'mid';
     const oevS   = oevScore(oev.dist);
-    const noiseS = noiseScore(noise?.day);
-    const solarS = solarScore(solar?.kwh);
+    const noiseS = noiseScore(noiseDay);
+    const solarS = solarScore(solarKwh);
     const crimeS = crimeScore(crime.hzahl);
 
     document.getElementById('score-grid').innerHTML =
-      makeScoreCard('Preisbewertung', `CHF ${priceQm}/m²`, `Referenz: CHF ${(expected/area).toFixed(1)}/m²`, priceS.score, priceS.pill) +
-      makeScoreCard('ÖV-Anbindung', `${oev.dist}m`, `${oev.name} · ${oev.count} Haltestellen im Umkreis`, oevS.score, oevS.pill) +
-      makeScoreCard('Lärmsituation', noise ? `${noise.day}dB` : 'N/A', noise ? `Strassenlärm Tagesmittel (BAFU)` : 'Keine BAFU-Daten verfügbar', noiseS.score, noiseS.pill) +
-      makeScoreCard('Besonnung', solar ? `${Math.round(solar.kwh)} kWh` : 'N/A', solar ? `Jahressumme Fassade (swisstopo)` : 'Keine Solardaten verfügbar', solarS.score, solarS.pill) +
-      makeScoreCard('Sicherheit', `${crime.hzahl}/1000`, `${crime.label} · Straftaten je 1000 Einw. (PKS)`, crimeS.score, crimeS.pill) +
-      makeScoreCard('Preis/m²', `CHF ${priceQm}`, `${area}m² · ${document.getElementById('rooms').value} Zi · ${isKauf ? 'Kauf' : 'Miete'}`, priceS.score, priceS.pill);
+      makeScoreCard('Preisbewertung', `CHF ${pricePerQm}/m²`,
+        `Referenz: CHF ${expected ? (expected/area).toFixed(1) : '–'}/m² · ${priceSource}`,
+        priceScore, pricePill) +
+      makeScoreCard('ÖV-Anbindung', meta.oevDist ? `${meta.oevDist}m` : (oev.dist ? `${oev.dist}m` : 'N/A'),
+        `${meta.oevName || oev.name} · ${meta.oevCount || oev.count} Haltestellen im Umkreis`,
+        oevScore(meta.oevDist || oev.dist).score, oevScore(meta.oevDist || oev.dist).pill) +
+      makeScoreCard('Lärmsituation', noiseDay ? `${noiseDay}dB` : 'N/A',
+        noiseDay ? 'Strassenlärm Tagesmittel (OSM)' : 'Keine Daten verfügbar',
+        noiseS.score, noiseS.pill) +
+      makeScoreCard('Besonnung', solarKwh ? `${Math.round(solarKwh)} kWh` : 'N/A',
+        solarKwh ? 'Jahressumme Fassade (swisstopo)' : 'Keine Daten verfügbar',
+        solarS.score, solarS.pill) +
+      makeScoreCard('Sicherheit', `${crime.hzahl}/1000`,
+        `${crime.label} · Straftaten je 1000 Einw. (PKS)`,
+        crimeS.score, crimeS.pill) +
+      makeScoreCard('Aussenraum', {none:'Kein',balkon:'Balkon',terrasse:'Terrasse',garten:'Garten'}[outdoor],
+        `Etage ${floor} · Faktor ${OUTDOOR_F[outdoor]}`,
+        outdoor==='none'?2:outdoor==='balkon'?3:outdoor==='terrasse'?4:5,
+        outdoor==='none'?'bad':outdoor==='balkon'?'mid':'good');
 
-    // POI
+    // ── POI ──────────────────────────────────────────────────────
+    const dotColors = { Bildung:'#378ADD', Einkauf:'#2D7A4F', Gastro:'#C8371A', Parks:'#639922', Gesundheit:'#7F77DD' };
     let poiHtml = '<div class="poi-title">Umgebung <em style="font-style:italic;color:var(--ink-light);font-size:0.8em">(800m Radius)</em></div>';
-    if (amenitiesData) {
-      const dotColors = { Bildung: '#378ADD', Einkauf: '#2D7A4F', Gastro: '#C8371A', Freizeit: '#639922', Gesundheit: '#7F77DD' };
+    const hasAmenities = Object.values(amenities).some(g => g.length > 0);
+    if (hasAmenities) {
       poiHtml += '<div class="poi-grid">';
-      Object.entries(amenitiesData).forEach(([gname, g]) => {
-        if (!g.items.length) return;
+      Object.entries(amenities).forEach(([gname, items]) => {
+        if (!items.length) return;
         const color = dotColors[gname] || '#888';
         poiHtml += `<div><div class="poi-group-label">${gname}</div>`;
-        g.items.forEach(item => {
+        items.sort((a,b)=>a.dist-b.dist).forEach(item => {
           poiHtml += `<div class="poi-item"><div class="poi-dot" style="background:${color}"></div>${item.name}<span class="poi-dist">${item.dist}m</span></div>`;
         });
         poiHtml += '</div>';
@@ -739,21 +624,38 @@ async function runAnalysis() {
     }
     document.getElementById('poi-section').innerHTML = poiHtml;
 
-    // Checklist
+    // ── CHECKLIST ────────────────────────────────────────────────
+    const checkItems = [
+      'Lärmprobe zu Stosszeiten (Morgen/Abend)',
+      noiseDay && noiseDay > 58 ? '⚠ Lärm hoch — Fenster & Verglasung prüfen' : 'Fensterverglasung & Schalldämmung kontrollieren',
+      outdoor === 'garten' ? 'Gartenfläche & Nutzungsrecht klären' : outdoor === 'terrasse' ? 'Terrassenzustand und Abdichtung prüfen' : 'Balkonzustand & Abdichtung kontrollieren',
+      floor === 0 && outdoor === 'none' ? '⚠ EG ohne Aussenraum — Privatsphäre & Licht prüfen' : `Etage ${floor} — Lift vorhanden?`,
+      'Heizungsart & Energieklasse erfragen',
+      'Zustand Küche, Bäder, Böden dokumentieren',
+      (meta.oevDist||oev.dist) > 500 ? `⚠ ÖV weit (${meta.oevDist||oev.dist}m) — Frequenz prüfen` : `Nächste Haltestelle: ${meta.oevName||oev.name} (${meta.oevDist||oev.dist||'–'}m)`,
+      'Waschküche, Keller, Veloabstellplatz',
+      'Bisherigen Mietzins beim Vermieter erfragen',
+      'Nebenkosten-Abrechnung letzter 2 Jahre',
+      crime.hzahl > 60 ? '⚠ Kriminalität erhöht — Quartier zu verschiedenen Zeiten besuchen' : 'Quartier zu verschiedenen Tageszeiten besuchen',
+      'Mobilfunkempfang & Glasfaser prüfen',
+    ];
     document.getElementById('checklist-section').innerHTML = `
       <div class="checklist-title">Besichtigungs-Checkliste</div>
-      <div class="checklist-items">${makeChecklist({ noise, oev, crime })}</div>`;
+      <div class="checklist-items">${checkItems.map(i=>`<div class="checklist-item"><div class="check-icon"></div>${i}</div>`).join('')}</div>`;
 
-    // Sources
-    const sources = ['swisstopo Geocoder','BAFU Lärmkarten','OpenStreetMap Overpass','BFS PKS Kriminalstatistik'];
-    if (solar) sources.push('swisstopo Solarenergie');
-    document.getElementById('sources-row').innerHTML = sources.map(s => `<span class="source-tag">${s}</span>`).join('') + '<span class="source-tag" style="margin-left:auto;color:var(--ink-light)">* Kriminalität: Gemeinde-Ebene</span>';
-
-    // Store analysis data for report generation
-    window._lastAnalysis = { address: label, rooms: document.getElementById('rooms').value, area, price, type: document.getElementById('type').value, year, floor, noise: noiseData, oev: oevData, solar: solarData, crime: crimeData, amenities: amenitiesData };
+    // ── SOURCES ──────────────────────────────────────────────────
+    const sources = ['swisstopo Geocoder','OpenStreetMap Overpass','BFS PKS','RealAdvisor Marktpreise'];
+    if (solarKwh) sources.push('swisstopo Solarenergie');
+    if (meta.streetData) sources.push('RealAdvisor Strassendaten');
+    document.getElementById('sources-row').innerHTML = sources.map(s=>`<span class="source-tag">${s}</span>`).join('');
 
     document.getElementById('results').classList.add('visible');
     document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // Report direkt anzeigen (bereits von API generiert)
+    if (apiData.report) {
+      renderReport(apiData.report);
+    }
 
   } catch(err) {
     showError(err.message || 'Fehler bei der Analyse. Bitte Adresse überprüfen.');
@@ -763,18 +665,27 @@ async function runAnalysis() {
   document.getElementById('btn-analyse').disabled = false;
 }
 
-async function generateReport() {
-  const btn = document.getElementById('btn-report');
+// ─── REPORT RENDERN ───────────────────────────────────────────────
+function renderReport(reportText) {
   const reportSection = document.getElementById('report-section');
   const reportContent = document.getElementById('report-content');
-
-  if (!window._lastAnalysis) return;
-
-  btn.disabled = true;
-  btn.textContent = 'Vollständiger Report wird generiert…';
+  const html = reportText
+    .replace(/^## (.+)$/gm, '<h2 style="font-family:var(--font-display);font-size:20px;margin:28px 0 10px;padding-top:20px;border-top:1px solid var(--rule)">$1</h2>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^- (.+)$/gm, '<li style="margin:4px 0;padding-left:4px">$1</li>')
+    .replace(/(<li.*<\/li>\n?)+/g, '<ul style="padding-left:20px;margin:8px 0">$&</ul>')
+    .replace(/\n\n/g, '</p><p style="margin:8px 0">')
+    .replace(/\n/g, '<br>');
+  reportContent.innerHTML = `<p style="margin:8px 0">${html}</p>`;
   reportSection.style.display = 'block';
-  reportContent.innerHTML = '<div style="color:var(--ink-light);font-size:13px;padding:20px 0">Claude analysiert das Inserat…</div>';
+  document.getElementById('btn-report').textContent = 'Report aktualisieren ↺';
+}
 
+async function generateReport() {
+  const btn = document.getElementById('btn-report');
+  if (!window._lastAnalysis) return;
+  btn.disabled = true;
+  btn.textContent = 'Wird generiert…';
   try {
     const response = await fetch('/api/report', {
       method: 'POST',
@@ -783,27 +694,13 @@ async function generateReport() {
     });
     const data = await response.json();
     if (data.error) throw new Error(data.error);
-
-    // Render markdown-like report
-    const html = data.report
-      .replace(/^## (.+)$/gm, '<h2 style="font-family:var(--font-display);font-size:20px;margin:28px 0 10px;padding-top:20px;border-top:1px solid var(--rule)">$1</h2>')
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/^- (.+)$/gm, '<li style="margin:4px 0;padding-left:4px">$1</li>')
-      .replace(/(<li.*<\/li>\n?)+/g, '<ul style="padding-left:20px;margin:8px 0">$&</ul>')
-      .replace(/\n\n/g, '</p><p style="margin:8px 0">')
-      .replace(/\n/g, '<br>');
-
-    reportContent.innerHTML = `<p style="margin:8px 0">${html}</p>`;
-    btn.textContent = 'Report aktualisieren ↺';
-    btn.disabled = false;
-    reportSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    renderReport(data.report);
+    document.getElementById('report-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch(err) {
-    reportContent.innerHTML = `<div style="color:var(--red);font-size:13px">Fehler: ${err.message}</div>`;
-    btn.textContent = 'Nochmals versuchen';
-    btn.disabled = false;
+    document.getElementById('report-content').innerHTML = `<div style="color:var(--red);font-size:13px">Fehler: ${err.message}</div>`;
   }
+  btn.disabled = false;
 }
 </script>
 </body>
 </html>
-
