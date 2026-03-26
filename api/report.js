@@ -49,7 +49,7 @@ try {
     console.log('NOISE features:', features.length);
     if (features.length) {
       const props = features[0].properties || {};
-      console.log('NOISE props:', JSON.stringify(props).substring(0, 300));
+     console.log('NOISE full feature:', JSON.stringify(features[0]).substring(0, 500));
       const val = props.lr_tag || props.Lr_Tag || props.lr_nacht || props.klasse || props.value;
       noiseDay = val ? parseFloat(val) : null;
       console.log('NOISE value:', noiseDay);
