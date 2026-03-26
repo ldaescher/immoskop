@@ -2,5 +2,11 @@
   "rewrites": [
     { "source": "/checker", "destination": "/checker.html" },
     { "source": "/", "destination": "/index.html" }
+  ],
+  "crons": [
+    {
+      "path": "/api/scrape-flatfox",
+      "schedule": "0 2 * * 0"
+    }
   ]
 }
