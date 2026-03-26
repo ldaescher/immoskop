@@ -380,8 +380,20 @@ async function fetchOverpass(lat, lon) {
       headers: { 'Accept': 'application/json' }
     });
     const text = await r.text();
-    if (!text.startsWith('{')) return null;
-    const data = JSON.parse(text);
+    if (!text.startsWith('{') && !text.startsWith('[')) {
+      console.warn('Overpass returned non-JSON, retrying...');
+      // Retry once after 2s
+      await new Promise(r => setTimeout(r, 2000));
+      const r2 = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`, {
+        signal: AbortSignal.timeout(14000),
+        headers: { 'Accept': 'application/json' }
+      });
+      const text2 = await r2.text();
+      if (!text2.startsWith('{')) return null;
+      var data = JSON.parse(text2);
+    } else {
+      var data = JSON.parse(text);
+    }
     const elements = data.elements || [];
 
     const groups = { Bildung:[], Einkauf:[], Gastro:[], Parks:[], Gesundheit:[] };
@@ -491,6 +503,7 @@ async function runAnalysis() {
     const oev = overpassData?.oev || { dist: null, name: '–', count: 0 };
     const amenities = overpassData?.amenities || {};
     // meta values (from API/backend) take priority for noise and oev
+    // If frontend overpass failed, parse amenitySummary from meta as text fallback
 
     // Crime (statisch)
     const CRIME_INDEX = {
@@ -517,33 +530,19 @@ async function runAnalysis() {
     // Analyse-Daten für Report speichern
     window._lastAnalysis = { address: label, rooms, area, price, type: document.getElementById('type').value, year, floor, outdoor };
 
-    setStatus('Marktpreise werden abgerufen…');
-
-    // API-Call für Preise + Solar + Noise + Report-Vorbereitung
-    const apiRes = await fetch('/api/report', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(window._lastAnalysis)
-    });
-    const apiData = await apiRes.json();
-    if (apiData.error) throw new Error(apiData.error);
-
-    // Meta aus API verwenden (Supabase-Preise, Solar, Noise)
-    const meta = apiData.meta || {};
-    window._apiMeta = meta;
-    window._lastReport = apiData.report;
-
-    // Preise aus API (konsistent mit Report)
-    const expected    = meta.expected || 0;
-    const delta       = meta.delta || 0;
-    const pricePerQm  = (price / area).toFixed(1);
-    const priceRange  = meta.priceRangeText || '';
-    const priceSource = meta.priceSource || 'Modell';
-    const noiseDay    = meta.noiseDay;
-    const solarKwh    = meta.solarKwh;
-
+    // ── STUFE 1: Sofort Kacheln zeigen mit Overpass-Daten ──────────
     setStatus('Analyse vollständig.', true);
     setTimeout(hideStatus, 1200);
+
+    // Temporäre Preiswerte (Fallback bis API antwortet)
+    const meta = {};
+    const noiseDay    = null;
+    const solarKwh    = null;
+    const expected    = 0;
+    const delta       = 0;
+    const pricePerQm  = (price / area).toFixed(1);
+    const priceRange  = '';
+    const priceSource = 'wird geladen…';
 
     // ── VERDICT ──────────────────────────────────────────────────
     document.getElementById('verdict-address').textContent = label;
@@ -620,7 +619,25 @@ async function runAnalysis() {
       });
       poiHtml += '</div>';
     } else {
-      poiHtml += '<p style="font-size:13px;color:var(--ink-light)">Umgebungsdaten konnten nicht geladen werden.</p>';
+      // Fallback: zeige amenitySummary aus meta als Text
+      if (window._apiMeta && window._apiMeta.amenitySummary) {
+        const lines = window._apiMeta.amenitySummary.split('\n');
+        poiHtml += '<div style="font-size:13px;color:var(--ink-mid);line-height:2">';
+        lines.forEach(l => { poiHtml += `<div>${l}</div>`; });
+        poiHtml += '</div>';
+      } else {
+        poiHtml += '<p style="font-size:13px;color:var(--ink-light)">Umgebungsdaten werden geladen…</p>';
+        // Update POI section once API responds
+        setTimeout(() => {
+          if (window._apiMeta?.amenitySummary) {
+            const lines = window._apiMeta.amenitySummary.split('\n');
+            let html = '<div class="poi-title">Umgebung</div><div style="font-size:13px;color:var(--ink-mid);line-height:2">';
+            lines.forEach(l => { html += `<div>${l}</div>`; });
+            html += '</div>';
+            document.getElementById('poi-section').innerHTML = html;
+          }
+        }, 12000);
+      }
     }
     document.getElementById('poi-section').innerHTML = poiHtml;
 
@@ -652,10 +669,68 @@ async function runAnalysis() {
     document.getElementById('results').classList.add('visible');
     document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-    // Report direkt anzeigen (bereits von API generiert)
-    if (apiData.report) {
-      renderReport(apiData.report);
-    }
+    // ── STUFE 2: API im Hintergrund (Preise + Solar + Claude) ────
+    document.getElementById('btn-report').textContent = 'KI-Report wird generiert…';
+    document.getElementById('btn-report').disabled = true;
+    fetch('/api/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(window._lastAnalysis)
+    }).then(r => r.json()).then(apiData => {
+      if (apiData.error) { console.warn('API:', apiData.error); return; }
+      const m = apiData.meta || {};
+      window._apiMeta = m;
+
+      // Preiskachel aktualisieren
+      const newDelta = m.delta || 0;
+      const newExpected = m.expected || 0;
+      const newSource = m.priceSource || 'RealAdvisor';
+      const pricePill2 = newDelta>10 ? 'bad' : newDelta<-10 ? 'good' : 'mid';
+      const priceScore2 = Math.max(1, Math.min(5, Math.round(3-newDelta/10)));
+
+      // Verdict aktualisieren
+      document.getElementById('verdict-source').textContent =
+        `Quelle: ${newSource}${m.streetData ? ` · ${m.streetData.name} (${m.streetData.percentile}. Perzentile)` : ''}`;
+      if (newExpected > 0) {
+        const newDeltaAbs = Math.abs(newDelta);
+        document.getElementById('verdict-main').textContent =
+          Math.abs(newDelta) <= 5 ? 'Im Marktbereich' :
+          newDelta > 0 ? `${newDelta}% über Marktpreis` : `${newDeltaAbs}% unter Marktpreis`;
+        document.getElementById('verdict-sub').textContent =
+          `Referenzpreis: CHF ${newExpected.toLocaleString('de-CH')}${isKauf?'':'/Mt.'} — Abweichung ${newDelta>0?'+':''}${newDelta}%`;
+        document.getElementById('verdict-range').textContent = m.priceRangeText || '';
+
+        // Meter aktualisieren
+        const mf2 = document.getElementById('meter-fill');
+        const meterPct2 = Math.abs(newDelta) <= 5 ? 50 : newDelta > 0 ? Math.min(50+newDelta*1.5,94) : Math.max(50+newDelta*1.5,6);
+        const meterColor2 = newDelta > 15 ? '#C8371A' : newDelta > 5 ? '#A07020' : '#2D7A4F';
+        mf2.style.width = meterPct2+'%'; mf2.style.background = meterColor2;
+
+        // Preiskachel aktualisieren
+        const cards = document.getElementById('score-grid');
+        const firstCard = cards.querySelector('.score-card');
+        if (firstCard) firstCard.outerHTML = makeScoreCard('Preisbewertung',
+          `CHF ${pricePerQm}/m²`,
+          `Referenz: CHF ${newExpected ? (newExpected/area).toFixed(1) : '–'}/m² · ${newSource}`,
+          priceScore2, pricePill2);
+      }
+
+      // Solar-Kachel aktualisieren
+      if (m.solarKwh) {
+        const solarS2 = solarScore(m.solarKwh);
+        const cards = document.getElementById('score-grid').querySelectorAll('.score-card');
+        if (cards[3]) cards[3].outerHTML = makeScoreCard('Besonnung',
+          `${Math.round(m.solarKwh)} kWh`,
+          'Jahressumme Fassade (swisstopo)', solarS2.score, solarS2.pill);
+      }
+
+      // Report anzeigen
+      if (apiData.report) renderReport(apiData.report);
+    }).catch(e => {
+      console.warn('API Fehler:', e);
+      document.getElementById('btn-report').disabled = false;
+      document.getElementById('btn-report').textContent = 'KI-Report generieren →';
+    });
 
   } catch(err) {
     showError(err.message || 'Fehler bei der Analyse. Bitte Adresse überprüfen.');
