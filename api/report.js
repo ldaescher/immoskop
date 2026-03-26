@@ -32,29 +32,35 @@ export default async function handler(req, res) {
 
   if (!lat) return res.status(400).json({ error: 'Adresse konnte nicht geocodiert werden.' });
 
- // ── 2. NOISE (BAFU) ─────────────────────────────────────────────
+ // ── 2. NOISE via OSM Strassenkategorien (Schätzung) ─────────────
 let noiseDay = null;
+let noiseSource = 'Schätzung';
 try {
-  const lv95e = lv03y + 2000000;
-  const lv95n = lv03x + 1000000;
-  const d = 500;
-  const bbox = `${lv95e-d},${lv95n-d},${lv95e+d},${lv95n+d}`;
-  const url = `https://wms.geo.admin.ch/?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=ch.bafu.laerm-strassenlaerm_tag&QUERY_LAYERS=ch.bafu.laerm-strassenlaerm_tag&CRS=EPSG:2056&BBOX=${bbox}&WIDTH=101&HEIGHT=101&I=50&J=50&INFO_FORMAT=application/json`;
-  const r = await fetch(url, { signal: AbortSignal.timeout(6000) });
-  const txt = await r.text();
-  console.log('NOISE response:', txt.substring(0, 400));
-  if (!txt.startsWith('<')) {
-    const data = JSON.parse(txt);
-    const features = data.features || [];
-    console.log('NOISE features:', features.length);
-    if (features.length) {
-      const props = features[0].properties || {};
-     console.log('NOISE full feature:', JSON.stringify(features[0]).substring(0, 500));
-      const val = props.lr_tag || props.Lr_Tag || props.lr_nacht || props.klasse || props.value;
-      noiseDay = val ? parseFloat(val) : null;
-      console.log('NOISE value:', noiseDay);
-    }
-  }
+  const roadQuery = `[out:json][timeout:6];(
+    way["highway"~"motorway|trunk|primary|secondary|tertiary|residential|living_street|unclassified"](around:100,${lat},${lon});
+  );out body;`;
+  const roadRes = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(roadQuery)}`, { signal: AbortSignal.timeout(7000) });
+  const roadData = await roadRes.json();
+  const roads = roadData.elements || [];
+  console.log('NOISE roads found:', roads.length, roads.map(r => r.tags?.highway).join(', '));
+  
+  const ROAD_DB = {
+    'motorway': 75, 'trunk': 72, 'primary': 65,
+    'secondary': 60, 'tertiary': 55,
+    'residential': 48, 'unclassified': 50,
+    'living_street': 42, 'service': 44
+  };
+  
+  let maxDb = 38; // baseline: ruhige Gegend
+  roads.forEach(r => {
+    const hw = r.tags?.highway;
+    const db = ROAD_DB[hw];
+    if (db && db > maxDb) maxDb = db;
+  });
+  
+  noiseDay = maxDb;
+  noiseSource = roads.length > 0 ? 'OSM Strassenkategorie (Schätzung)' : 'Schätzung (keine Strassen im 100m-Radius)';
+  console.log('NOISE estimated:', noiseDay, 'dB |', noiseSource);
 } catch(e) { console.log('NOISE error:', e.message); }
 
   // ── 3. SOLAR via geo.admin.ch REST identify ─────────────────────
@@ -168,7 +174,7 @@ Preis: CHF ${parseInt(price).toLocaleString('de-CH')}${isKauf?'':'/Mt.'} (CHF ${
 Marktmodell-Referenz: CHF ${expected.toLocaleString('de-CH')}${isKauf?'':'/Mt.'} → Abweichung: ${delta>0?'+':''}${delta}%
 
 BEHÖRDEN-DATEN:
-Lärm (BAFU): ${noiseDay?`${noiseDay} dB Tagesmittel`:'nicht verfügbar'}
+Lärm (${noiseSource}): ${noiseDay ? `${noiseDay} dB Tagesmittel (geschätzt aus Strassenkategorie)` : 'nicht verfügbar'}
 Besonnung (swisstopo BFE): ${solarKwh?`${Math.round(solarKwh)} kWh/Jahr`:'nicht verfügbar'}
 ÖV: ${oevDist?`${oevDist}m zur Haltestelle ${oevName} · ${oevCount} Haltestellen im 800m-Radius`:'nicht verfügbar'}
 Sicherheit (PKS): ${crime.hzahl} Delikte/1000 Einw. in ${crime.label}${steuerfuss?`\nSteuerfuss: ${steuerfuss}%`:''}
