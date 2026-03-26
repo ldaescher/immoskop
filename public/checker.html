@@ -291,6 +291,17 @@
         <!-- SOURCES -->
         <div class="sources-row" id="sources-row"></div>
 
+        <!-- COMPREHENSIVE REPORT BUTTON -->
+        <button id="btn-report" onclick="generateReport()" style="width:100%;margin-top:24px;padding:16px;background:var(--ink);color:var(--cream);border:none;font-family:var(--font-body);font-size:14px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;transition:background 0.2s;" onmouseover="this.style.background='#C8371A'" onmouseout="this.style.background='var(--ink)'">
+          Vollständigen KI-Report generieren →
+        </button>
+
+        <!-- REPORT OUTPUT -->
+        <div id="report-section" style="display:none;margin-top:20px;background:#fff;border:1px solid var(--rule);padding:32px 36px;">
+          <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-light);margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--rule)">Immoskop — Vollständige Inserat-Analyse</div>
+          <div id="report-content" style="font-size:15px;line-height:1.75;color:var(--ink)"></div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -738,6 +749,9 @@ async function runAnalysis() {
     if (solar) sources.push('swisstopo Solarenergie');
     document.getElementById('sources-row').innerHTML = sources.map(s => `<span class="source-tag">${s}</span>`).join('') + '<span class="source-tag" style="margin-left:auto;color:var(--ink-light)">* Kriminalität: Gemeinde-Ebene</span>';
 
+    // Store analysis data for report generation
+    window._lastAnalysis = { address: label, rooms: document.getElementById('rooms').value, area, price, type: document.getElementById('type').value, year, floor, noise: noiseData, oev: oevData, solar: solarData, crime: crimeData, amenities: amenitiesData };
+
     document.getElementById('results').classList.add('visible');
     document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
@@ -747,6 +761,47 @@ async function runAnalysis() {
   }
 
   document.getElementById('btn-analyse').disabled = false;
+}
+
+async function generateReport() {
+  const btn = document.getElementById('btn-report');
+  const reportSection = document.getElementById('report-section');
+  const reportContent = document.getElementById('report-content');
+
+  if (!window._lastAnalysis) return;
+
+  btn.disabled = true;
+  btn.textContent = 'Vollständiger Report wird generiert…';
+  reportSection.style.display = 'block';
+  reportContent.innerHTML = '<div style="color:var(--ink-light);font-size:13px;padding:20px 0">Claude analysiert das Inserat…</div>';
+
+  try {
+    const response = await fetch('/api/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(window._lastAnalysis)
+    });
+    const data = await response.json();
+    if (data.error) throw new Error(data.error);
+
+    // Render markdown-like report
+    const html = data.report
+      .replace(/^## (.+)$/gm, '<h2 style="font-family:var(--font-display);font-size:20px;margin:28px 0 10px;padding-top:20px;border-top:1px solid var(--rule)">$1</h2>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/^- (.+)$/gm, '<li style="margin:4px 0;padding-left:4px">$1</li>')
+      .replace(/(<li.*<\/li>\n?)+/g, '<ul style="padding-left:20px;margin:8px 0">$&</ul>')
+      .replace(/\n\n/g, '</p><p style="margin:8px 0">')
+      .replace(/\n/g, '<br>');
+
+    reportContent.innerHTML = `<p style="margin:8px 0">${html}</p>`;
+    btn.textContent = 'Report aktualisieren ↺';
+    btn.disabled = false;
+    reportSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch(err) {
+    reportContent.innerHTML = `<div style="color:var(--red);font-size:13px">Fehler: ${err.message}</div>`;
+    btn.textContent = 'Nochmals versuchen';
+    btn.disabled = false;
+  }
 }
 </script>
 </body>
