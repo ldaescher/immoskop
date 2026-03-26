@@ -3,7 +3,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { address, rooms, area, price, type, year, floor } = req.body;
+  const { address, rooms, area, price, type, year, floor, outdoor } = req.body;
   const isKauf = type === 'kauf';
 
   // ── 1. GEOCODE ──────────────────────────────────────────────────
@@ -134,20 +134,24 @@ export default async function handler(req, res) {
 
   // Erwarteter Preis berechnen
   const YEAR_F = {'2020':1.18,'2010':1.07,'2000':1,'1990':0.92,'1980':0.85,'alt':0.77};
+  const OUTDOOR_F = {'none':0.95,'balkon':1.0,'terrasse':1.05,'garten':1.10};
+  const outdoorFactor = OUTDOOR_F[outdoor] || 1.0;
   const yearFactor = YEAR_F[year] || 1;
-  const floorFactor = 1 + (parseInt(floor)||0) * 0.015;
+  // EG = -5%, 1.OG = Basis (0%), höher = +1.5% pro Etage
+  const floorNum = parseInt(floor) || 0;
+  const floorFactor = floorNum === 0 ? 0.95 : 1 + (floorNum - 1) * 0.015;
 
   let expected, refPerSqmUsed;
   if (isKauf && refSalePerSqm) {
     refPerSqmUsed = refSalePerSqm;
-    expected = Math.round(refSalePerSqm * area * yearFactor * floorFactor);
+    expected = Math.round(refSalePerSqm * area * yearFactor * floorFactor * outdoorFactor);
   } else if (!isKauf && refRentPerSqm) {
     refPerSqmUsed = refRentPerSqm;
-    expected = Math.round(refRentPerSqm * area * yearFactor * floorFactor);
+    expected = Math.round(refRentPerSqm * area * yearFactor * floorFactor * outdoorFactor);
   } else {
     // Letzter Fallback
     refPerSqmUsed = 17;
-    expected = isKauf ? Math.round(17 * area * 220) : Math.round(17 * area);
+    expected = isKauf ? Math.round(17 * area * 220 * outdoorFactor) : Math.round(17 * area * outdoorFactor);
   }
 
   const delta = Math.round((price - expected) / expected * 100);
@@ -190,9 +194,14 @@ export default async function handler(req, res) {
     );out body;`;
 
     const r = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`, {
-      signal: AbortSignal.timeout(14000)
+      signal: AbortSignal.timeout(14000),
+      headers: { 'Accept': 'application/json' }
     });
-    const data = await r.json();
+    const text = await r.text();
+    if (!text.startsWith('{') && !text.startsWith('[')) {
+      throw new Error('Overpass returned non-JSON: ' + text.substring(0, 50));
+    }
+    const data = JSON.parse(text);
     const elements = data.elements || [];
     console.log('OVERPASS total elements:', elements.length);
 
@@ -294,7 +303,7 @@ export default async function handler(req, res) {
 
 INSERAT:
 Adresse: ${label}
-Typ: ${isKauf?'Kaufobjekt':'Mietwohnung'} | ${rooms} Zimmer | ${area} m² | Etage ${floor} | Baujahr ${year}
+Typ: ${isKauf?'Kaufobjekt':'Mietwohnung'} | ${rooms} Zimmer | ${area} m² | Etage ${floor} | Baujahr ${year} | Aussenraum: ${{none:'Kein Aussenraum',balkon:'Balkon',terrasse:'Terrasse',garten:'Garten/Sitzplatz'}[outdoor]||'–'}
 Preis: CHF ${parseInt(price).toLocaleString('de-CH')}${isKauf?'':'/Mt.'} (CHF ${pricePerQm}/m²)
 
 MARKTDATEN (Quelle: ${priceSource}):
@@ -353,8 +362,8 @@ ${steuerfuss?`\n## Steuerlicher Vorteil\nBerechne konkret: was spart eine Person
     return res.status(200).json({
       report: claudeData.content?.[0]?.text||'',
       meta: {
-        noiseDay, solarKwh, oevDist, oevName, amenitySummary, crime, steuerfuss,
-        delta, expected, priceRangeText, priceSource,
+        noiseDay, solarKwh, oevDist, oevName, oevCount, amenitySummary, crime, steuerfuss,
+        delta, expected, priceRangeText, priceSource, outdoor, outdoorFactor,
         streetData: streetData ? { name: streetData.street_name, salePerSqm: streetData.median_sale_price_sqm, percentile: streetPercentile } : null,
         lat: lat?.toFixed(4), lon: lon?.toFixed(4)
       }
