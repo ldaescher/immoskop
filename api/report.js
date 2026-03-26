@@ -32,23 +32,28 @@ export default async function handler(req, res) {
 
   if (!lat) return res.status(400).json({ error: 'Adresse konnte nicht geocodiert werden.' });
 
-  // ── 2. NOISE via geo.admin.ch REST identify ─────────────────────
-  // Convert WGS84 back to LV95 for the identify endpoint
-  let noiseDay = null;
-  try {
-    // Use WGS84 with sr=4326
-    const noiseUrl = `https://api3.geo.admin.ch/rest/services/api/MapServer/identify?geometry=${lon},${lat}&geometryType=esriGeometryPoint&layers=all:ch.bafu.laerm-strassenlarm_tag&mapExtent=${lon-0.01},${lat-0.01},${lon+0.01},${lat+0.01}&imageDisplay=100,100,96&tolerance=50&returnGeometry=false&sr=4326`;
-    const noiseRes = await fetch(noiseUrl, { signal: AbortSignal.timeout(6000) });
-    const noiseData = await noiseRes.json();
-    const results = noiseData.results || [];
-    console.log('NOISE results:', results.length);
-    if (results.length) {
-      const props = results[0].attributes || {};
-      console.log('NOISE props:', JSON.stringify(props).substring(0, 300));
-      const val = props.db_tag || props.laeq_tag || props.klasse || props.beurteilungspegel || props.lr_tag || null;
-      noiseDay = val ? parseFloat(val) : null;
+  // ── 2. NOISE via WMS GetFeatureInfo (LV95/EPSG:2056) ────────────
+let noiseDay = null;
+try {
+  // Convert LV03 to LV95 (add 2000000 to Easting, 1000000 to Northing)
+  const lv95e = lv03y + 2000000;
+  const lv95n = lv03x + 1000000;
+  const delta = 500;
+  const bbox = `${lv95e-delta},${lv95n-delta},${lv95e+delta},${lv95n+delta}`;
+  const noiseUrl = `https://wms.geo.admin.ch/?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=ch.bafu.laerm-strassenlarm_tag&QUERY_LAYERS=ch.bafu.laerm-strassenlarm_tag&CRS=EPSG:2056&BBOX=${bbox}&WIDTH=101&HEIGHT=101&I=50&J=50&INFO_FORMAT=application/json`;
+  const noiseRes = await fetch(noiseUrl, { signal: AbortSignal.timeout(6000) });
+  const noiseText = await noiseRes.text();
+  console.log('NOISE response:', noiseText.substring(0, 400));
+  if (!noiseText.startsWith('<')) {
+    const noiseData = JSON.parse(noiseText);
+    const features = noiseData.features || [];
+    if (features.length) {
+      const props = features[0].properties || {};
+      console.log('NOISE props:', JSON.stringify(props));
+      noiseDay = parseFloat(props.lr_tag || props.Lr_Tag || props.db_tag || props.value) || null;
     }
-  } catch(e) { console.log('NOISE error:', e.message); }
+  }
+} catch(e) { console.log('NOISE error:', e.message); }
 
   // ── 3. SOLAR via geo.admin.ch REST identify ─────────────────────
   let solarKwh = null;
