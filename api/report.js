@@ -32,36 +32,87 @@ export default async function handler(req, res) {
 
   if (!lat) return res.status(400).json({ error: 'Adresse konnte nicht geocodiert werden.' });
 
- // ── 2. NOISE via OSM Strassenkategorien (Schätzung) ─────────────
-let noiseDay = null;
-let noiseSource = 'Schätzung';
+ // ── 2+4+5. KOMBINIERTE OVERPASS-ABFRAGE ─────────────────────────
+let noiseDay = null, noiseSource = 'Schätzung';
+let oevDist = null, oevName = null, oevCount = 0;
+let amenitySummary = '';
+
 try {
-  const roadQuery = `[out:json][timeout:6];(
-    way["highway"~"motorway|trunk|primary|secondary|tertiary|residential|living_street|unclassified"](around:100,${lat},${lon});
+  const query = `[out:json][timeout:15];(
+    way["highway"~"motorway|trunk|primary|secondary|tertiary|residential|living_street"](around:150,${lat},${lon});
+    node["public_transport"="stop_position"](around:800,${lat},${lon});
+    node["highway"="bus_stop"](around:800,${lat},${lon});
+    node["railway"="tram_stop"](around:800,${lat},${lon});
+    node["railway"="station"](around:800,${lat},${lon});
+    node["amenity"="school"](around:800,${lat},${lon});
+    node["amenity"="kindergarten"](around:800,${lat},${lon});
+    node["shop"="supermarket"](around:800,${lat},${lon});
+    node["amenity"="restaurant"](around:600,${lat},${lon});
+    node["amenity"="cafe"](around:600,${lat},${lon});
+    node["leisure"="park"](around:800,${lat},${lon});
+    node["amenity"="pharmacy"](around:800,${lat},${lon});
   );out body;`;
-  const roadRes = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(roadQuery)}`, { signal: AbortSignal.timeout(7000) });
-  const roadData = await roadRes.json();
-  const roads = roadData.elements || [];
-  console.log('NOISE roads found:', roads.length, roads.map(r => r.tags?.highway).join(', '));
-  
-  const ROAD_DB = {
-    'motorway': 75, 'trunk': 72, 'primary': 65,
-    'secondary': 60, 'tertiary': 55,
-    'residential': 48, 'unclassified': 50,
-    'living_street': 42, 'service': 44
-  };
-  
-  let maxDb = 38; // baseline: ruhige Gegend
-  roads.forEach(r => {
-    const hw = r.tags?.highway;
-    const db = ROAD_DB[hw];
-    if (db && db > maxDb) maxDb = db;
+
+  const r = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`, {
+    signal: AbortSignal.timeout(14000)
   });
-  
+  const data = await r.json();
+  const elements = data.elements || [];
+  console.log('OVERPASS total elements:', elements.length);
+
+  const ROAD_DB = {'motorway':75,'trunk':72,'primary':65,'secondary':60,'tertiary':55,'residential':48,'unclassified':50,'living_street':42};
+  const OEV_TYPES = ['stop_position','bus_stop','tram_stop','station'];
+  const groups = { Schulen:[], Einkauf:[], Gastro:[], Parks:[], Gesundheit:[] };
+  let maxDb = 38;
+  let minOevDist = Infinity, nearestOev = null;
+
+  elements.forEach(el => {
+    const hw = el.tags?.highway;
+    const pt = el.tags?.public_transport || el.tags?.highway || el.tags?.railway;
+    const amenity = el.tags?.amenity || el.tags?.shop || el.tags?.leisure;
+
+    // Roads → noise
+    if (el.type === 'way' && hw && ROAD_DB[hw]) {
+      if (ROAD_DB[hw] > maxDb) maxDb = ROAD_DB[hw];
+    }
+
+    // ÖV stops
+    if (el.type === 'node' && el.lat && (
+      el.tags?.public_transport === 'stop_position' ||
+      el.tags?.highway === 'bus_stop' ||
+      el.tags?.railway === 'tram_stop' ||
+      el.tags?.railway === 'station'
+    )) {
+      oevCount++;
+      const dLat = (el.lat - lat) * Math.PI/180;
+      const dLon = (el.lon - lon) * Math.PI/180;
+      const a = Math.sin(dLat/2)**2 + Math.cos(lat*Math.PI/180)*Math.cos(el.lat*Math.PI/180)*Math.sin(dLon/2)**2;
+      const dist = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      if (dist < minOevDist) { minOevDist = dist; nearestOev = el; }
+    }
+
+    // Amenities
+    if (el.type === 'node' && el.lat && amenity) {
+      const name = el.tags?.name || amenity;
+      const dLat = (el.lat - lat) * Math.PI/180;
+      const dLon = (el.lon - lon) * Math.PI/180;
+      const a = Math.sin(dLat/2)**2 + Math.cos(lat*Math.PI/180)*Math.cos(el.lat*Math.PI/180)*Math.sin(dLon/2)**2;
+      const dist = Math.round(6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+      if (['school','kindergarten'].includes(amenity) && groups.Schulen.length < 3) groups.Schulen.push(`${name} ${dist}m`);
+      if (amenity === 'supermarket' && groups.Einkauf.length < 3) groups.Einkauf.push(`${name} ${dist}m`);
+      if (['restaurant','cafe'].includes(amenity) && groups.Gastro.length < 3) groups.Gastro.push(`${name} ${dist}m`);
+      if (amenity === 'park' && groups.Parks.length < 2) groups.Parks.push(`${name} ${dist}m`);
+      if (amenity === 'pharmacy' && groups.Gesundheit.length < 2) groups.Gesundheit.push(`${name} ${dist}m`);
+    }
+  });
+
   noiseDay = maxDb;
-  noiseSource = roads.length > 0 ? 'OSM Strassenkategorie (Schätzung)' : 'Schätzung (keine Strassen im 100m-Radius)';
-  console.log('NOISE estimated:', noiseDay, 'dB |', noiseSource);
-} catch(e) { console.log('NOISE error:', e.message); }
+  noiseSource = 'OSM Strassenkategorie';
+  if (minOevDist < Infinity) { oevDist = Math.round(minOevDist); oevName = nearestOev?.tags?.name || 'Haltestelle'; }
+  amenitySummary = Object.entries(groups).filter(([,v]) => v.length).map(([k,v]) => `${k}: ${v.join(', ')}`).join('\n');
+  console.log('NOISE:', noiseDay, '| OEV:', oevDist, oevName, '| AMENITIES:', amenitySummary.length);
+
+} catch(e) { console.log('OVERPASS error:', e.message); }
 
   // ── 3. SOLAR via geo.admin.ch REST identify ─────────────────────
   let solarKwh = null;
@@ -78,56 +129,6 @@ try {
       solarKwh = val ? parseFloat(val) : null;
     }
   } catch(e) { console.log('SOLAR error:', e.message); }
-
-  // ── 4. OEV via Overpass ─────────────────────────────────────────
-  let oevDist = null, oevName = null, oevCount = 0;
-  try {
-    const query = `[out:json][timeout:8];(node["public_transport"="stop_position"](around:800,${lat},${lon});node["highway"="bus_stop"](around:800,${lat},${lon});node["railway"="tram_stop"](around:800,${lat},${lon});node["railway"="station"](around:800,${lat},${lon}););out body;`;
-    const oevRes = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`, { signal: AbortSignal.timeout(9000) });
-    const oevData = await oevRes.json();
-    const elements = oevData.elements || [];
-    oevCount = elements.length;
-    console.log('OEV elements:', oevCount);
-    if (elements.length) {
-      let minDist = Infinity, nearest = null;
-      elements.forEach(el => {
-        const dLat = (el.lat - lat) * Math.PI/180;
-        const dLon = (el.lon - lon) * Math.PI/180;
-        const a = Math.sin(dLat/2)**2 + Math.cos(lat*Math.PI/180)*Math.cos(el.lat*Math.PI/180)*Math.sin(dLon/2)**2;
-        const dist = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        if (dist < minDist) { minDist = dist; nearest = el; }
-      });
-      oevDist = Math.round(minDist);
-      oevName = nearest?.tags?.name || 'Haltestelle';
-      console.log('OEV nearest:', oevDist, 'm -', oevName);
-    }
-  } catch(e) { console.log('OEV error:', e.message); }
-
-  // ── 5. AMENITIES via Overpass ───────────────────────────────────
-  let amenitySummary = '';
-  try {
-    const query = `[out:json][timeout:10];(node["amenity"="school"](around:800,${lat},${lon});node["amenity"="kindergarten"](around:800,${lat},${lon});node["shop"="supermarket"](around:800,${lat},${lon});node["amenity"="restaurant"](around:600,${lat},${lon});node["amenity"="cafe"](around:600,${lat},${lon});node["leisure"="park"](around:800,${lat},${lon});node["amenity"="pharmacy"](around:800,${lat},${lon}););out body;`;
-    const amenRes = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`, { signal: AbortSignal.timeout(10000) });
-    const amenData = await amenRes.json();
-    const elements = amenData.elements || [];
-    console.log('AMENITIES elements:', elements.length);
-    const groups = { Schulen: [], Einkauf: [], Gastro: [], Parks: [], Gesundheit: [] };
-    elements.forEach(el => {
-      const t = el.tags?.amenity || el.tags?.shop || el.tags?.leisure;
-      const name = el.tags?.name || t;
-      const dLat = (el.lat - lat) * Math.PI/180;
-      const dLon = (el.lon - lon) * Math.PI/180;
-      const a = Math.sin(dLat/2)**2 + Math.cos(lat*Math.PI/180)*Math.cos(el.lat*Math.PI/180)*Math.sin(dLon/2)**2;
-      const dist = Math.round(6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
-      if (['school','kindergarten'].includes(t) && groups.Schulen.length < 3) groups.Schulen.push(`${name} ${dist}m`);
-      if (['supermarket'].includes(t) && groups.Einkauf.length < 3) groups.Einkauf.push(`${name} ${dist}m`);
-      if (['restaurant','cafe'].includes(t) && groups.Gastro.length < 3) groups.Gastro.push(`${name} ${dist}m`);
-      if (['park'].includes(t) && groups.Parks.length < 2) groups.Parks.push(`${name} ${dist}m`);
-      if (['pharmacy'].includes(t) && groups.Gesundheit.length < 2) groups.Gesundheit.push(`${name} ${dist}m`);
-    });
-    amenitySummary = Object.entries(groups).filter(([,v]) => v.length).map(([k,v]) => `${k}: ${v.join(', ')}`).join('\n');
-    console.log('AMENITIES:', amenitySummary || 'none');
-  } catch(e) { console.log('AMENITIES error:', e.message); }
 
   // ── 6. CRIME ────────────────────────────────────────────────────
   const CRIME = {
