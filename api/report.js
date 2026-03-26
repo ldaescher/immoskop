@@ -12,6 +12,7 @@ export default async function handler(req, res) {
     const geoUrl = `https://api3.geo.admin.ch/rest/services/api/SearchServer?searchText=${encodeURIComponent(address)}&type=locations&limit=1&origins=address`;
     const geoRes = await fetch(geoUrl);
     const geoData = await geoRes.json();
+    console.log('GEO results count:', geoData.results?.length);
     if (geoData.results?.length) {
       const attrs = geoData.results[0].attrs;
       label = attrs.label.replace(/<[^>]+>/g, '');
@@ -24,8 +25,9 @@ export default async function handler(req, res) {
       lon = lonDeg * 100/36;
       const plzMatch = label.match(/\b(\d{4})\b/);
       plz = plzMatch ? plzMatch[1] : '8000';
+      console.log('GEO label:', label, 'lat:', lat, 'lon:', lon, 'plz:', plz);
     }
-  } catch(e) { label = address; plz = '8000'; }
+  } catch(e) { console.log('GEO error:', e.message); label = address; plz = '8000'; }
 
   if (!lat) {
     return res.status(400).json({ error: 'Adresse konnte nicht geocodiert werden.' });
@@ -39,12 +41,17 @@ export default async function handler(req, res) {
     const noiseUrl = `https://wms.geo.admin.ch/?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=ch.bafu.laerm-strassenlarm_tag&QUERY_LAYERS=ch.bafu.laerm-strassenlarm_tag&CRS=EPSG:4326&BBOX=${bbox}&WIDTH=101&HEIGHT=101&I=50&J=50&INFO_FORMAT=application/json`;
     const noiseRes = await fetch(noiseUrl, { signal: AbortSignal.timeout(5000) });
     const noiseData = await noiseRes.json();
+    console.log('NOISE features:', noiseData.features?.length, 'results:', noiseData.results?.length);
+    if (noiseData.features?.length) {
+      console.log('NOISE props:', JSON.stringify(noiseData.features[0].properties));
+    }
     const features = noiseData.features || noiseData.results || [];
     if (features.length && features[0].properties) {
       const props = features[0].properties;
-      noiseDay = parseFloat(props.db_tag || props.laeq_tag || props.value || props.LDEN) || null;
+      noiseDay = parseFloat(props.db_tag || props.laeq_tag || props.value || props.LDEN || props.db || props.noise) || null;
+      console.log('NOISE noiseDay:', noiseDay, 'all props keys:', Object.keys(props));
     }
-  } catch(e) {}
+  } catch(e) { console.log('NOISE error:', e.message); }
 
   // ── 3. SOLAR (swisstopo BFE) ────────────────────────────────────
   let solarKwh = null;
@@ -54,12 +61,17 @@ export default async function handler(req, res) {
     const solarUrl = `https://wms.geo.admin.ch/?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=ch.bfe.solarenergie-eignung-fassaden&QUERY_LAYERS=ch.bfe.solarenergie-eignung-fassaden&CRS=EPSG:4326&BBOX=${bbox}&WIDTH=11&HEIGHT=11&I=5&J=5&INFO_FORMAT=application/json`;
     const solarRes = await fetch(solarUrl, { signal: AbortSignal.timeout(5000) });
     const solarData = await solarRes.json();
+    console.log('SOLAR features:', solarData.features?.length, 'results:', solarData.results?.length);
+    if (solarData.features?.length) {
+      console.log('SOLAR props:', JSON.stringify(solarData.features[0].properties));
+    }
     const features = solarData.features || solarData.results || [];
     if (features.length && features[0].properties) {
       const props = features[0].properties;
-      solarKwh = parseFloat(props.gstrahlung || props.stromertrag || props.eignung) || null;
+      console.log('SOLAR all keys:', Object.keys(props));
+      solarKwh = parseFloat(props.gstrahlung || props.stromertrag || props.eignung || props.value) || null;
     }
-  } catch(e) {}
+  } catch(e) { console.log('SOLAR error:', e.message); }
 
   // ── 4. OEV (Overpass) ───────────────────────────────────────────
   let oevDist = null, oevName = null, oevCount = 0;
@@ -69,6 +81,7 @@ export default async function handler(req, res) {
     const oevData = await oevRes.json();
     const elements = oevData.elements || [];
     oevCount = elements.length;
+    console.log('OEV elements:', oevCount);
     if (elements.length) {
       let minDist = Infinity, nearest = null;
       elements.forEach(el => {
@@ -80,8 +93,9 @@ export default async function handler(req, res) {
       });
       oevDist = Math.round(minDist);
       oevName = nearest?.tags?.name || 'Haltestelle';
+      console.log('OEV nearest:', oevDist, 'm', oevName);
     }
-  } catch(e) {}
+  } catch(e) { console.log('OEV error:', e.message); }
 
   // ── 5. AMENITIES (Overpass) ─────────────────────────────────────
   let amenitySummary = '';
@@ -90,6 +104,7 @@ export default async function handler(req, res) {
     const amenRes = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`, { signal: AbortSignal.timeout(10000) });
     const amenData = await amenRes.json();
     const elements = amenData.elements || [];
+    console.log('AMENITIES elements:', elements.length);
     const groups = { Schulen: [], Einkauf: [], Gastro: [], Parks: [], Gesundheit: [] };
     elements.forEach(el => {
       const t = el.tags?.amenity || el.tags?.shop || el.tags?.leisure;
@@ -105,9 +120,10 @@ export default async function handler(req, res) {
       if (['pharmacy'].includes(t) && groups.Gesundheit.length < 2) groups.Gesundheit.push(`${name} ${dist}m`);
     });
     amenitySummary = Object.entries(groups).filter(([,v]) => v.length).map(([k,v]) => `${k}: ${v.join(', ')}`).join('\n');
-  } catch(e) {}
+    console.log('AMENITIES summary:', amenitySummary);
+  } catch(e) { console.log('AMENITIES error:', e.message); }
 
-  // ── 6. CRIME (PKS) ──────────────────────────────────────────────
+  // ── 6. CRIME ────────────────────────────────────────────────────
   const CRIME = {
     'zürich': { hzahl: 98, label: 'Zürich' }, 'zuerich': { hzahl: 98, label: 'Zürich' },
     'bern': { hzahl: 72, label: 'Bern' }, 'basel': { hzahl: 85, label: 'Basel' },
@@ -123,7 +139,7 @@ export default async function handler(req, res) {
     if (labelLower.includes(key)) { crime = val; break; }
   }
 
-  // ── 7. PRICE REFERENCE ──────────────────────────────────────────
+  // ── 7. PRICE ────────────────────────────────────────────────────
   const BASE_QM = { '80':22.5,'81':21,'82':19.5,'83':17.5,'84':18,'85':20,'86':18.5,'30':17,'31':16.5,'40':18.5,'41':17.8,'10':23,'12':25,'60':18,'default':17 };
   const YEAR_F = { '2020':1.18,'2010':1.07,'2000':1,'1990':0.92,'1980':0.85,'alt':0.77 };
   const prefix = plz.substring(0,2);
@@ -133,11 +149,13 @@ export default async function handler(req, res) {
   const pricePerQm = (price / area).toFixed(1);
 
   // ── 8. STEUERFUSS ───────────────────────────────────────────────
-  const TAXES = { 'kilchberg':72,'küsnacht':73,'zollikon':78,'herrliberg':75,'thalwil':80,'rüschlikon':73,'zürich':119,'winterthur':122,'bern':116,'basel':96,'luzern':107,'uster':112 };
+  const TAXES = { 'kilchberg':72,'küsnacht':73,'zollikon':78,'herrliberg':75,'thalwil':80,'rüschlikon':73,'zürich':119,'winterthur':122,'bern':116,'basel':96,'luzern':107 };
   let steuerfuss = null;
   for (const [key, val] of Object.entries(TAXES)) {
     if (labelLower.includes(key)) { steuerfuss = val; break; }
   }
+
+  console.log('SUMMARY → noise:', noiseDay, 'solar:', solarKwh, 'oev:', oevDist, 'amenities len:', amenitySummary.length, 'crime:', crime.hzahl, 'tax:', steuerfuss);
 
   // ── 9. PROMPT ───────────────────────────────────────────────────
   const prompt = `Du bist ein unabhängiger Schweizer Immobilienexperte. Erstelle einen vollständigen Analysebericht auf Deutsch. Sei direkt, konkret und ehrlich — kein Marketing.
@@ -169,8 +187,8 @@ ${amenitySummary || 'keine Daten'}
 [3–5 ehrliche Punkte — Risiken, fehlende Infos, was bei der Besichtigung zu prüfen ist]
 
 ## Lagequalität
-[Bewerte Lärm, Sonne, ÖV, Umgebung mit den konkreten Zahlen. Interpretiere verständlich.]
-${steuerfuss ? '\n## Steuerlicher Vorteil\n[Konkrete CHF-Ersparnis bei CHF 120\'000 Jahreseinkommen vs. Zürich-Stadt]' : ''}
+[Bewerte Lärm, Sonne, ÖV und Umgebung mit den konkreten Zahlen. Interpretiere verständlich.]
+${steuerfuss ? `\n## Steuerlicher Vorteil\n[Konkrete CHF-Ersparnis bei CHF 120'000 Jahreseinkommen vs. Zürich-Stadt]` : ''}
 
 ## Besichtigungs-Checkliste
 [8–10 spezifische Punkte für genau dieses Objekt]
@@ -199,11 +217,7 @@ ${steuerfuss ? '\n## Steuerlicher Vorteil\n[Konkrete CHF-Ersparnis bei CHF 120\'
 
     return res.status(200).json({
       report: claudeData.content?.[0]?.text || '',
-      meta: {
-        address: label, plz, lat, lon,
-        noise: noiseDay, solar: solarKwh, oev: oevDist ? { dist: oevDist, name: oevName } : null,
-        crime, steuerfuss, delta, expected
-      }
+      meta: { noiseDay, solarKwh, oevDist, oevName, amenitySummary, crime, steuerfuss, delta, expected }
     });
   } catch(err) {
     return res.status(500).json({ error: 'Server-Fehler: ' + err.message });
