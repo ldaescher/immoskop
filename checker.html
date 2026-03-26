@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Immoskop — Adress-Analyse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #F5F0E8; --ink: #1A1916; --ink-mid: #3A3835; --ink-light: #6A6864;
+    --red: #C8371A; --green: #2D7A4F; --amber: #A07020;
+    --rule: rgba(26,25,22,0.12); --card-bg: #FFFFFF;
+    --font-display: 'DM Serif Display', Georgia, serif;
+    --font-body: 'Schibsted Grotesk', Helvetica, sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--cream); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.6; min-height: 100vh; }
+  header { border-bottom: 1px solid var(--rule); padding: 0 clamp(20px,4vw,60px); display: flex; align-items: center; justify-content: space-between; height: 52px; background: var(--cream); position: sticky; top: 0; z-index: 50; }
+  .header-tag { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; color: var(--ink-light); text-transform: uppercase; }
+  .page { max-width: 1100px; margin: 0 auto; padding: clamp(32px,5vw,64px) clamp(20px,4vw,60px); }
+  .page-title { font-family: var(--font-display); font-size: clamp(36px,5vw,68px); line-height: 1; letter-spacing: -0.02em; margin-bottom: 8px; }
+  .page-title em { font-style: italic; color: var(--red); }
+  .page-sub { font-size: 15px; color: var(--ink-light); margin-bottom: 40px; max-width: 540px; }
+  .layout { display: grid; grid-template-columns: 380px 1fr; gap: 32px; align-items: start; }
+  @media(max-width:860px){ .layout { grid-template-columns: 1fr; } }
+  .input-panel { background: var(--ink); color: var(--cream); padding: 28px; position: sticky; top: 68px; }
+  .panel-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(245,240,232,0.35); margin-bottom: 20px; }
+  .field { margin-bottom: 16px; }
+  .field-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(245,240,232,0.4); margin-bottom: 7px; }
+  .field input, .field select { width: 100%; background: rgba(245,240,232,0.07); border: 1px solid rgba(245,240,232,0.14); color: var(--cream); padding: 10px 12px; font-family: var(--font-body); font-size: 14px; outline: none; transition: border-color 0.2s; border-radius: 0; }
+  .field input:focus, .field select:focus { border-color: rgba(245,240,232,0.4); }
+  .field input::placeholder { color: rgba(245,240,232,0.22); }
+  .field select option { background: #1A1916; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .btn-analyse { width: 100%; margin-top: 6px; padding: 13px; background: var(--red); color: var(--cream); border: none; font-family: var(--font-body); font-size: 14px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: opacity 0.2s; }
+  .btn-analyse:hover { opacity: 0.88; }
+  .btn-analyse:disabled { opacity: 0.45; cursor: not-allowed; }
+  .api-note { font-family: var(--font-mono); font-size: 10px; color: rgba(245,240,232,0.25); margin-top: 14px; line-height: 1.6; }
+  .autocomplete-wrap { position: relative; }
+  .autocomplete-list { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #2A2926; border: 1px solid rgba(245,240,232,0.2); z-index: 100; max-height: 200px; overflow-y: auto; display: none; }
+  .autocomplete-item { padding: 9px 12px; font-size: 13px; color: var(--cream); cursor: pointer; border-bottom: 1px solid rgba(245,240,232,0.08); }
+  .autocomplete-item:hover { background: rgba(245,240,232,0.1); }
+  .status-bar { display: none; align-items: center; gap: 10px; padding: 12px 16px; background: var(--card-bg); border: 1px solid var(--rule); margin-bottom: 24px; font-family: var(--font-mono); font-size: 11px; color: var(--ink-light); }
+  .status-bar.visible { display: flex; }
+  .spinner { width: 14px; height: 14px; border: 2px solid var(--rule); border-top-color: var(--red); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .results { display: none; }
+  .results.visible { display: block; }
+  .verdict-hero { background: var(--card-bg); border: 1px solid var(--rule); padding: 28px 32px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: center; }
+  .verdict-address { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; color: var(--ink-light); margin-bottom: 10px; }
+  .verdict-main { font-family: var(--font-display); font-size: clamp(24px,3.5vw,40px); line-height: 1.05; }
+  .verdict-sub { font-size: 13px; color: var(--ink-light); margin-top: 8px; }
+  .verdict-range { font-size: 12px; color: var(--ink-light); margin-top: 5px; font-family: var(--font-mono); }
+  .verdict-source { font-size: 11px; color: var(--ink-light); margin-top: 4px; font-family: var(--font-mono); opacity: 0.6; }
+  .verdict-badge { padding: 8px 20px; font-family: var(--font-mono); font-size: 12px; font-weight: 500; letter-spacing: 0.08em; white-space: nowrap; }
+  .badge-over { background: #FDECEA; color: var(--red); border: 1px solid rgba(200,55,26,0.25); }
+  .badge-fair { background: #EDF6F0; color: var(--green); border: 1px solid rgba(45,122,79,0.25); }
+  .badge-under { background: #EDF6F0; color: var(--green); border: 1px solid rgba(45,122,79,0.25); }
+  .badge-warn { background: #FEF8EC; color: var(--amber); border: 1px solid rgba(160,112,32,0.25); }
+  .badge-loading { background: rgba(26,25,22,0.05); color: var(--ink-light); border: 1px solid var(--rule); }
+  .meter-wrap { margin-top: 16px; }
+  .meter-track { height: 6px; background: var(--rule); position: relative; }
+  .meter-fill { height: 100%; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
+  .meter-marker { position: absolute; top: -5px; width: 2px; height: 16px; background: var(--ink-light); left: 50%; }
+  .meter-labels { display: flex; justify-content: space-between; margin-top: 5px; font-family: var(--font-mono); font-size: 10px; color: var(--ink-light); }
+  .score-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  @media(max-width:860px){ .score-grid { grid-template-columns: 1fr 1fr; } }
+  .score-card { background: var(--card-bg); border: 1px solid var(--rule); padding: 18px 20px; }
+  .score-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .score-card-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-light); }
+  .score-pill { font-family: var(--font-mono); font-size: 10px; padding: 3px 8px; border-radius: 20px; }
+  .pill-good { background: #EDF6F0; color: var(--green); }
+  .pill-mid  { background: #FEF8EC; color: var(--amber); }
+  .pill-bad  { background: #FDECEA; color: var(--red); }
+  .pill-load { background: rgba(26,25,22,0.05); color: var(--ink-light); }
+  .score-value { font-family: var(--font-display); font-size: 28px; color: var(--ink); line-height: 1; }
+  .score-detail { font-size: 12px; color: var(--ink-light); margin-top: 4px; line-height: 1.5; }
+  .score-bar { height: 3px; margin-top: 12px; background: var(--rule); }
+  .score-bar-fill { height: 100%; transition: width 0.6s ease; }
+  .poi-section { background: var(--card-bg); border: 1px solid var(--rule); padding: 24px 28px; margin-bottom: 20px; }
+  .poi-title { font-family: var(--font-display); font-size: 22px; margin-bottom: 18px; border-bottom: 1px solid var(--rule); padding-bottom: 14px; }
+  .poi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+  .poi-group-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-light); margin-bottom: 8px; }
+  .poi-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-mid); padding: 4px 0; border-bottom: 1px solid var(--rule); }
+  .poi-item:last-child { border-bottom: none; }
+  .poi-dist { font-family: var(--font-mono); font-size: 11px; color: var(--ink-light); margin-left: auto; }
+  .poi-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .checklist-section { background: var(--ink); color: var(--cream); padding: 24px 28px; margin-bottom: 20px; }
+  .checklist-title { font-family: var(--font-display); font-size: 22px; margin-bottom: 16px; }
+  .checklist-items { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  @media(max-width:600px){ .checklist-items { grid-template-columns: 1fr; } }
+  .checklist-item { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: rgba(245,240,232,0.8); line-height: 1.5; }
+  .check-icon { width: 16px; height: 16px; border: 1px solid rgba(245,240,232,0.25); flex-shrink: 0; margin-top: 2px; }
+  .sources-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+  .source-tag { font-family: var(--font-mono); font-size: 10px; padding: 4px 10px; border: 1px solid var(--rule); color: var(--ink-light); }
+  .error-box { background: #FDECEA; border: 1px solid rgba(200,55,26,0.25); padding: 16px 20px; font-size: 14px; color: var(--red); display: none; margin-bottom: 20px; }
+  .error-box.visible { display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="/" style="text-decoration:none">
+    <svg width="130" height="26" viewBox="0 0 320 64" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="32" cy="32" r="24" fill="none" stroke="#1A1916" stroke-width="2.2"/>
+      <circle cx="32" cy="32" r="14" fill="none" stroke="#1A1916" stroke-width="1.2"/>
+      <line x1="4" y1="32" x2="18" y2="32" stroke="#1A1916" stroke-width="1.8"/>
+      <line x1="46" y1="32" x2="60" y2="32" stroke="#1A1916" stroke-width="1.8"/>
+      <line x1="32" y1="4" x2="32" y2="18" stroke="#1A1916" stroke-width="1.8"/>
+      <line x1="32" y1="46" x2="32" y2="60" stroke="#1A1916" stroke-width="1.8"/>
+      <polygon points="32,19 41,27 23,27" fill="#C8371A"/>
+      <rect x="25" y="27" width="14" height="11" fill="#C8371A"/>
+      <rect x="29" y="32" width="6" height="6" fill="#F5F0E8"/>
+      <text x="74" y="26" font-family="DM Serif Display,Georgia,serif" font-size="28" fill="#1A1916" letter-spacing="-0.5">immo</text>
+      <text x="152" y="26" font-family="DM Serif Display,Georgia,serif" font-size="28" fill="#C8371A" font-style="italic">skop</text>
+    </svg>
+  </a>
+  <span class="header-tag">Beta — Adress-Analyse</span>
+</header>
+
+<div class="page">
+  <h1 class="page-title">Inserat-<em>Analyse</em></h1>
+  <p class="page-sub">Geben Sie die Adresse des Inserats ein. IMMOSKOP ruft Lärm, Besonnung, ÖV, Umgebung und Marktpreisdaten ab.</p>
+
+  <div class="layout">
+    <div class="input-panel">
+      <div class="panel-label">Inserat-Daten</div>
+      <div class="field">
+        <div class="field-label">Adresse des Inserats</div>
+        <div class="autocomplete-wrap">
+          <input type="text" id="address" placeholder="z.B. Rigistrasse 8, Kilchberg" autocomplete="off" oninput="onAddressInput(this.value)">
+          <div class="autocomplete-list" id="autocomplete-list"></div>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <div class="field-label">Zimmer</div>
+          <select id="rooms">
+            <option>1</option><option>1.5</option><option>2</option><option>2.5</option>
+            <option selected>3</option><option>3.5</option><option>4</option>
+            <option>4.5</option><option>5</option><option>5.5+</option>
+          </select>
+        </div>
+        <div class="field">
+          <div class="field-label">Fläche m²</div>
+          <input type="number" id="area" value="75" min="20" max="500">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <div class="field-label">Typ</div>
+          <select id="type">
+            <option value="miete">Miete</option>
+            <option value="kauf">Kauf</option>
+          </select>
+        </div>
+        <div class="field">
+          <div class="field-label">Etage</div>
+          <input type="number" id="floor" value="2" min="0" max="30">
+        </div>
+      </div>
+      <div class="field">
+        <div class="field-label">Aussenraum</div>
+        <select id="outdoor">
+          <option value="none">Kein Aussenraum</option>
+          <option value="balkon" selected>Balkon</option>
+          <option value="terrasse">Terrasse</option>
+          <option value="garten">Garten / Sitzplatz</option>
+        </select>
+      </div>
+      <div class="field">
+        <div class="field-label">Zustand / Renovation</div>
+        <select id="condition">
+          <option value="neuwertig">Neuwertig / kürzlich renoviert</option>
+          <option value="gut" selected>Guter Zustand</option>
+          <option value="mittel">Normaler Unterhalt</option>
+          <option value="renovationsbed">Renovationsbedürftig</option>
+        </select>
+      </div>
+      <div class="field">
+        <div class="field-label" id="price-label">Mietzins CHF/Mt.</div>
+        <input type="number" id="price" value="2400" min="100">
+      </div>
+      <div class="field">
+        <div class="field-label">Baujahr</div>
+        <select id="year">
+          <option value="2020">ab 2020</option>
+          <option value="2010">2010–2019</option>
+          <option value="2000" selected>2000–2009</option>
+          <option value="1990">1990–1999</option>
+          <option value="1980">1980–1989</option>
+          <option value="alt">vor 1980</option>
+        </select>
+      </div>
+      <button class="btn-analyse" id="btn-analyse" onclick="runAnalysis()">Analyse starten →</button>
+      <div class="api-note">Datenquellen: swisstopo, OpenStreetMap, BFS PKS, RealAdvisor</div>
+    </div>
+
+    <div>
+      <div class="status-bar" id="status-bar">
+        <div class="spinner" id="spinner"></div>
+        <div id="status-text">Starte Analyse…</div>
+      </div>
+      <div class="error-box" id="error-box"></div>
+      <div class="results" id="results">
+
+        <div class="verdict-hero">
+          <div>
+            <div class="verdict-address" id="verdict-address"></div>
+            <div class="verdict-main" id="verdict-main"></div>
+            <div class="verdict-sub" id="verdict-sub"></div>
+            <div class="verdict-range" id="verdict-range"></div>
+            <div class="verdict-source" id="verdict-source"></div>
+            <div class="meter-wrap">
+              <div class="meter-track">
+                <div class="meter-fill" id="meter-fill"></div>
+                <div class="meter-marker"></div>
+              </div>
+              <div class="meter-labels"><span>Sehr günstig</span><span>Marktpreis</span><span>Sehr teuer</span></div>
+            </div>
+          </div>
+          <div class="verdict-badge" id="verdict-badge"></div>
+        </div>
+
+        <div class="score-grid" id="score-grid"></div>
+        <div class="poi-section" id="poi-section"></div>
+        <div class="checklist-section" id="checklist-section"></div>
+        <div class="sources-row" id="sources-row"></div>
+
+        <div id="report-section" style="display:none;margin-top:20px;background:#fff;border:1px solid var(--rule);padding:32px 36px;">
+          <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-light);margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--rule)">Immoskop — Vollständige Inserat-Analyse</div>
+          <div id="report-content" style="font-size:15px;line-height:1.75;color:var(--ink)"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const OUTDOOR_F = { none:0.95, balkon:1.0, terrasse:1.05, garten:1.10 };
+const OUTDOOR_LABEL = { none:'Kein Aussenraum', balkon:'Balkon', terrasse:'Terrasse', garten:'Garten/Sitzplatz' };
+let selectedCoords = null, acTimer = null;
+
+// --- AUTOCOMPLETE -------------------------------------------------
+async function onAddressInput(val) {
+  clearTimeout(acTimer);
+  const list = document.getElementById('autocomplete-list');
+  if (val.length < 4) { list.style.display='none'; return; }
+  acTimer = setTimeout(async () => {
+    try {
+      const r = await fetch(`https://api3.geo.admin.ch/rest/services/api/SearchServer?searchText=${encodeURIComponent(val)}&type=locations&limit=6&origins=address,zipcode`);
+      const d = await r.json();
+      const results = d.results || [];
+      if (!results.length) { list.style.display='none'; return; }
+      list.innerHTML = '';
+      results.forEach(res => {
+        const label = res.attrs.label.replace(/<[^>]+>/g,'');
+        const div = document.createElement('div');
+        div.className = 'autocomplete-item';
+        div.textContent = label;
+        div.onclick = () => {
+          document.getElementById('address').value = label;
+          const c = lv95ToWgs84(res.attrs.y, res.attrs.x);
+          selectedCoords = { lat:c.lat, lon:c.lon, label };
+          list.style.display = 'none';
+        };
+        list.appendChild(div);
+      });
+      list.style.display = 'block';
+    } catch(e) { list.style.display='none'; }
+  }, 280);
+}
+function lv95ToWgs84(e, n) {
+  const E=(e-2600000)/1000000, N=(n-1200000)/1000000;
+  const lon=2.6779094+4.728982*E+0.791484*E*N+0.1306*E*N*N-0.0436*E*E*E;
+  const lat=16.9023892+3.238272*N-0.270978*E*E-0.002528*N*N-0.0447*E*E*N-0.0140*N*N*N;
+  return { lat:lat*100/36, lon:lon*100/36 };
+}
+document.addEventListener('click', e => { if (!e.target.closest('.autocomplete-wrap')) document.getElementById('autocomplete-list').style.display='none'; });
+document.getElementById('type').addEventListener('change', function() {
+  const isKauf = this.value==='kauf';
+  document.getElementById('price-label').textContent = isKauf ? 'Kaufpreis CHF' : 'Mietzins CHF/Mt.';
+  document.getElementById('price').value = isKauf ? '850000' : '2400';
+});
+
+// --- STATUS -------------------------------------------------------
+function setStatus(msg, done=false) {
+  document.getElementById('status-bar').classList.add('visible');
+  document.getElementById('status-text').textContent = msg;
+  if (done) document.getElementById('spinner').style.display='none';
+}
+function hideStatus() { document.getElementById('status-bar').classList.remove('visible'); }
+function showError(msg) { const b=document.getElementById('error-box'); b.textContent=msg; b.classList.add('visible'); }
+function clearError() { document.getElementById('error-box').classList.remove('visible'); }
+
+// --- GEOCODE ------------------------------------------------------
+async function geocodeAddress(address) {
+  const r = await fetch(`https://api3.geo.admin.ch/rest/services/api/SearchServer?searchText=${encodeURIComponent(address)}&type=locations&limit=1&origins=address`);
+  const d = await r.json();
+  if (!d.results?.length) throw new Error('Adresse nicht gefunden.');
+  const attrs = d.results[0].attrs;
+  const label = attrs.label.replace(/<[^>]+>/g,'');
+  const c = lv95ToWgs84(attrs.y, attrs.x);
+  return { lat:c.lat, lon:c.lon, label };
+}
+
+// --- OVERPASS -----------------------------------------------------
+async function fetchOverpass(lat, lon) {
+  const query = `[out:json][timeout:15];(
+    way["highway"~"motorway|trunk|primary|secondary|tertiary|residential|living_street"](around:150,${lat},${lon});
+    node["public_transport"="stop_position"](around:800,${lat},${lon});
+    node["highway"="bus_stop"](around:800,${lat},${lon});
+    node["railway"="tram_stop"](around:800,${lat},${lon});
+    node["railway"="station"](around:800,${lat},${lon});
+    node["amenity"="school"](around:800,${lat},${lon});
+    node["amenity"="kindergarten"](around:800,${lat},${lon});
+    node["shop"="supermarket"](around:800,${lat},${lon});
+    node["amenity"="restaurant"](around:600,${lat},${lon});
+    node["amenity"="cafe"](around:600,${lat},${lon});
+    node["leisure"="park"](around:800,${lat},${lon});
+    node["amenity"="pharmacy"](around:800,${lat},${lon});
+  );out body;`;
+
+  // Try up to 2 times
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      if (attempt > 0) await sleep(2000);
+      const r = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`, {
+        signal: AbortSignal.timeout(14000),
+        headers: { 'Accept': 'application/json' }
+      });
+      const text = await r.text();
+      if (!text.startsWith('{')) { console.warn('Overpass non-JSON, attempt', attempt+1); continue; }
+      const data = JSON.parse(text);
+      const elements = data.elements || [];
+
+      const ROAD_DB = { motorway:75, trunk:72, primary:65, secondary:60, tertiary:55, residential:48, living_street:42 };
+      const groups = { Bildung:[], Einkauf:[], Gastro:[], Parks:[], Gesundheit:[] };
+      const dotColors = { Bildung:'#378ADD', Einkauf:'#2D7A4F', Gastro:'#C8371A', Parks:'#639922', Gesundheit:'#7F77DD' };
+      let maxDb = 38, minOevDist = Infinity, nearestOev = null, oevCount = 0;
+
+      elements.forEach(el => {
+        const hw = el.tags?.highway;
+        const amenity = el.tags?.amenity || el.tags?.shop || el.tags?.leisure;
+
+        // Noise
+        if (el.type==='way' && hw && ROAD_DB[hw]) {
+          if (ROAD_DB[hw] > maxDb) maxDb = ROAD_DB[hw];
+        }
+        // ÖV
+        if (el.type==='node' && el.lat && (el.tags?.public_transport==='stop_position' || el.tags?.highway==='bus_stop' || el.tags?.railway==='tram_stop' || el.tags?.railway==='station')) {
+          oevCount++;
+          const dist = haversine(lat, lon, el.lat, el.lon);
+          if (dist < minOevDist) { minOevDist=dist; nearestOev=el; }
+        }
+        // Amenities
+        if (el.type==='node' && el.lat && amenity) {
+          const name = el.tags?.name || amenity;
+          const dist = Math.round(haversine(lat, lon, el.lat, el.lon));
+          if (['school','kindergarten'].includes(amenity) && groups.Bildung.length<3) groups.Bildung.push({name,dist});
+          if (amenity==='supermarket' && groups.Einkauf.length<3) groups.Einkauf.push({name,dist});
+          if (['restaurant','cafe'].includes(amenity) && groups.Gastro.length<3) groups.Gastro.push({name,dist});
+          if (amenity==='park' && groups.Parks.length<2) groups.Parks.push({name,dist});
+          if (amenity==='pharmacy' && groups.Gesundheit.length<2) groups.Gesundheit.push({name,dist});
+        }
+      });
+
+      return {
+        noise: maxDb,
+        oev: { dist: minOevDist<Infinity ? Math.round(minOevDist) : null, name: nearestOev?.tags?.name||'Haltestelle', count: oevCount },
+        amenities: groups,
+        dotColors
+      };
+    } catch(e) { console.warn('Overpass error:', e.message); }
+  }
+  return null;
+}
+
+// --- HAVERSINE ----------------------------------------------------
+function haversine(lat1,lon1,lat2,lon2) {
+  const R=6371000, dLat=(lat2-lat1)*Math.PI/180, dLon=(lon2-lon1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
+
+// --- SCORE HELPERS ------------------------------------------------
+function oevScore(dist) {
+  if (!dist) return {score:3,label:'Keine Daten',pill:'mid'};
+  if (dist<80)  return {score:5,label:'Ausgezeichnet',pill:'good'};
+  if (dist<200) return {score:4,label:'Sehr gut',pill:'good'};
+  if (dist<400) return {score:3,label:'Gut',pill:'mid'};
+  if (dist<700) return {score:2,label:'Mässig',pill:'mid'};
+  return {score:1,label:'Schlecht',pill:'bad'};
+}
+function noiseScore(db) {
+  if (!db) return {score:3,label:'Keine Daten',pill:'mid'};
+  if (db<45) return {score:5,label:'Sehr ruhig',pill:'good'};
+  if (db<52) return {score:4,label:'Ruhig',pill:'good'};
+  if (db<58) return {score:3,label:'Moderat',pill:'mid'};
+  if (db<65) return {score:2,label:'Laut',pill:'bad'};
+  return {score:1,label:'Sehr laut',pill:'bad'};
+}
+function solarScore(kwh) {
+  if (!kwh) return {score:3,label:'Keine Daten',pill:'mid'};
+  if (kwh>1100) return {score:5,label:'Sehr sonnig',pill:'good'};
+  if (kwh>900)  return {score:4,label:'Sonnig',pill:'good'};
+  if (kwh>700)  return {score:3,label:'Mässig',pill:'mid'};
+  return {score:2,label:'Wenig Sonne',pill:'bad'};
+}
+function crimeScore(h) {
+  if (h<25) return {score:5,label:'Sehr sicher',pill:'good'};
+  if (h<45) return {score:4,label:'Sicher',pill:'good'};
+  if (h<65) return {score:3,label:'Durchschnittlich',pill:'mid'};
+  if (h<85) return {score:2,label:'Erhöht',pill:'bad'};
+  return {score:1,label:'Hoch',pill:'bad'};
+}
+function makeScoreCard(label, valueStr, detail, scoreOf5, pillClass) {
+  const pct=(scoreOf5/5*100).toFixed(0);
+  const barColor=pillClass==='good'?'#2D7A4F':pillClass==='mid'?'#A07020':'#C8371A';
+  return `<div class="score-card">
+    <div class="score-card-top">
+      <div class="score-card-label">${label}</div>
+      <span class="score-pill pill-${pillClass}">${['','*','**','***','****','*****'][scoreOf5]||'-'}</span>
+    </div>
+    <div class="score-value">${valueStr}</div>
+    <div class="score-detail">${detail}</div>
+    <div class="score-bar"><div class="score-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
+  </div>`;
+}
+
+
+// --- PARSE AMENITY SUMMARY ----------------------------------------
+// Backend format: "Schulen: Name1 100m, Name2 200m / Einkauf: usw."
+function parseAmenitySummary(summary) {
+  if (!summary) return {};
+  const MAP = { 'Schulen':'Bildung', 'Einkauf':'Einkauf', 'Gastro':'Gastro', 'Parks':'Parks', 'Gesundheit':'Gesundheit' };
+  const groups = {};
+  summary.split('\n').forEach(line => {
+    const colonIdx = line.indexOf(':');
+    if (colonIdx < 0) return;
+    const key = line.substring(0, colonIdx).trim();
+    const gname = MAP[key] || key;
+    const items = line.substring(colonIdx+1).split(',').map(s => {
+      const m = s.trim().match(/^(.+?)\s+(\d+)m?$/);
+      return m ? { name:m[1].trim(), dist:parseInt(m[2]) } : null;
+    }).filter(Boolean);
+    if (items.length) groups[gname] = items;
+  });
+  return groups;
+}
+
+// --- MAIN ANALYSIS ------------------------------------------------
+async function runAnalysis() {
+  clearError();
+  document.getElementById('results').classList.remove('visible');
+  document.getElementById('report-section').style.display='none';
+  document.getElementById('btn-analyse').disabled=true;
+  document.getElementById('spinner').style.display='';
+
+  const addressInput = document.getElementById('address').value.trim();
+  if (!addressInput) { showError('Bitte eine Adresse eingeben.'); document.getElementById('btn-analyse').disabled=false; return; }
+
+  // Formular-Werte
+  const price   = parseInt(document.getElementById('price').value)||2400;
+  const area    = parseInt(document.getElementById('area').value)||75;
+  const year    = document.getElementById('year').value;
+  const floor   = parseInt(document.getElementById('floor').value)||0;
+  const outdoor = document.getElementById('outdoor').value;
+  const isKauf  = document.getElementById('type').value==='kauf';
+  const rooms   = document.getElementById('rooms').value;
+  const pricePerQm = (price/area).toFixed(1);
+
+  // Crime (statisch)
+  const CRIME = {'zürich':{hzahl:98,label:'Zürich'},'bern':{hzahl:72,label:'Bern'},'basel':{hzahl:85,label:'Basel'},'genf':{hzahl:110,label:'Genf'},'winterthur':{hzahl:62,label:'Winterthur'},'luzern':{hzahl:58,label:'Luzern'},'lausanne':{hzahl:95,label:'Lausanne'},'kilchberg':{hzahl:18,label:'Kilchberg'},'küsnacht':{hzahl:16,label:'Küsnacht'},'thalwil':{hzahl:22,label:'Thalwil'},'zollikon':{hzahl:20,label:'Zollikon'},'uster':{hzahl:45,label:'Uster'},'st. gallen':{hzahl:54,label:'St. Gallen'}};
+
+  try {
+    // -- SCHRITT 1: Geocode (~0.5s) ------------------------------
+    setStatus('Adresse wird geocodiert...');
+    let coords = selectedCoords;
+    if (!coords || !addressInput.toLowerCase().includes((coords.label||'').toLowerCase().substring(0,8))) {
+      coords = await geocodeAddress(addressInput);
+    }
+    const { lat, lon, label } = coords;
+    const plzMatch = label.match(/\b(\d{4})\b/);
+    const plz = plzMatch ? plzMatch[1] : '8000';
+    const labelLower = label.toLowerCase();
+    let crime = {hzahl:38,label:'diese Gemeinde'};
+    for (const [k,v] of Object.entries(CRIME)) { if (labelLower.includes(k)) { crime=v; break; } }
+
+    // Analyse-Daten speichern
+    const condition = document.getElementById('condition').value;
+    window._lastAnalysis = { address:label, rooms, area, price, type:document.getElementById('type').value, year, floor, outdoor, condition };
+
+    // -- SCHRITT 2: Daten-Call (~5s: Preise + Overpass + Solar)
+    setStatus('Umgebung & Marktpreise werden abgerufen...');
+    const dataRes = await fetch('/api/data', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(window._lastAnalysis)
+    });
+    const dataData = await dataRes.json();
+    if (dataData.error) throw new Error(dataData.error);
+    const meta = dataData.meta || {};
+
+    // Overpass-Daten aus Backend-Meta
+    const noise  = meta.noiseDay || null;
+    const oev    = { dist:meta.oevDist||null, name:meta.oevName||'-', count:meta.oevCount||0 };
+    // Amenities aus amenitySummary parsen (Backend-Format: "Schulen: x 200m / Einkauf: usw.")
+    const amenities = parseAmenitySummary(meta.amenitySummary || '');
+    const dotColors = { Bildung:'#378ADD', Einkauf:'#2D7A4F', Gastro:'#C8371A', Parks:'#639922', Gesundheit:'#7F77DD' };
+
+    setStatus('Kacheln werden erstellt...');
+
+    // -- SCHRITT 3: Kacheln sofort zeigen (ohne Preise) ----------
+    document.getElementById('verdict-address').textContent = label;
+    document.getElementById('verdict-main').textContent = 'Marktpreise werden geladen...';
+    document.getElementById('verdict-sub').textContent = '';
+    document.getElementById('verdict-range').textContent = '';
+    document.getElementById('verdict-source').textContent = '';
+    const badge = document.getElementById('verdict-badge');
+    badge.textContent = '...'; badge.className = 'verdict-badge badge-loading';
+    document.getElementById('meter-fill').style.width = '50%';
+
+    const noiseS = noiseScore(noise);
+    const oevS   = oevScore(oev.dist);
+    const crimeS = crimeScore(crime.hzahl);
+
+    document.getElementById('score-grid').innerHTML =
+      makeScoreCard('Preisbewertung', '...', 'Marktpreise werden geladen', 3, 'load') +
+      makeScoreCard('ÖV-Anbindung', oev.dist ? `${oev.dist}m` : 'N/A', `${oev.name} · ${oev.count} Haltestellen`, oevS.score, oevS.pill) +
+      makeScoreCard('Lärmsituation', noise ? `${noise}dB` : 'N/A', noise ? 'Strassenlärm (OSM)' : 'Keine Daten', noiseS.score, noiseS.pill) +
+      makeScoreCard('Besonnung', '...', 'Wird geladen (swisstopo)', 3, 'load') +
+      makeScoreCard('Sicherheit', `${crime.hzahl}/1000`, `${crime.label} · PKS`, crimeS.score, crimeS.pill) +
+      makeScoreCard('Aussenraum', OUTDOOR_LABEL[outdoor], `Etage ${floor} · Faktor ×${OUTDOOR_F[outdoor]}`, outdoor==='none'?2:outdoor==='balkon'?3:outdoor==='terrasse'?4:5, outdoor==='none'?'bad':outdoor==='balkon'?'mid':'good') +
+      makeScoreCard('Zustand', {neuwertig:'Neuwertig',gut:'Gut',mittel:'Mittel',renovationsbed:'Renov.bed.'}[condition]||condition, {neuwertig:'Kürzlich renoviert',gut:'Guter Unterhalt',mittel:'Normaler Unterhalt',renovationsbed:'Renovationsbedürftig'}[condition]||'', {neuwertig:5,gut:4,mittel:3,renovationsbed:1}[condition]||3, {neuwertig:'good',gut:'good',mittel:'mid',renovationsbed:'bad'}[condition]||'mid');
+
+    // POI
+    let poiHtml = '<div class="poi-title">Umgebung <em style="font-style:italic;color:var(--ink-light);font-size:0.8em">(800m Radius)</em></div>';
+    const hasAmenities = Object.values(amenities).some(g=>g.length>0);
+    if (hasAmenities) {
+      poiHtml += '<div class="poi-grid">';
+      Object.entries(amenities).forEach(([gname, items]) => {
+        if (!items.length) return;
+        const color = dotColors[gname]||'#888';
+        poiHtml += `<div><div class="poi-group-label">${gname}</div>`;
+        items.sort((a,b)=>a.dist-b.dist).forEach(item => {
+          poiHtml += `<div class="poi-item"><div class="poi-dot" style="background:${color}"></div>${item.name}<span class="poi-dist">${item.dist}m</span></div>`;
+        });
+        poiHtml += '</div>';
+      });
+      poiHtml += '</div>';
+    } else {
+      poiHtml += '<p style="font-size:13px;color:var(--ink-light)">Umgebungsdaten nicht verfügbar.</p>';
+    }
+    document.getElementById('poi-section').innerHTML = poiHtml;
+
+    // Checklist
+    const checkItems = [
+      'Lärmprobe zu Stosszeiten (Morgen/Abend)',
+      noise && noise>58 ? '! Lärm hoch - Fenster & Verglasung prüfen' : 'Fensterverglasung & Schalldämmung kontrollieren',
+      outdoor==='garten' ? 'Gartenfläche & Nutzungsrecht klären' : outdoor==='terrasse' ? 'Terrassenzustand und Abdichtung prüfen' : 'Balkonzustand & Abdichtung kontrollieren',
+      floor===0 && outdoor==='none' ? '! EG ohne Aussenraum - Privatsphäre & Licht prüfen' : `Etage ${floor} - Lift vorhanden?`,
+      'Heizungsart & Energieklasse erfragen',
+      'Zustand Küche, Bäder, Böden dokumentieren',
+      oev.dist && oev.dist>500 ? `! ÖV weit (${oev.dist}m) - Frequenz prüfen` : `Nächste Haltestelle: ${oev.name} (${oev.dist||'-'}m)`,
+      'Waschküche, Keller, Veloabstellplatz',
+      'Bisherigen Mietzins beim Vermieter erfragen',
+      'Nebenkosten-Abrechnung letzter 2 Jahre',
+      crime.hzahl>60 ? '! Kriminalität erhöht - Quartier zu verschiedenen Zeiten besuchen' : 'Quartier zu verschiedenen Tageszeiten besuchen',
+      'Mobilfunkempfang & Glasfaser prüfen',
+    ];
+    document.getElementById('checklist-section').innerHTML = `
+      <div class="checklist-title">Besichtigungs-Checkliste</div>
+      <div class="checklist-items">${checkItems.map(i=>`<div class="checklist-item"><div class="check-icon"></div>${i}</div>`).join('')}</div>`;
+
+    document.getElementById('sources-row').innerHTML =
+      ['swisstopo Geocoder','OpenStreetMap Overpass','BFS PKS','RealAdvisor Marktpreise'].map(s=>`<span class="source-tag">${s}</span>`).join('');
+
+    // Resultate sofort zeigen
+    setStatus('Umgebungsdaten geladen - Marktpreise folgen...');
+    document.getElementById('results').classList.add('visible');
+    document.getElementById('results').scrollIntoView({ behavior:'smooth', block:'start' });
+
+    // -- SCHRITT 4: Preise & Report aus API-Antwort -------------
+    const delta      = meta.delta || 0;
+    const expected   = meta.expected || 0;
+    const priceSource= meta.priceSource || 'Modell';
+    const priceRange = meta.priceRangeText || '';
+    const solarKwh   = meta.solarKwh;
+
+    // Verdict aktualisieren
+    const deltaAbs = Math.abs(delta);
+    let verdictText, verdictSub, badgeClass, badgeText, meterColor, meterPct;
+    if (deltaAbs<=5) {
+      verdictText='Im Marktbereich'; verdictSub=`Referenz: CHF ${expected.toLocaleString('de-CH')}${isKauf?'':'/Mt.'} - Abweichung ${delta>0?'+':''}${delta}%`;
+      badgeClass='badge-fair'; badgeText='&#10003; Fair'; meterColor='#2D7A4F'; meterPct=50;
+    } else if (delta>0) {
+      verdictText=`${delta}% über Marktpreis`; verdictSub=`Referenz CHF ${expected.toLocaleString('de-CH')}${isKauf?'':'/Mt.'} - CHF ${(price-expected).toLocaleString('de-CH')} zu viel`;
+      badgeClass=delta>15?'badge-over':'badge-warn'; badgeText=delta>15?'! Überteuert':'~ Leicht überteuert';
+      meterColor=delta>15?'#C8371A':'#A07020'; meterPct=Math.min(50+delta*1.5,94);
+    } else {
+      verdictText=`${deltaAbs}% unter Marktpreis`; verdictSub=`Referenz CHF ${expected.toLocaleString('de-CH')}${isKauf?'':'/Mt.'} - günstiges Angebot`;
+      badgeClass='badge-under'; badgeText='&#10003; Günstig'; meterColor='#2D7A4F'; meterPct=Math.max(50+delta*1.5,6);
+    }
+
+    document.getElementById('verdict-main').textContent = verdictText;
+    document.getElementById('verdict-sub').textContent = verdictSub;
+    document.getElementById('verdict-range').textContent = priceRange;
+    document.getElementById('verdict-source').textContent = `Quelle: ${priceSource}${meta.streetData?` · ${meta.streetData.name} (${meta.streetData.percentile}. Perzentile)`:''}`;
+    const badge2 = document.getElementById('verdict-badge');
+    badge2.textContent=badgeText; badge2.className='verdict-badge '+badgeClass;
+    const mf=document.getElementById('meter-fill');
+    mf.style.width=meterPct+'%'; mf.style.background=meterColor;
+
+    // Preis- und Solar-Kacheln aktualisieren
+    const priceScore = Math.max(1,Math.min(5,Math.round(3-delta/10)));
+    const pricePill  = delta>10?'bad':delta<-10?'good':'mid';
+    const solarS     = solarScore(solarKwh);
+    const cards      = document.getElementById('score-grid').children;
+    if (cards[0]) cards[0].outerHTML = makeScoreCard('Preisbewertung', `CHF ${pricePerQm}/m2`, `Referenz: CHF ${expected?(expected/area).toFixed(1):'-'}/m2 · ${priceSource}`, priceScore, pricePill);
+    if (cards[3]) document.getElementById('score-grid').children[3].outerHTML = makeScoreCard('Besonnung', solarKwh?`${Math.round(solarKwh)} kWh`:'N/A', solarKwh?'Jahressumme Fassade (swisstopo)':'Keine Daten', solarS.score, solarS.pill);
+
+    setStatus('Analyse vollständig.', true);
+    setTimeout(hideStatus, 1500);
+
+    // ── SCHRITT 5: Claude im Hintergrund (~8s) ─────────────────
+    setStatus('KI-Report wird generiert...');
+    fetch('/api/report', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(window._lastAnalysis)
+    }).then(r=>r.json()).then(d=>{
+      if (d.report) renderReport(d.report);
+    }).catch(e=>console.warn('Report error:', e));
+
+  } catch(err) {
+    showError(err.message||'Fehler bei der Analyse.');
+    hideStatus();
+  }
+  document.getElementById('btn-analyse').disabled=false;
+}
+
+// --- REPORT -------------------------------------------------------
+function renderReport(text) {
+  const html = text
+    .replace(/^## (.+)$/gm,'<h2 style="font-family:var(--font-display);font-size:20px;margin:28px 0 10px;padding-top:20px;border-top:1px solid var(--rule)">$1</h2>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/^- (.+)$/gm,'<li style="margin:4px 0;padding-left:4px">$1</li>')
+    .replace(/(<li.*<\/li>\n?)+/g,'<ul style="padding-left:20px;margin:8px 0">$&</ul>')
+    .replace(/\n\n/g,'</p><p style="margin:8px 0">')
+    .replace(/\n/g,'<br>');
+  document.getElementById('report-content').innerHTML=`<p style="margin:8px 0">${html}</p>`;
+  document.getElementById('report-section').style.display='block';
+  document.getElementById('report-section').scrollIntoView({behavior:'smooth',block:'start'});
+}
+</script>
+</body>
+</html>
