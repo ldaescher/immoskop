@@ -244,7 +244,7 @@ const OUTDOOR_F = { none:0.95, balkon:1.0, terrasse:1.05, garten:1.10 };
 const OUTDOOR_LABEL = { none:'Kein Aussenraum', balkon:'Balkon', terrasse:'Terrasse', garten:'Garten/Sitzplatz' };
 let selectedCoords = null, acTimer = null;
 
-// ─── AUTOCOMPLETE ─────────────────────────────────────────────────
+// --- AUTOCOMPLETE -------------------------------------------------
 async function onAddressInput(val) {
   clearTimeout(acTimer);
   const list = document.getElementById('autocomplete-list');
@@ -286,7 +286,7 @@ document.getElementById('type').addEventListener('change', function() {
   document.getElementById('price').value = isKauf ? '850000' : '2400';
 });
 
-// ─── STATUS ───────────────────────────────────────────────────────
+// --- STATUS -------------------------------------------------------
 function setStatus(msg, done=false) {
   document.getElementById('status-bar').classList.add('visible');
   document.getElementById('status-text').textContent = msg;
@@ -296,7 +296,7 @@ function hideStatus() { document.getElementById('status-bar').classList.remove('
 function showError(msg) { const b=document.getElementById('error-box'); b.textContent=msg; b.classList.add('visible'); }
 function clearError() { document.getElementById('error-box').classList.remove('visible'); }
 
-// ─── GEOCODE ──────────────────────────────────────────────────────
+// --- GEOCODE ------------------------------------------------------
 async function geocodeAddress(address) {
   const r = await fetch(`https://api3.geo.admin.ch/rest/services/api/SearchServer?searchText=${encodeURIComponent(address)}&type=locations&limit=1&origins=address`);
   const d = await r.json();
@@ -307,7 +307,7 @@ async function geocodeAddress(address) {
   return { lat:c.lat, lon:c.lon, label };
 }
 
-// ─── OVERPASS ─────────────────────────────────────────────────────
+// --- OVERPASS -----------------------------------------------------
 async function fetchOverpass(lat, lon) {
   const query = `[out:json][timeout:15];(
     way["highway"~"motorway|trunk|primary|secondary|tertiary|residential|living_street"](around:150,${lat},${lon});
@@ -379,7 +379,7 @@ async function fetchOverpass(lat, lon) {
   return null;
 }
 
-// ─── HAVERSINE ────────────────────────────────────────────────────
+// --- HAVERSINE ----------------------------------------------------
 function haversine(lat1,lon1,lat2,lon2) {
   const R=6371000, dLat=(lat2-lat1)*Math.PI/180, dLon=(lon2-lon1)*Math.PI/180;
   const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
@@ -387,7 +387,7 @@ function haversine(lat1,lon1,lat2,lon2) {
 }
 function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
 
-// ─── SCORE HELPERS ────────────────────────────────────────────────
+// --- SCORE HELPERS ------------------------------------------------
 function oevScore(dist) {
   if (!dist) return {score:3,label:'Keine Daten',pill:'mid'};
   if (dist<80)  return {score:5,label:'Ausgezeichnet',pill:'good'};
@@ -424,7 +424,7 @@ function makeScoreCard(label, valueStr, detail, scoreOf5, pillClass) {
   return `<div class="score-card">
     <div class="score-card-top">
       <div class="score-card-label">${label}</div>
-      <span class="score-pill pill-${pillClass}">${['','★','★★','★★★','★★★★','★★★★★'][scoreOf5]||'-'}</span>
+      <span class="score-pill pill-${pillClass}">${['','*','**','***','****','*****'][scoreOf5]||'-'}</span>
     </div>
     <div class="score-value">${valueStr}</div>
     <div class="score-detail">${detail}</div>
@@ -433,7 +433,7 @@ function makeScoreCard(label, valueStr, detail, scoreOf5, pillClass) {
 }
 
 
-// ─── PARSE AMENITY SUMMARY ────────────────────────────────────────
+// --- PARSE AMENITY SUMMARY ----------------------------------------
 // Backend format: "Schulen: Name1 100m, Name2 200m / Einkauf: usw."
 function parseAmenitySummary(summary) {
   if (!summary) return {};
@@ -453,7 +453,7 @@ function parseAmenitySummary(summary) {
   return groups;
 }
 
-// ─── MAIN ANALYSIS ────────────────────────────────────────────────
+// --- MAIN ANALYSIS ------------------------------------------------
 async function runAnalysis() {
   clearError();
   document.getElementById('results').classList.remove('visible');
@@ -478,7 +478,7 @@ async function runAnalysis() {
   const CRIME = {'zürich':{hzahl:98,label:'Zürich'},'bern':{hzahl:72,label:'Bern'},'basel':{hzahl:85,label:'Basel'},'genf':{hzahl:110,label:'Genf'},'winterthur':{hzahl:62,label:'Winterthur'},'luzern':{hzahl:58,label:'Luzern'},'lausanne':{hzahl:95,label:'Lausanne'},'kilchberg':{hzahl:18,label:'Kilchberg'},'küsnacht':{hzahl:16,label:'Küsnacht'},'thalwil':{hzahl:22,label:'Thalwil'},'zollikon':{hzahl:20,label:'Zollikon'},'uster':{hzahl:45,label:'Uster'},'st. gallen':{hzahl:54,label:'St. Gallen'}};
 
   try {
-    // ── SCHRITT 1: Geocode (~0.5s) ──────────────────────────────
+    // -- SCHRITT 1: Geocode (~0.5s) ------------------------------
     setStatus('Adresse wird geocodiert...');
     let coords = selectedCoords;
     if (!coords || !addressInput.toLowerCase().includes((coords.label||'').toLowerCase().substring(0,8))) {
@@ -495,7 +495,7 @@ async function runAnalysis() {
     const condition = document.getElementById('condition').value;
     window._lastAnalysis = { address:label, rooms, area, price, type:document.getElementById('type').value, year, floor, outdoor, condition };
 
-    // ── SCHRITT 2: API-Call (macht alles: Preise + Overpass + Solar) 
+    // -- SCHRITT 2: API-Call (macht alles: Preise + Overpass + Solar) 
     setStatus('Umgebung & Marktpreise werden abgerufen...');
 
     const apiPromise = fetch('/api/report', {
@@ -518,7 +518,7 @@ async function runAnalysis() {
 
     setStatus('Kacheln werden erstellt...');
 
-    // ── SCHRITT 3: Kacheln sofort zeigen (ohne Preise) ──────────
+    // -- SCHRITT 3: Kacheln sofort zeigen (ohne Preise) ----------
     document.getElementById('verdict-address').textContent = label;
     document.getElementById('verdict-main').textContent = 'Marktpreise werden geladen...';
     document.getElementById('verdict-sub').textContent = '';
@@ -564,16 +564,16 @@ async function runAnalysis() {
     // Checklist
     const checkItems = [
       'Lärmprobe zu Stosszeiten (Morgen/Abend)',
-      noise && noise>58 ? '⚠ Lärm hoch - Fenster & Verglasung prüfen' : 'Fensterverglasung & Schalldämmung kontrollieren',
+      noise && noise>58 ? '! Lärm hoch - Fenster & Verglasung prüfen' : 'Fensterverglasung & Schalldämmung kontrollieren',
       outdoor==='garten' ? 'Gartenfläche & Nutzungsrecht klären' : outdoor==='terrasse' ? 'Terrassenzustand und Abdichtung prüfen' : 'Balkonzustand & Abdichtung kontrollieren',
-      floor===0 && outdoor==='none' ? '⚠ EG ohne Aussenraum - Privatsphäre & Licht prüfen' : `Etage ${floor} - Lift vorhanden?`,
+      floor===0 && outdoor==='none' ? '! EG ohne Aussenraum - Privatsphäre & Licht prüfen' : `Etage ${floor} - Lift vorhanden?`,
       'Heizungsart & Energieklasse erfragen',
       'Zustand Küche, Bäder, Böden dokumentieren',
-      oev.dist && oev.dist>500 ? `⚠ ÖV weit (${oev.dist}m) - Frequenz prüfen` : `Nächste Haltestelle: ${oev.name} (${oev.dist||'-'}m)`,
+      oev.dist && oev.dist>500 ? `! ÖV weit (${oev.dist}m) - Frequenz prüfen` : `Nächste Haltestelle: ${oev.name} (${oev.dist||'-'}m)`,
       'Waschküche, Keller, Veloabstellplatz',
       'Bisherigen Mietzins beim Vermieter erfragen',
       'Nebenkosten-Abrechnung letzter 2 Jahre',
-      crime.hzahl>60 ? '⚠ Kriminalität erhöht - Quartier zu verschiedenen Zeiten besuchen' : 'Quartier zu verschiedenen Tageszeiten besuchen',
+      crime.hzahl>60 ? '! Kriminalität erhöht - Quartier zu verschiedenen Zeiten besuchen' : 'Quartier zu verschiedenen Tageszeiten besuchen',
       'Mobilfunkempfang & Glasfaser prüfen',
     ];
     document.getElementById('checklist-section').innerHTML = `
@@ -588,7 +588,7 @@ async function runAnalysis() {
     document.getElementById('results').classList.add('visible');
     document.getElementById('results').scrollIntoView({ behavior:'smooth', block:'start' });
 
-    // ── SCHRITT 4: Preise & Report aus API-Antwort ─────────────
+    // -- SCHRITT 4: Preise & Report aus API-Antwort -------------
     const delta      = meta.delta || 0;
     const expected   = meta.expected || 0;
     const priceSource= meta.priceSource || 'Modell';
@@ -600,14 +600,14 @@ async function runAnalysis() {
     let verdictText, verdictSub, badgeClass, badgeText, meterColor, meterPct;
     if (deltaAbs<=5) {
       verdictText='Im Marktbereich'; verdictSub=`Referenz: CHF ${expected.toLocaleString('de-CH')}${isKauf?'':'/Mt.'} - Abweichung ${delta>0?'+':''}${delta}%`;
-      badgeClass='badge-fair'; badgeText='✓ Fair'; meterColor='#2D7A4F'; meterPct=50;
+      badgeClass='badge-fair'; badgeText='v Fair'; meterColor='#2D7A4F'; meterPct=50;
     } else if (delta>0) {
       verdictText=`${delta}% über Marktpreis`; verdictSub=`Referenz CHF ${expected.toLocaleString('de-CH')}${isKauf?'':'/Mt.'} - CHF ${(price-expected).toLocaleString('de-CH')} zu viel`;
-      badgeClass=delta>15?'badge-over':'badge-warn'; badgeText=delta>15?'⚠ Überteuert':'~ Leicht überteuert';
+      badgeClass=delta>15?'badge-over':'badge-warn'; badgeText=delta>15?'! Überteuert':'~ Leicht überteuert';
       meterColor=delta>15?'#C8371A':'#A07020'; meterPct=Math.min(50+delta*1.5,94);
     } else {
       verdictText=`${deltaAbs}% unter Marktpreis`; verdictSub=`Referenz CHF ${expected.toLocaleString('de-CH')}${isKauf?'':'/Mt.'} - günstiges Angebot`;
-      badgeClass='badge-under'; badgeText='↓ Günstig'; meterColor='#2D7A4F'; meterPct=Math.max(50+delta*1.5,6);
+      badgeClass='badge-under'; badgeText='v Günstig'; meterColor='#2D7A4F'; meterPct=Math.max(50+delta*1.5,6);
     }
 
     document.getElementById('verdict-main').textContent = verdictText;
@@ -624,7 +624,7 @@ async function runAnalysis() {
     const pricePill  = delta>10?'bad':delta<-10?'good':'mid';
     const solarS     = solarScore(solarKwh);
     const cards      = document.getElementById('score-grid').children;
-    if (cards[0]) cards[0].outerHTML = makeScoreCard('Preisbewertung', `CHF ${pricePerQm}/m²`, `Referenz: CHF ${expected?(expected/area).toFixed(1):'-'}/m² · ${priceSource}`, priceScore, pricePill);
+    if (cards[0]) cards[0].outerHTML = makeScoreCard('Preisbewertung', `CHF ${pricePerQm}/m2`, `Referenz: CHF ${expected?(expected/area).toFixed(1):'-'}/m2 · ${priceSource}`, priceScore, pricePill);
     if (cards[3]) document.getElementById('score-grid').children[3].outerHTML = makeScoreCard('Besonnung', solarKwh?`${Math.round(solarKwh)} kWh`:'N/A', solarKwh?'Jahressumme Fassade (swisstopo)':'Keine Daten', solarS.score, solarS.pill);
 
     setStatus('Analyse vollständig.', true);
@@ -640,7 +640,7 @@ async function runAnalysis() {
   document.getElementById('btn-analyse').disabled=false;
 }
 
-// ─── REPORT ───────────────────────────────────────────────────────
+// --- REPORT -------------------------------------------------------
 function renderReport(text) {
   const html = text
     .replace(/^## (.+)$/gm,'<h2 style="font-family:var(--font-display);font-size:20px;margin:28px 0 10px;padding-top:20px;border-top:1px solid var(--rule)">$1</h2>')
