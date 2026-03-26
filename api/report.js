@@ -3,7 +3,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { address, rooms, area, price, type, year, floor, outdoor } = req.body;
+  const { address, rooms, area, price, type, year, floor, outdoor, condition } = req.body;
   const isKauf = type === 'kauf';
 
   // ── 1. GEOCODE ──────────────────────────────────────────────────
@@ -136,6 +136,10 @@ export default async function handler(req, res) {
   const YEAR_F = {'2020':1.18,'2010':1.07,'2000':1,'1990':0.92,'1980':0.85,'alt':0.77};
   const OUTDOOR_F = {'none':0.95,'balkon':1.0,'terrasse':1.05,'garten':1.10};
   const outdoorFactor = OUTDOOR_F[outdoor] || 1.0;
+  // Zustand/Renovation
+  const CONDITION_F = {'neuwertig':1.08,'gut':1.0,'mittel':0.92,'renovationsbed':0.82};
+  const conditionFactor = CONDITION_F[condition] || 1.0;
+  const CONDITION_LABEL = {'neuwertig':'Neuwertig/kürzl. renoviert','gut':'Guter Zustand','mittel':'Normaler Unterhalt','renovationsbed':'Renovationsbedürftig'};
   const yearFactor = YEAR_F[year] || 1;
   // EG = -5%, 1.OG = Basis (0%), höher = +1.5% pro Etage
   const floorNum = parseInt(floor) || 0;
@@ -144,14 +148,14 @@ export default async function handler(req, res) {
   let expected, refPerSqmUsed;
   if (isKauf && refSalePerSqm) {
     refPerSqmUsed = refSalePerSqm;
-    expected = Math.round(refSalePerSqm * area * yearFactor * floorFactor * outdoorFactor);
+    expected = Math.round(refSalePerSqm * area * yearFactor * floorFactor * outdoorFactor * conditionFactor);
   } else if (!isKauf && refRentPerSqm) {
     refPerSqmUsed = refRentPerSqm;
-    expected = Math.round(refRentPerSqm * area * yearFactor * floorFactor * outdoorFactor);
+    expected = Math.round(refRentPerSqm * area * yearFactor * floorFactor * outdoorFactor * conditionFactor);
   } else {
     // Letzter Fallback
     refPerSqmUsed = 17;
-    expected = isKauf ? Math.round(17 * area * 220 * outdoorFactor) : Math.round(17 * area * outdoorFactor);
+    expected = isKauf ? Math.round(17 * area * 220 * outdoorFactor * conditionFactor) : Math.round(17 * area * outdoorFactor * conditionFactor);
   }
 
   const delta = Math.round((price - expected) / expected * 100);
@@ -303,7 +307,8 @@ export default async function handler(req, res) {
 
 INSERAT:
 Adresse: ${label}
-Typ: ${isKauf?'Kaufobjekt':'Mietwohnung'} | ${rooms} Zimmer | ${area} m² | Etage ${floor} | Baujahr ${year} | Aussenraum: ${{none:'Kein Aussenraum',balkon:'Balkon',terrasse:'Terrasse',garten:'Garten/Sitzplatz'}[outdoor]||'–'}
+Typ: ${isKauf?'Kaufobjekt':'Mietwohnung'} | ${rooms} Zimmer | ${area} m² | Etage ${floor} | Baujahr ${year}
+Zustand: ${CONDITION_LABEL[condition]||'–'} | Aussenraum: ${{none:'Kein Aussenraum',balkon:'Balkon',terrasse:'Terrasse',garten:'Garten/Sitzplatz'}[outdoor]||'–'}
 Preis: CHF ${parseInt(price).toLocaleString('de-CH')}${isKauf?'':'/Mt.'} (CHF ${pricePerQm}/m²)
 
 MARKTDATEN (Quelle: ${priceSource}):
@@ -362,7 +367,7 @@ ${steuerfuss?`\n## Steuerlicher Vorteil\nBerechne konkret: was spart eine Person
     return res.status(200).json({
       report: claudeData.content?.[0]?.text||'',
       meta: {
-        noiseDay, solarKwh, oevDist, oevName, oevCount, amenitySummary, crime, steuerfuss,
+        noiseDay, solarKwh, oevDist, oevName, oevCount, amenitySummary, crime, steuerfuss, condition, conditionFactor,
         delta, expected, priceRangeText, priceSource, outdoor, outdoorFactor,
         streetData: streetData ? { name: streetData.street_name, salePerSqm: streetData.median_sale_price_sqm, percentile: streetPercentile } : null,
         lat: lat?.toFixed(4), lon: lon?.toFixed(4)
