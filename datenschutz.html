@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Datenschutz — Immoskop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--cream:#F5F0E8;--ink:#1A1916;--ink-light:#6A6864;--red:#C8371A;--green:#2D7A4F;--rule:rgba(26,25,22,0.12);--font-display:'DM Serif Display',Georgia,serif;--font-body:'Schibsted Grotesk',sans-serif;--font-mono:'DM Mono',monospace;}
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--cream);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.7;}
+  header{border-bottom:1px solid var(--rule);padding:0 clamp(20px,5vw,80px);display:flex;align-items:center;height:68px;}
+  .logo{text-decoration:none;display:flex;align-items:center;gap:10px;}
+  .logo img{height:52px;}
+  .logo-text{font-family:var(--font-display);font-size:26px;color:var(--ink);}
+  .logo-text em{font-style:italic;color:var(--red);}
+  main{max-width:720px;margin:0 auto;padding:clamp(40px,6vw,80px) clamp(20px,5vw,40px);}
+  .tag{font-family:var(--font-mono);font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--red);margin-bottom:12px;}
+  h1{font-family:var(--font-display);font-size:clamp(28px,5vw,48px);line-height:1.1;letter-spacing:-0.02em;margin-bottom:28px;}
+  h1 em{font-style:italic;color:var(--red);}
+  h2{font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-light);margin:32px 0 8px;}
+  p{margin-bottom:12px;color:#3A3835;}
+  ul{padding-left:20px;margin-bottom:12px;color:#3A3835;}
+  li{margin-bottom:4px;}
+  a{color:var(--red);}
+  .divider{height:1px;background:var(--rule);margin:32px 0;}
+  .highlight{background:white;border:1px solid var(--rule);padding:16px 20px;margin:16px 0;font-size:14px;}
+  footer{border-top:1px solid var(--rule);padding:20px clamp(20px,5vw,80px);font-family:var(--font-mono);font-size:10px;color:var(--ink-light);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:60px;}
+</style>
+  <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+<header>
+  <a href="/" class="logo">
+    <img src="/logo.png" alt="Immoskop">
+    <span class="logo-text">immo<em>skop</em></span>
+  </a>
+  <nav style="display:flex;gap:24px;align-items:center;">
+    <a href="/" style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-light);text-decoration:none;">Home</a>
+  </nav>
+  <div style="display:flex;gap:2px;">
+    <button onclick="setSubLang('de')" id="sl-de" style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;padding:4px 8px;border:1px solid rgba(26,25,22,0.12);background:var(--ink);color:var(--cream);cursor:pointer;">DE</button>
+    <button onclick="setSubLang('en')" id="sl-en" style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;padding:4px 8px;border:1px solid rgba(26,25,22,0.12);background:none;color:#6A6864;cursor:pointer;">EN</button>
+    <button onclick="setSubLang('fr')" id="sl-fr" style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;padding:4px 8px;border:1px solid rgba(26,25,22,0.12);background:none;color:#6A6864;cursor:pointer;">FR</button>
+  </div>
+</header>
+<main>
+  <div class="tag" data-t="tag">Rechtliches</div>
+  <h1 data-t="h1">Datenschutz&shy;erklärung</h1>
+
+  <div class="highlight">
+    <strong>Kurzfassung:</strong> Immoskop speichert keine vollständigen Adressen und keine IP-Adressen. Strassennamen (ohne Hausnummer) werden anonym zur Verbesserung der Marktdatenbank gespeichert. Kein Cross-Site-Tracking, keine Werbung.
+  </div>
+
+  <h2 data-t="h2_verantwortlich">Verantwortliche Stelle</h2>
+  <p>Däscher &amp; Partner Immobilien GmbH<br>
+  Cresta 3, 7415 Pratval<br>
+  E-Mail: <span id="em-display"></span></p>
+
+  <div class="divider"></div>
+
+  <h2 data-t="h2_daten">Welche Daten werden verarbeitet?</h2>
+  <p>Bei jeder Analyse werden folgende Daten temporär verarbeitet:</p>
+  <ul>
+    <li>Die eingegebene Adresse (für die Geocodierung — Hausnummer wird nicht gespeichert)</li>
+    <li>Formularangaben (Preis, Fläche, Zimmer etc.) — nur für die Berechnung</li>
+    <li>Allfällig eingefügter Inseratstext — nur für die KI-Analyse</li>
+  </ul>
+  <p>Die vollständige Adresse (mit Hausnummer) wird nicht gespeichert.</p>
+
+  <div class="divider"></div>
+
+  <h2 data-t="h2_statistik">Anonyme Nutzungsstatistiken</h2>
+  <p>Immoskop erfasst anonyme Nutzungsstatistiken zur Verbesserung der Marktdatenbank. Diese enthalten:</p>
+  <ul>
+    <li>Strassenname <strong>ohne Hausnummer</strong> sowie PLZ und Gemeinde</li>
+    <li>Objekttyp, Zimmeranzahl, Fläche</li>
+    <li>Prozentuale Abweichung vom Marktpreis</li>
+    <li>Ob BAFU-Lärmdaten, Solar- oder Strassendaten vorhanden waren</li>
+  </ul>
+  <p>Es werden keine IP-Adressen, keine vollständigen Adressen und keine personenbezogenen Angaben gespeichert. Die Statistiken sind nicht auf einzelne Personen zurückführbar.</p>
+
+  <div class="divider"></div>
+
+  <h2 data-t="h2_cookies">Cookies und Tracking</h2>
+  <p>Immoskop verwendet keine Cookies und kein Cross-Site-Tracking. Es werden keine Daten an Werbenetzwerke oder Social-Media-Plattformen weitergegeben.</p>
+
+  <div class="divider"></div>
+
+  <h2 data-t="h2_dritte">Drittanbieter</h2>
+  <ul>
+    <li><strong>swisstopo API</strong> — Geocodierung. Betrieben durch den Bund.</li>
+    <li><strong>BAFU WMS</strong> — Lärmdaten. Betrieben durch den Bund.</li>
+    <li><strong>Geoapify</strong> — Umgebungsdaten. Datenschutz: geoapify.com</li>
+    <li><strong>Anthropic Claude API</strong> — KI-Analyse. Datenschutz: anthropic.com</li>
+  </ul>
+
+  <div class="divider"></div>
+
+  <h2 data-t="h2_rechte">Ihre Rechte (DSG / DSGVO)</h2>
+  <p>Da Immoskop keine personenbezogenen Daten speichert, gibt es grundsätzlich keine Daten auf die Auskunfts- oder Löschungsrechte anwendbar wären. <span data-t="bei_fragen">Bei Fragen:</span> <a href="/kontakt.html" style="color:var(--red);" data-t="kontakt_link">Kontaktformular</a></p>
+
+  <p style="font-size:12px;color:var(--ink-light);margin-top:24px;">Stand: März 2026.</p>
+</main>
+<footer>
+  <span>© 2026 Immoskop — Zürich, Schweiz</span>
+  <div style="display:flex;gap:20px;">
+    <a href="/ueber-uns.html" style="color:var(--ink-light);text-decoration:none;">Über uns</a>
+    <a href="/datenschutz.html" style="color:var(--ink-light);text-decoration:none;">Datenschutz</a>
+    <a href="/impressum.html" style="color:var(--ink-light);text-decoration:none;">Impressum</a>
+    <a href="/kontakt.html" style="color:var(--ink-light);text-decoration:none;">Kontakt</a>
+  </div>
+</footer><script>
+(function(){
+  var u='hallo',d='immoskop'+'.ch',e=u+'@'+d;
+  var els=document.querySelectorAll('[data-em]');
+  els.forEach(function(el){el.href='mailto:'+e;el.textContent=e;});
+})();
+</script>
+<script>
+window.T = {
+  de: { tag: 'Rechtliches', h1: 'Datenschutz­erklärung', kontakt_link: 'Kontaktformular', footer_copy: '© 2026 Immoskop — Zürich, Schweiz',
+    h2_verantwortlich: 'Verantwortliche Stelle', h2_daten: 'Welche Daten werden verarbeitet?', h2_statistik: 'Anonyme Nutzungsstatistiken',
+    h2_cookies: 'Cookies und Tracking', h2_dritte: 'Drittanbieter', h2_rechte: 'Ihre Rechte (DSG / DSGVO)',
+    bei_fragen: 'Bei Fragen:' },
+  en: { tag: 'Legal', h1: 'Privacy Policy', kontakt_link: 'Contact form', footer_copy: '© 2026 Immoskop — Zurich, Switzerland',
+    h2_verantwortlich: 'Data controller', h2_daten: 'What data is processed?', h2_statistik: 'Anonymous usage statistics',
+    h2_cookies: 'Cookies and tracking', h2_dritte: 'Third-party services', h2_rechte: 'Your rights (FADP / GDPR)',
+    bei_fragen: 'For questions:' },
+  fr: { tag: 'Mentions légales', h1: 'Politique de confidentialité', kontakt_link: 'Formulaire de contact', footer_copy: '© 2026 Immoskop — Zurich, Suisse',
+    h2_verantwortlich: 'Responsable du traitement', h2_daten: 'Quelles données sont traitées ?', h2_statistik: 'Statistiques d’utilisation anonymes',
+    h2_cookies: 'Cookies et suivi', h2_dritte: 'Services tiers', h2_rechte: 'Vos droits (LPD / RGPD)',
+    bei_fragen: 'Pour toute question :' }
+};
+</script><script>
+function setSubLang(lang) {
+  ['de','en','fr'].forEach(l => {
+    const btn = document.getElementById('sl-'+l);
+    if (btn) { btn.style.background = l===lang?'var(--ink)':'none'; btn.style.color=l===lang?'var(--cream)':'#6A6864'; }
+  });
+  document.querySelectorAll('[data-t]').forEach(el => {
+    const t = (window.T||{})[lang]; if(!t) return;
+    const key = el.getAttribute('data-t');
+    if (t[key] !== undefined) el.innerHTML = t[key];
+  });
+  localStorage.setItem('immoskop_lang', lang);
+}
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('immoskop_lang') || (navigator.language||'de').substring(0,2);
+  setSubLang(['de','en','fr'].includes(saved)?saved:'de');
+});
+</script>
+</body>
+</html>
