@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Impressum — Immoskop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--cream:#F5F0E8;--ink:#1A1916;--ink-light:#6A6864;--red:#C8371A;--green:#2D7A4F;--rule:rgba(26,25,22,0.12);--font-display:'DM Serif Display',Georgia,serif;--font-body:'Schibsted Grotesk',sans-serif;--font-mono:'DM Mono',monospace;}
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--cream);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.7;}
+  header{border-bottom:1px solid var(--rule);padding:0 clamp(20px,5vw,80px);display:flex;align-items:center;height:68px;}
+  .logo{text-decoration:none;display:flex;align-items:center;gap:10px;}
+  .logo img{height:52px;}
+  .logo-text{font-family:var(--font-display);font-size:26px;color:var(--ink);}
+  .logo-text em{font-style:italic;color:var(--red);}
+  main{max-width:720px;margin:0 auto;padding:clamp(40px,6vw,80px) clamp(20px,5vw,40px);}
+  .tag{font-family:var(--font-mono);font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--red);margin-bottom:12px;}
+  h1{font-family:var(--font-display);font-size:clamp(28px,5vw,48px);line-height:1.1;letter-spacing:-0.02em;margin-bottom:28px;}
+  h1 em{font-style:italic;color:var(--red);}
+  h2{font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-light);margin:32px 0 8px;}
+  p{margin-bottom:12px;color:#3A3835;}
+  ul{padding-left:20px;margin-bottom:12px;color:#3A3835;}
+  li{margin-bottom:4px;}
+  a{color:var(--red);}
+  .divider{height:1px;background:var(--rule);margin:32px 0;}
+  .highlight{background:white;border:1px solid var(--rule);padding:16px 20px;margin:16px 0;font-size:14px;}
+  footer{border-top:1px solid var(--rule);padding:20px clamp(20px,5vw,80px);font-family:var(--font-mono);font-size:10px;color:var(--ink-light);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:60px;}
+</style>
+</head>
+<body>
+<header>
+  <a href="/" class="logo">
+    <img src="/logo.png" alt="Immoskop">
+    <span class="logo-text">immo<em>skop</em></span>
+  </a>
+</header>
+<main>
+  <div class="tag">Rechtliches</div>
+  <h1>Impressum</h1>
+
+  <h2>Betreiber</h2>
+  <p>Däscher &amp; Partner Immobilien GmbH<br>
+  Cresta 3<br>
+  7415 Pratval<br>
+  Schweiz</p>
+
+  <h2>Kontakt</h2>
+  <p>E-Mail: <a data-em href="#"></a></p>
+
+  <div class="divider"></div>
+
+  <h2>Haftungsausschluss</h2>
+  <p>Die auf Immoskop bereitgestellten Analysen dienen ausschliesslich zur allgemeinen Orientierung. Sie stellen keine Rechts-, Finanz- oder Anlageberatung dar. Die Preisschätzungen basieren auf statistischen Modellen und öffentlich verfügbaren Daten — sie sind keine verbindlichen Bewertungen im Sinne des Schweizer Immobilienrechts.</p>
+
+  <div class="divider"></div>
+
+  <h2>Urheberrecht</h2>
+  <p>Alle Inhalte dieser Website sind urheberrechtlich geschützt. Die verwendeten Datenquellen (BAFU, swisstopo, BFS, OpenStreetMap) stehen unter ihren jeweiligen Lizenzbedingungen.</p>
+</main>
+<footer>
+  <span>© 2025 Immoskop — Zürich, Schweiz</span>
+  <div style="display:flex;gap:20px;">
+    <a href="/ueber-uns.html" style="color:var(--ink-light);text-decoration:none;">Über uns</a>
+    <a href="/datenschutz.html" style="color:var(--ink-light);text-decoration:none;">Datenschutz</a>
+    <a href="/impressum.html" style="color:var(--ink-light);text-decoration:none;">Impressum</a>
+    <a href="/kontakt.html" style="color:var(--ink-light);text-decoration:none;">Kontakt</a>
+  </div>
+</footer><script>
+(function(){
+  var u='hallo',d='immoskop'+'.ch',e=u+'@'+d;
+  var els=document.querySelectorAll('[data-em]');
+  els.forEach(function(el){el.href='mailto:'+e;el.textContent=e;});
+})();
+</script>
+</body>
+</html>
