@@ -1,0 +1,17 @@
+{
+  "rewrites": [
+    { "source": "/checker", "destination": "/checker.html" },
+    { "source": "/kontakt", "destination": "/kontakt.html" },
+    { "source": "/ueber-uns", "destination": "/ueber-uns.html" },
+    { "source": "/datenschutz", "destination": "/datenschutz.html" },
+    { "source": "/impressum", "destination": "/impressum.html" },
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/", "destination": "/index.html" }
+  ],
+  "crons": [
+    {
+      "path": "/api/scrape-flatfox",
+      "schedule": "0 2 * * 0"
+    }
+  ]
+}
