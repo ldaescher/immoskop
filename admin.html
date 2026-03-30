@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Immoskop — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --cream:#F5F0E8; --ink:#1A1916; --ink-light:#6A6864; --red:#C8371A; --green:#2D7A4F; --amber:#A07020; --rule:rgba(26,25,22,0.12); --font-display:'DM Serif Display',Georgia,serif; --font-body:'Schibsted Grotesk',sans-serif; --font-mono:'DM Mono',monospace; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--cream); color: var(--ink); font-family: var(--font-body); font-size: 14px; }
+  header { border-bottom: 1px solid var(--rule); padding: 0 40px; display: flex; align-items: center; justify-content: space-between; height: 56px; }
+  .logo { font-family: var(--font-display); font-size: 20px; }
+  .logo em { font-style: italic; color: var(--red); }
+  .admin-tag { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-light); }
+
+  /* LOGIN */
+  #login-screen { display: flex; align-items: center; justify-content: center; min-height: calc(100vh - 56px); }
+  .login-box { border: 1px solid var(--rule); padding: 40px; background: white; width: 340px; }
+  .login-box h2 { font-family: var(--font-display); font-size: 24px; margin-bottom: 20px; }
+  .login-box input { width: 100%; padding: 10px 12px; border: 1px solid var(--rule); font-family: var(--font-body); font-size: 14px; outline: none; margin-bottom: 12px; }
+  .login-box button { width: 100%; padding: 11px; background: var(--ink); color: var(--cream); border: none; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; }
+
+  /* DASHBOARD */
+  #dashboard { display: none; padding: 32px 40px; max-width: 1400px; margin: 0 auto; }
+  .dash-title { font-family: var(--font-display); font-size: 32px; margin-bottom: 8px; }
+  .dash-sub { font-family: var(--font-mono); font-size: 10px; color: var(--ink-light); letter-spacing: 0.08em; margin-bottom: 32px; }
+
+  /* KPI CARDS */
+  .kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 32px; }
+  .kpi-card { background: white; border: 1px solid var(--rule); padding: 20px; }
+  .kpi-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-light); margin-bottom: 8px; }
+  .kpi-value { font-family: var(--font-display); font-size: 32px; line-height: 1; }
+  .kpi-sub { font-size: 11px; color: var(--ink-light); margin-top: 6px; }
+  .kpi-trend { font-family: var(--font-mono); font-size: 10px; margin-top: 4px; }
+  .trend-up { color: var(--green); }
+  .trend-down { color: var(--red); }
+
+  /* TABLES */
+  .section { margin-bottom: 32px; }
+  .section-header { font-family: var(--font-display); font-size: 20px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--rule); }
+  table { width: 100%; border-collapse: collapse; background: white; border: 1px solid var(--rule); font-size: 13px; }
+  th { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-light); padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--rule); background: var(--cream); }
+  td { padding: 10px 14px; border-bottom: 1px solid rgba(26,25,22,0.06); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(26,25,22,0.02); }
+  .badge { font-family: var(--font-mono); font-size: 9px; padding: 2px 7px; }
+  .badge-red { background: #FDECEA; color: var(--red); }
+  .badge-green { background: #EDF6F0; color: var(--green); }
+  .badge-amber { background: #FEF8EC; color: var(--amber); }
+
+  /* CHARTS */
+  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px; }
+  .chart-card { background: white; border: 1px solid var(--rule); padding: 20px; }
+  .chart-title { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-light); margin-bottom: 16px; }
+  .bar-chart { display: flex; flex-direction: column; gap: 8px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; }
+  .bar-label { font-size: 12px; width: 80px; flex-shrink: 0; color: var(--ink-light); }
+  .bar-track { flex: 1; height: 8px; background: var(--rule); }
+  .bar-fill { height: 100%; transition: width 0.6s ease; }
+  .bar-value { font-family: var(--font-mono); font-size: 10px; color: var(--ink-light); width: 40px; text-align: right; flex-shrink: 0; }
+
+  .refresh-btn { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; padding: 6px 14px; border: 1px solid var(--rule); background: none; color: var(--ink-light); cursor: pointer; margin-left: 12px; }
+  .refresh-btn:hover { background: var(--ink); color: var(--cream); }
+  .loading { color: var(--ink-light); font-family: var(--font-mono); font-size: 11px; padding: 20px 0; }
+</style>
+  <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+
+<header>
+  <div class="logo">immo<em>skop</em> <span style="font-size:14px;color:var(--ink-light);font-family:var(--font-body);">Admin</span></div>
+  <span class="admin-tag">Interne Nutzungsstatistiken</span>
+</header>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <h2>Admin-Zugang</h2>
+    <input type="password" id="pwd-input" placeholder="Passwort" onkeydown="if(event.key==='Enter')login()">
+    <button onclick="login()">Anmelden →</button>
+    <div id="login-error" style="color:var(--red);font-size:12px;margin-top:10px;display:none;">Falsches Passwort.</div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div class="dash-title">Dashboard</div>
+  <div class="dash-sub" id="dash-updated">Wird geladen...</div>
+
+  <!-- KPI CARDS -->
+  <div class="kpi-grid" id="kpi-grid">
+    <div class="kpi-card"><div class="kpi-label">Analysen gesamt</div><div class="kpi-value" id="kpi-total">–</div><div class="kpi-sub" id="kpi-today">heute: –</div></div>
+    <div class="kpi-card"><div class="kpi-label">KI-Reports</div><div class="kpi-value" id="kpi-reports">–</div><div class="kpi-sub" id="kpi-report-rate">Rate: –</div></div>
+    <div class="kpi-card"><div class="kpi-label">Paste-Modus</div><div class="kpi-value" id="kpi-pastes">–</div><div class="kpi-sub" id="kpi-paste-rate">Rate: –</div></div>
+    <div class="kpi-card"><div class="kpi-label">Ø Delta %</div><div class="kpi-value" id="kpi-delta">–</div><div class="kpi-sub">Marktabweichung</div></div>
+    <div class="kpi-card"><div class="kpi-label">Befristete MV</div><div class="kpi-value" id="kpi-befristet">–</div><div class="kpi-sub">erkannt</div></div>
+  </div>
+
+  <!-- CHARTS -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">Analysen nach Typ</div>
+      <div class="bar-chart" id="chart-type"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Preisabweichung Verteilung</div>
+      <div class="bar-chart" id="chart-delta"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Datenqualität</div>
+      <div class="bar-chart" id="chart-quality"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Top PLZ</div>
+      <div id="chart-plz" class="bar-chart"></div>
+    </div>
+  </div>
+
+  <!-- DAILY TABLE -->
+  <div class="section">
+    <div class="section-header">
+      Tagesverlauf
+      <button class="refresh-btn" onclick="loadDashboard()">↻ Aktualisieren</button>
+    </div>
+    <table id="daily-table">
+      <thead><tr><th>Tag</th><th>Analysen</th><th>KI-Reports</th><th>Pastes</th><th>Ø Delta %</th><th>Unique PLZ</th><th>Befristet</th></tr></thead>
+      <tbody id="daily-tbody"><tr><td colspan="7" class="loading">Wird geladen...</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- PLZ TABLE -->
+  <div class="section">
+    <div class="section-header">Top Standorte</div>
+    <table id="plz-table">
+      <thead><tr><th>PLZ</th><th>Stadt</th><th>Analysen</th><th>Ø Delta %</th><th>Überteuert</th><th>Günstig</th></tr></thead>
+      <tbody id="plz-tbody"><tr><td colspan="6" class="loading">Wird geladen...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// Simple password check (client-side, for basic protection)
+// For production: use Vercel password protection or a proper auth
+const ADMIN_PWD_HASH = 'immoskop2025admin'; // Change this!
+
+function login() {
+  const pwd = document.getElementById('pwd-input').value;
+  if (pwd === ADMIN_PWD_HASH) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    loadDashboard();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+document.getElementById('pwd-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') login();
+});
+
+const SUPABASE_URL = 'https://clwdxufyeiznyhrfrysl.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsd2R4dWZ5ZWl6bnlocmZyeXNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI5MDQ1MDQsImV4cCI6MjA1ODQ4MDUwNH0.mMCHyaIsnYVWjXjeFzxCqvmM8cZ13dn_NR4x9Kxr_TI';
+
+async function query(endpoint) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, {
+    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+  });
+  return r.json();
+}
+
+function bar(label, value, max, color='#1A1916') {
+  const pct = max > 0 ? Math.round(value/max*100) : 0;
+  return `<div class="bar-row">
+    <div class="bar-label">${label}</div>
+    <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color};"></div></div>
+    <div class="bar-value">${value}</div>
+  </div>`;
+}
+
+function deltaColor(d) { return d > 10 ? 'var(--red)' : d < -10 ? 'var(--green)' : 'var(--amber)'; }
+function deltaBadge(d) {
+  if (d === null || d === undefined) return '–';
+  const cls = d > 10 ? 'badge-red' : d < -10 ? 'badge-green' : 'badge-amber';
+  const sign = d > 0 ? '+' : '';
+  return `<span class="badge ${cls}">${sign}${d}%</span>`;
+}
+
+async function loadDashboard() {
+  document.getElementById('dash-updated').textContent = `Aktualisiert: ${new Date().toLocaleString('de-CH')}`;
+
+  try {
+    // Load all events
+    const events = await query('analytics_events?select=*&order=ts.desc&limit=1000');
+
+    if (!Array.isArray(events) || events.length === 0) {
+      document.getElementById('daily-tbody').innerHTML = '<tr><td colspan="7" style="color:var(--ink-light);padding:20px;">Noch keine Daten vorhanden.</td></tr>';
+      document.getElementById('plz-tbody').innerHTML = '<tr><td colspan="6" style="color:var(--ink-light);padding:20px;">Noch keine Daten vorhanden.</td></tr>';
+      ['kpi-total','kpi-reports','kpi-pastes','kpi-delta','kpi-befristet'].forEach(id => document.getElementById(id).textContent = '0');
+      return;
+    }
+
+    const analyses = events.filter(e => e.event_type === 'analysis');
+    const reports = events.filter(e => e.event_type === 'report');
+    const pastes = events.filter(e => e.event_type === 'parse');
+    const befristet = analyses.filter(e => e.befristet);
+    const today = new Date().toISOString().slice(0,10);
+    const todayCount = analyses.filter(e => e.ts?.slice(0,10) === today).length;
+    const avgDelta = analyses.length ? Math.round(analyses.reduce((s,e) => s + (e.delta_pct||0), 0) / analyses.length) : 0;
+
+    // KPIs
+    document.getElementById('kpi-total').textContent = analyses.length;
+    document.getElementById('kpi-today').textContent = `heute: ${todayCount}`;
+    document.getElementById('kpi-reports').textContent = reports.length;
+    document.getElementById('kpi-report-rate').textContent = `Rate: ${analyses.length ? Math.round(reports.length/analyses.length*100) : 0}%`;
+    document.getElementById('kpi-pastes').textContent = pastes.length;
+    document.getElementById('kpi-paste-rate').textContent = `Rate: ${analyses.length ? Math.round(analyses.filter(e=>e.used_paste).length/analyses.length*100) : 0}%`;
+    document.getElementById('kpi-delta').textContent = (avgDelta > 0 ? '+' : '') + avgDelta + '%';
+    document.getElementById('kpi-befristet').textContent = befristet.length;
+
+    // Chart: Type
+    const miete = analyses.filter(e => e.listing_type === 'miete').length;
+    const kauf = analyses.filter(e => e.listing_type === 'kauf').length;
+    const wohnung = analyses.filter(e => e.property_kind === 'wohnung').length;
+    const haus = analyses.filter(e => e.property_kind === 'haus').length;
+    const maxType = Math.max(miete, kauf, wohnung, haus, 1);
+    document.getElementById('chart-type').innerHTML =
+      bar('Miete', miete, maxType, '#1A1916') +
+      bar('Kauf', kauf, maxType, '#C8371A') +
+      bar('Wohnung', wohnung, maxType, '#2D7A4F') +
+      bar('Haus', haus, maxType, '#A07020');
+
+    // Chart: Delta distribution
+    const under = analyses.filter(e => e.delta_pct < -10).length;
+    const fair = analyses.filter(e => e.delta_pct >= -10 && e.delta_pct <= 10).length;
+    const over = analyses.filter(e => e.delta_pct > 10).length;
+    const maxD = Math.max(under, fair, over, 1);
+    document.getElementById('chart-delta').innerHTML =
+      bar('Günstig (<−10%)', under, maxD, '#2D7A4F') +
+      bar('Fair (±10%)', fair, maxD, '#A07020') +
+      bar('Überteuert (>10%)', over, maxD, '#C8371A');
+
+    // Chart: Data quality
+    const hasBafu = analyses.filter(e => e.has_bafu_noise).length;
+    const hasSolar = analyses.filter(e => e.has_solar).length;
+    const hasStreet = analyses.filter(e => e.has_street_data).length;
+    const maxQ = Math.max(analyses.length, 1);
+    document.getElementById('chart-quality').innerHTML =
+      bar('BAFU Lärm', hasBafu, maxQ, '#1A1916') +
+      bar('Solar', hasSolar, maxQ, '#1A1916') +
+      bar('Strassendaten', hasStreet, maxQ, '#1A1916');
+
+    // Chart: Top PLZ
+    const plzCount = {};
+    analyses.forEach(e => { if (e.plz) plzCount[e.plz] = (plzCount[e.plz]||0) + 1; });
+    const topPlz = Object.entries(plzCount).sort((a,b)=>b[1]-a[1]).slice(0,6);
+    const maxP = topPlz.length ? topPlz[0][1] : 1;
+    document.getElementById('chart-plz').innerHTML = topPlz.map(([p,c]) => bar(p, c, maxP, '#C8371A')).join('');
+
+    // Daily table
+    const byDay = {};
+    events.forEach(e => {
+      const day = e.ts?.slice(0,10);
+      if (!day) return;
+      if (!byDay[day]) byDay[day] = {analyses:0,reports:0,pastes:0,deltas:[],plzs:new Set(),befristet:0};
+      if (e.event_type === 'analysis') { byDay[day].analyses++; if(e.delta_pct!==null) byDay[day].deltas.push(e.delta_pct); if(e.plz) byDay[day].plzs.add(e.plz); if(e.befristet) byDay[day].befristet++; }
+      if (e.event_type === 'report') byDay[day].reports++;
+      if (e.event_type === 'parse') byDay[day].pastes++;
+    });
+    const days = Object.keys(byDay).sort().reverse().slice(0,14);
+    document.getElementById('daily-tbody').innerHTML = days.length ? days.map(day => {
+      const d = byDay[day];
+      const avg = d.deltas.length ? Math.round(d.deltas.reduce((a,b)=>a+b,0)/d.deltas.length) : null;
+      return `<tr>
+        <td style="font-family:var(--font-mono);font-size:11px;">${day}</td>
+        <td>${d.analyses}</td>
+        <td>${d.reports}</td>
+        <td>${d.pastes}</td>
+        <td>${deltaBadge(avg)}</td>
+        <td>${d.plzs.size}</td>
+        <td>${d.befristet > 0 ? `<span class="badge badge-red">${d.befristet}</span>` : '–'}</td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="7" style="color:var(--ink-light);">Keine Daten</td></tr>';
+
+    // PLZ table
+    const plzData = {};
+    analyses.forEach(e => {
+      if (!e.plz) return;
+      if (!plzData[e.plz]) plzData[e.plz] = {city: e.city||'–', count:0, deltas:[], over:0, under:0};
+      plzData[e.plz].count++;
+      if (e.delta_pct !== null) { plzData[e.plz].deltas.push(e.delta_pct); if(e.delta_pct>10) plzData[e.plz].over++; if(e.delta_pct<-10) plzData[e.plz].under++; }
+    });
+    const sortedPlz = Object.entries(plzData).sort((a,b)=>b[1].count-a[1].count).slice(0,20);
+    document.getElementById('plz-tbody').innerHTML = sortedPlz.length ? sortedPlz.map(([plz, d]) => {
+      const avg = d.deltas.length ? Math.round(d.deltas.reduce((a,b)=>a+b,0)/d.deltas.length) : null;
+      return `<tr>
+        <td style="font-family:var(--font-mono);">${plz}</td>
+        <td>${d.city}</td>
+        <td>${d.count}</td>
+        <td>${deltaBadge(avg)}</td>
+        <td>${d.over > 0 ? `<span class="badge badge-red">${d.over}</span>` : '–'}</td>
+        <td>${d.under > 0 ? `<span class="badge badge-green">${d.under}</span>` : '–'}</td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="6" style="color:var(--ink-light);">Keine Daten</td></tr>';
+
+  } catch(err) {
+    console.error('Dashboard error:', err);
+    document.getElementById('daily-tbody').innerHTML = `<tr><td colspan="7" style="color:var(--red);">Fehler: ${err.message}</td></tr>`;
+  }
+}
+</script>
+</body>
+</html>

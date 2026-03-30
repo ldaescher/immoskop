@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kontakt — Immoskop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--cream:#F5F0E8;--ink:#1A1916;--ink-light:#6A6864;--red:#C8371A;--green:#2D7A4F;--rule:rgba(26,25,22,0.12);--font-display:'DM Serif Display',Georgia,serif;--font-body:'Schibsted Grotesk',sans-serif;--font-mono:'DM Mono',monospace;}
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--cream);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.7;}
+  header{border-bottom:1px solid var(--rule);padding:0 clamp(20px,5vw,80px);display:flex;align-items:center;height:68px;}
+  .logo{text-decoration:none;display:flex;align-items:center;gap:10px;}
+  .logo img{height:52px;}
+  .logo-text{font-family:var(--font-display);font-size:26px;color:var(--ink);}
+  .logo-text em{font-style:italic;color:var(--red);}
+  main{max-width:720px;margin:0 auto;padding:clamp(40px,6vw,80px) clamp(20px,5vw,40px);}
+  .tag{font-family:var(--font-mono);font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--red);margin-bottom:12px;}
+  h1{font-family:var(--font-display);font-size:clamp(28px,5vw,48px);line-height:1.1;letter-spacing:-0.02em;margin-bottom:28px;}
+  h1 em{font-style:italic;color:var(--red);}
+  h2{font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-light);margin:32px 0 8px;}
+  p{margin-bottom:12px;color:#3A3835;}
+  ul{padding-left:20px;margin-bottom:12px;color:#3A3835;}
+  li{margin-bottom:4px;}
+  a{color:var(--red);}
+  .divider{height:1px;background:var(--rule);margin:32px 0;}
+  .highlight{background:white;border:1px solid var(--rule);padding:16px 20px;margin:16px 0;font-size:14px;}
+  footer{border-top:1px solid var(--rule);padding:20px clamp(20px,5vw,80px);font-family:var(--font-mono);font-size:10px;color:var(--ink-light);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:60px;}
+</style>
+  <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+<header>
+  <a href="/" class="logo">
+    <img src="/logo.png" alt="Immoskop">
+    <span class="logo-text">immo<em>skop</em></span>
+  </a>
+</header>
+<style>
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:600px){.form-grid{grid-template-columns:1fr;}}
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-light);margin-bottom:6px;}
+  .field input,.field select,.field textarea{width:100%;padding:11px 14px;border:1px solid var(--rule);background:white;font-family:var(--font-body);font-size:14px;color:var(--ink);outline:none;transition:border-color 0.15s;}
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--ink);}
+  .field textarea{resize:vertical;min-height:140px;}
+  .btn-send{padding:14px 32px;background:var(--ink);color:var(--cream);border:none;font-family:var(--font-mono);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;transition:background 0.2s;}
+  .btn-send:hover{background:var(--red);}
+  .btn-send:disabled{opacity:0.5;cursor:not-allowed;}
+  .success{display:none;background:#EDF6F0;border:1px solid rgba(45,122,79,0.25);padding:20px 24px;margin-top:24px;}
+  .success strong{font-family:var(--font-display);font-size:20px;color:var(--green);display:block;margin-bottom:6px;}
+  .contact-cards{display:flex;gap:16px;flex-wrap:wrap;margin-top:40px;}
+  .contact-card{flex:1;min-width:180px;background:white;border:1px solid var(--rule);padding:18px 20px;}
+  .contact-card .lbl{font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-light);margin-bottom:8px;}
+</style>
+<main>
+  <div class="tag">Kontakt</div>
+  <h1>Schreiben Sie <em>uns.</em></h1>
+  <p style="color:var(--ink-light);margin-bottom:32px;">Fragen, Feedback, Fehler oder Medienanfragen — wir freuen uns über Ihre Nachricht.</p>
+
+  <form id="cf" onsubmit="sendForm(event)">
+    <div class="form-grid">
+      <div class="field"><label>Name</label><input type="text" id="f-name" placeholder="Max Muster" required></div>
+      <div class="field"><label>E-Mail</label><input type="email" id="f-email" placeholder="max@beispiel.ch" required></div>
+    </div>
+    <div class="field">
+      <label>Betreff</label>
+      <select id="f-betreff">
+        <option value="Feedback">Feedback / Verbesserungsvorschlag</option>
+        <option value="Fehler">Fehler melden</option>
+        <option value="Presse">Medienanfrage / Presse</option>
+        <option value="Datenschutz">Datenschutzanfrage</option>
+        <option value="Sonstiges">Sonstiges</option>
+      </select>
+    </div>
+    <div class="field"><label>Nachricht</label><textarea id="f-msg" required></textarea></div>
+    <button type="submit" class="btn-send" id="f-btn">Nachricht senden →</button>
+  </form>
+
+  <div class="success" id="f-success">
+    <strong>Nachricht erhalten.</strong>
+    <span>Vielen Dank — wir melden uns so bald wie möglich.</span>
+  </div>
+
+  <div class="contact-cards">
+    <div class="contact-card"><div class="lbl">E-Mail</div><a data-em href="#"></a></div>
+    <div class="contact-card"><div class="lbl">Standort</div><span>Zürich, Schweiz</span></div>
+    <div class="contact-card"><div class="lbl">Antwortzeit</div><span>1–2 Werktage</span></div>
+  </div>
+</main>
+<footer>
+  <span>© 2025 Immoskop — Zürich, Schweiz</span>
+  <div style="display:flex;gap:20px;">
+    <a href="/ueber-uns.html" style="color:var(--ink-light);text-decoration:none;">Über uns</a>
+    <a href="/datenschutz.html" style="color:var(--ink-light);text-decoration:none;">Datenschutz</a>
+    <a href="/impressum.html" style="color:var(--ink-light);text-decoration:none;">Impressum</a>
+    <a href="/kontakt.html" style="color:var(--ink-light);text-decoration:none;">Kontakt</a>
+  </div>
+</footer>
+<script>
+(function(){
+  var u='hallo',d='immoskop'+'.ch',e=u+'@'+d;
+  document.querySelectorAll('[data-em]').forEach(function(el){el.href='mailto:'+e;el.textContent=e;});
+})();
+
+function sendForm(ev) {
+  ev.preventDefault();
+  var btn = document.getElementById('f-btn');
+  btn.disabled = true; btn.textContent = 'Wird gesendet...';
+  var u='hallo',d='immoskop'+'.ch',em=u+'@'+d;
+  var name = document.getElementById('f-name').value;
+  var email = document.getElementById('f-email').value;
+  var betreff = document.getElementById('f-betreff').value;
+  var msg = document.getElementById('f-msg').value;
+  var sub = encodeURIComponent('Immoskop Kontakt: ' + betreff);
+  var body = encodeURIComponent('Name: ' + name + '\nE-Mail: ' + email + '\n\n' + msg);
+  window.location.href = 'mailto:' + em + '?subject=' + sub + '&body=' + body;
+  document.getElementById('cf').style.display = 'none';
+  document.getElementById('f-success').style.display = 'block';
+}
+</script>
+</body>
+</html>
