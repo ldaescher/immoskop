@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kontakt — Immoskop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --cream:#F5F0E8; --ink:#1A1916; --ink-light:#6A6864; --red:#C8371A; --green:#2D7A4F; --rule:rgba(26,25,22,0.12); --font-display:'DM Serif Display',Georgia,serif; --font-body:'Schibsted Grotesk',sans-serif; --font-mono:'DM Mono',monospace; }
+  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--cream); color:var(--ink); font-family:var(--font-body); font-size:15px; line-height:1.7; }
+  header { border-bottom:1px solid var(--rule); padding:0 clamp(20px,5vw,80px); display:flex; align-items:center; height:68px; }
+  .logo { text-decoration:none; display:flex; align-items:center; gap:10px; }
+  .logo img { height:52px; }
+  .logo span { font-family:var(--font-display); font-size:26px; color:var(--ink); }
+  .logo em { font-style:italic; color:var(--red); }
+  main { max-width:720px; margin:0 auto; padding:clamp(40px,6vw,80px) clamp(20px,5vw,40px); }
+  .tag { font-family:var(--font-mono); font-size:10px; letter-spacing:0.16em; text-transform:uppercase; color:var(--red); margin-bottom:12px; }
+  h1 { font-family:var(--font-display); font-size:clamp(32px,5vw,52px); line-height:1.1; letter-spacing:-0.02em; margin-bottom:12px; }
+  h1 em { font-style:italic; color:var(--red); }
+  .sub { color:var(--ink-light); margin-bottom:40px; font-size:15px; }
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media(max-width:600px) { .form-grid { grid-template-columns:1fr; } }
+  .field { margin-bottom:16px; }
+  .field label { display:block; font-family:var(--font-mono); font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink-light); margin-bottom:6px; }
+  .field input, .field select, .field textarea {
+    width:100%; padding:11px 14px; border:1px solid var(--rule);
+    background:white; font-family:var(--font-body); font-size:14px;
+    color:var(--ink); outline:none; border-radius:0;
+    transition:border-color 0.15s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color:var(--ink); }
+  .field textarea { resize:vertical; min-height:140px; }
+  .btn-submit {
+    padding:14px 32px; background:var(--ink); color:var(--cream);
+    border:none; font-family:var(--font-mono); font-size:11px;
+    letter-spacing:0.12em; text-transform:uppercase; cursor:pointer;
+    transition:background 0.2s; margin-top:8px;
+  }
+  .btn-submit:hover { background:var(--red); }
+  .btn-submit:disabled { opacity:0.5; cursor:not-allowed; }
+  .success-box { display:none; background:#EDF6F0; border:1px solid rgba(45,122,79,0.25); padding:20px 24px; margin-top:24px; }
+  .success-box .title { font-family:var(--font-display); font-size:20px; color:var(--green); margin-bottom:6px; }
+  .success-box p { font-size:14px; color:var(--green); }
+  .error-box { display:none; background:#FDECEA; border:1px solid rgba(200,55,26,0.25); padding:12px 16px; margin-top:12px; font-size:13px; color:var(--red); }
+  .divider { height:1px; background:var(--rule); margin:40px 0; }
+  .direct-contact { display:flex; gap:24px; flex-wrap:wrap; }
+  .contact-card { flex:1; min-width:200px; background:white; border:1px solid var(--rule); padding:20px 24px; }
+  .contact-card .label { font-family:var(--font-mono); font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink-light); margin-bottom:8px; }
+  .contact-card a { color:var(--red); text-decoration:none; font-size:15px; }
+  .contact-card a:hover { text-decoration:underline; }
+  footer { border-top:1px solid var(--rule); padding:20px clamp(20px,5vw,80px); font-family:var(--font-mono); font-size:10px; color:var(--ink-light); display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-top:80px; }
+  footer a { color:var(--ink-light); text-decoration:none; }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="/" class="logo">
+    <img src="/logo.png" alt="Immoskop">
+    <span>immo<em>skop</em></span>
+  </a>
+</header>
+
+<main>
+  <div class="tag">Kontakt</div>
+  <h1>Schreiben Sie <em>uns.</em></h1>
+  <p class="sub">Fragen, Feedback, Fehler oder Medienanfragen — wir freuen uns über Ihre Nachricht.</p>
+
+  <!-- KONTAKTFORMULAR -->
+  <form id="contact-form" onsubmit="submitForm(event)">
+    <div class="form-grid">
+      <div class="field">
+        <label for="name">Name</label>
+        <input type="text" id="name" name="name" placeholder="Max Muster" required>
+      </div>
+      <div class="field">
+        <label for="email">E-Mail</label>
+        <input type="email" id="email" name="email" placeholder="max@beispiel.ch" required>
+      </div>
+    </div>
+    <div class="field">
+      <label for="betreff">Betreff</label>
+      <select id="betreff" name="betreff">
+        <option value="feedback">Feedback / Verbesserungsvorschlag</option>
+        <option value="fehler">Fehler melden</option>
+        <option value="presse">Medienanfrage / Presse</option>
+        <option value="datenschutz">Datenschutzanfrage</option>
+        <option value="sonstiges">Sonstiges</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="nachricht">Nachricht</label>
+      <textarea id="nachricht" name="nachricht" placeholder="Ihre Nachricht..." required></textarea>
+    </div>
+    <button type="submit" class="btn-submit" id="btn-submit">Nachricht senden →</button>
+    <div class="error-box" id="error-box">Fehler beim Senden. Bitte versuchen Sie es erneut oder schreiben Sie direkt an hallo@immoskop.ch.</div>
+  </form>
+
+  <div class="success-box" id="success-box">
+    <div class="title">Nachricht erhalten.</div>
+    <p>Vielen Dank — wir melden uns so bald wie möglich bei Ihnen.</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="direct-contact">
+    <div class="contact-card">
+      <div class="label">E-Mail</div>
+      <a href="mailto:hallo@immoskop.ch">hallo@immoskop.ch</a>
+    </div>
+    <div class="contact-card">
+      <div class="label">Standort</div>
+      <span style="font-size:15px;color:var(--ink);">Zürich, Schweiz</span>
+    </div>
+    <div class="contact-card">
+      <div class="label">Antwortzeit</div>
+      <span style="font-size:15px;color:var(--ink);">In der Regel 1–2 Werktage</span>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <span>© 2025 Immoskop — Zürich, Schweiz</span>
+  <div style="display:flex;gap:20px;">
+    <a href="/ueber-uns.html">Über uns</a>
+    <a href="/datenschutz.html">Datenschutz</a>
+    <a href="/impressum.html">Impressum</a>
+    <a href="/kontakt.html">Kontakt</a>
+  </div>
+</footer>
+
+<script>
+async function submitForm(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btn-submit');
+  const errBox = document.getElementById('error-box');
+  const successBox = document.getElementById('success-box');
+  errBox.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Wird gesendet...';
+
+  const name = document.getElementById('name').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const betreff = document.getElementById('betreff').value;
+  const nachricht = document.getElementById('nachricht').value.trim();
+
+  // Send via mailto fallback (no backend needed)
+  // For production: replace with a form service like Formspree or EmailJS
+  const subject = encodeURIComponent(`Immoskop Kontakt: ${betreff}`);
+  const body = encodeURIComponent(`Name: ${name}\nE-Mail: ${email}\nBetreff: ${betreff}\n\n${nachricht}`);
+
+  try {
+    // Try Formspree if configured, otherwise mailto fallback
+    const FORMSPREE_ID = ''; // Optional: Formspree ID eintragen (https://formspree.io)
+
+    if (FORMSPREE_ID) {
+      const res = await fetch(`https://formspree.io/f/${FORMSPREE_ID}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ name, email, betreff, nachricht })
+      });
+      if (!res.ok) throw new Error('Formspree error');
+    } else {
+      // Mailto fallback
+      window.location.href = `mailto:hallo@immoskop.ch?subject=${subject}&body=${body}`;
+    }
+
+    document.getElementById('contact-form').style.display = 'none';
+    successBox.style.display = 'block';
+  } catch(err) {
+    errBox.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Nachricht senden →';
+  }
+}
+</script>
+
+</body>
+</html>
