@@ -1,0 +1,71 @@
+{
+  "outputDirectory": ".",
+  "routes": [
+    {
+      "src": "/checker",
+      "dest": "/checker.html"
+    },
+    {
+      "src": "/kontakt",
+      "dest": "/kontakt.html"
+    },
+    {
+      "src": "/ueber-uns",
+      "dest": "/ueber-uns.html"
+    },
+    {
+      "src": "/datenschutz",
+      "dest": "/datenschutz.html"
+    },
+    {
+      "src": "/impressum",
+      "dest": "/impressum.html"
+    },
+    {
+      "src": "/admin",
+      "dest": "/admin.html"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*\\.html)",
+      "dest": "/$1"
+    },
+    {
+      "src": "/(.*\\.png|.*\\.ico|.*\\.css|.*\\.js)",
+      "dest": "/$1"
+    },
+    {
+      "src": "/",
+      "dest": "/index.html"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/scrape-flatfox",
+      "schedule": "0 2 * * 0"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/sitemap.xml",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/xml; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "source": "/robots.txt",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        }
+      ]
+    }
+  ]
+}
