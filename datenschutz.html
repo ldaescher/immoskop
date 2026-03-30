@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Datenschutz — Immoskop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --cream:#F5F0E8; --ink:#1A1916; --ink-light:#6A6864; --red:#C8371A; --rule:rgba(26,25,22,0.12); --font-display:'DM Serif Display',Georgia,serif; --font-body:'Schibsted Grotesk',sans-serif; --font-mono:'DM Mono',monospace; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--cream); color:var(--ink); font-family:var(--font-body); font-size:15px; line-height:1.7; }
+  header { border-bottom:1px solid var(--rule); padding:0 clamp(20px,5vw,80px); display:flex; align-items:center; height:68px; }
+  .logo { text-decoration:none; display:flex; align-items:center; gap:10px; }
+  .logo img { height:52px; }
+  .logo span { font-family:var(--font-display); font-size:26px; color:var(--ink); }
+  .logo em { font-style:italic; color:var(--red); }
+  main { max-width:720px; margin:0 auto; padding:clamp(40px,6vw,80px) clamp(20px,5vw,40px); }
+  .tag { font-family:var(--font-mono); font-size:10px; letter-spacing:0.16em; text-transform:uppercase; color:var(--red); margin-bottom:12px; }
+  h1 { font-family:var(--font-display); font-size:clamp(28px,4vw,44px); margin-bottom:32px; }
+  h2 { font-family:var(--font-mono); font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink-light); margin:32px 0 8px; }
+  p { margin-bottom:12px; color:#3A3835; }
+  ul { padding-left:20px; margin-bottom:12px; color:#3A3835; }
+  li { margin-bottom:4px; }
+  .divider { height:1px; background:var(--rule); margin:32px 0; }
+  .highlight { background:white; border:1px solid var(--rule); padding:16px 20px; margin:16px 0; font-size:14px; }
+  footer { border-top:1px solid var(--rule); padding:20px clamp(20px,5vw,80px); font-family:var(--font-mono); font-size:10px; color:var(--ink-light); display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+  footer a { color:var(--ink-light); text-decoration:none; }
+</style>
+</head>
+<body>
+<header>
+  <a href="/" class="logo">
+    <img src="/logo.png" alt="Immoskop">
+    <span>immo<em>skop</em></span>
+  </a>
+</header>
+<main>
+  <div class="tag">Rechtliches</div>
+  <h1>Datenschutzerklärung</h1>
+
+  <div class="highlight">
+    <strong>Kurzfassung:</strong> Immoskop speichert keine personenbezogenen Daten. Keine Cookies, kein Tracking, keine Weitergabe an Dritte. Die eingegebenen Adressen werden nur für die Dauer der Analyse verarbeitet und nicht gespeichert.
+  </div>
+
+  <h2>Verantwortliche Stelle</h2>
+  <p>[Name / Firma], [Adresse], [PLZ Ort], <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="9df5fcf1f1f2ddf4f0f0f2eef6f2edb3fef5">[email&#160;protected]</a></p>
+
+  <div class="divider"></div>
+
+  <h2>Welche Daten werden verarbeitet?</h2>
+  <p>Bei jeder Analyse werden folgende Daten temporär verarbeitet:</p>
+  <ul>
+    <li>Die eingegebene Adresse (für die Geocodierung, Hausnummer wird nicht gespeichert)</li>
+    <li>Formularangaben (Preis, Fläche, Zimmer etc.) — nur für die Berechnung</li>
+    <li>Allfällig eingefügter Inseratstext — nur für die KI-Analyse</li>
+  </ul>
+  <p>Die vollständige Adresse (mit Hausnummer) wird nicht gespeichert und nur für die Dauer der Analyse im Arbeitsspeicher gehalten.</p>
+
+  <div class="divider"></div>
+
+  <h2>Anonyme Nutzungsstatistiken</h2>
+  <p>Immoskop erfasst anonyme Nutzungsstatistiken zur Verbesserung der Marktdatenbank und des Dienstes. Diese enthalten:</p>
+  <ul>
+    <li>Strassenname <strong>ohne Hausnummer</strong> sowie PLZ und Gemeinde</li>
+    <li>Objekttyp, Zimmeranzahl, Fläche</li>
+    <li>Prozentuale Abweichung vom Marktpreis</li>
+    <li>Ob BAFU-Lärmdaten, Solar- oder Strassendaten vorhanden waren</li>
+  </ul>
+  <p>Strassennamen ohne Hausnummer sind öffentliche Infrastruktur und nicht auf einzelne Personen zurückführbar. Es werden keine IP-Adressen, keine vollständigen Adressen und keine personenbezogenen Angaben gespeichert.</p>
+
+  <div class="divider"></div>
+
+  <h2>Cookies und Tracking</h2>
+  <p>Immoskop verwendet keine Cookies und kein Cross-Site-Tracking. Es werden keine Daten an Werbenetzwerke oder Social-Media-Plattformen weitergegeben.</p>
+
+  <div class="divider"></div>
+
+  <h2>Drittanbieter</h2>
+  <p>Für die Analyse werden folgende externe Dienste aufgerufen:</p>
+  <ul>
+    <li><strong>swisstopo API</strong> — Geocodierung (Adresse → Koordinaten). Datenschutzerklärung: geo.admin.ch</li>
+    <li><strong>BAFU WMS</strong> — Lärmdaten. Betrieben durch den Bund.</li>
+    <li><strong>Geoapify</strong> — Umgebungsdaten (ÖV, Amenities). Datenschutzerklärung: geoapify.com</li>
+    <li><strong>Anthropic Claude API</strong> — KI-Analyse. Datenschutzerklärung: anthropic.com</li>
+  </ul>
+  <p>Diese Dienste erhalten ausschliesslich die für die jeweilige Funktion notwendigen Koordinaten oder Texte. Keine personenbezogenen Daten werden weitergegeben.</p>
+
+  <div class="divider"></div>
+
+  <h2>Ihre Rechte (DSG / DSGVO)</h2>
+  <p>Da Immoskop keine personenbezogenen Daten speichert, gibt es grundsätzlich keine personenbezogenen Daten, auf die Auskunfts-, Berichtigungs- oder Löschungsrechte angewendet werden könnten. Bei Fragen wenden Sie sich an <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="761e171a1a19361f1b1b19051d190658151e">[email&#160;protected]</a>.</p>
+
+  <div class="divider"></div>
+  <p style="font-size:12px;color:var(--ink-light);">Stand: März 2025. Änderungen vorbehalten.</p>
+</main>
+<footer>
+  <span>© 2025 Immoskop — Zürich, Schweiz</span>
+  <div style="display
