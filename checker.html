@@ -505,9 +505,8 @@
           <!-- Market Band -->
           <div class="market-band" id="market-band">
             <div class="market-band-label">Markteinordnung</div>
-            <div style="position:relative;padding-top:28px;">
-              <div class="band-obj-label" id="band-obj-label" style="left:50%">Dieses Objekt</div>
-              <div class="band-ref-label" style="left:50%">Marktpreis</div>
+            <div style="position:relative;padding-top:22px;">
+              <div class="band-obj-label" id="band-obj-label" style="left:50%;max-width:90px;text-align:center;">Dieses Objekt</div>
               <div class="band-track">
                 <div class="band-ref-line"></div>
                 <div class="band-obj-marker" id="band-obj-marker" style="left:50%"></div>
@@ -1087,7 +1086,7 @@ async function runAnalysis() {
       <div class="checklist-sub">Basierend auf Preis, Lage und den Angaben im Inserat.</div>
       <div class="checklist-items">${checkItems.map(i=>{
         const prio=isPriority(i); const txt=prio?i.substring(2):i;
-        return `<div class="checklist-item${prio?' priority':''}"><div class="check-icon"></div>${txt}</div>`;
+        return `<div class="checklist-item"><div class="check-icon"></div>${txt}</div>`;
       }).join('')}</div>`;
 
     document.getElementById('sources-row').innerHTML =
