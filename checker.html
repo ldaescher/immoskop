@@ -1,0 +1,1342 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Immoskop — Adress-Analyse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #F5F0E8; --ink: #1A1916; --ink-mid: #3A3835; --ink-light: #6A6864;
+    --red: #C8371A; --green: #2D7A4F; --amber: #A07020;
+    --rule: rgba(26,25,22,0.12); --card-bg: #FFFFFF;
+    --font-display: 'DM Serif Display', Georgia, serif;
+    --font-body: 'Schibsted Grotesk', Helvetica, sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--cream); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.6; min-height: 100vh; }
+  header { border-bottom: 1px solid var(--rule); padding: 0 clamp(20px,4vw,60px); display: flex; align-items: center; justify-content: space-between; height: 52px; background: var(--cream); position: sticky; top: 0; z-index: 50; }
+  .header-tag { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; color: var(--ink-light); text-transform: uppercase; }
+  .page { max-width: 1100px; margin: 0 auto; padding: clamp(32px,5vw,64px) clamp(20px,4vw,60px); }
+  .page-title { font-family: var(--font-display); font-size: clamp(36px,5vw,68px); line-height: 1; letter-spacing: -0.02em; margin-bottom: 8px; }
+  .page-title em { font-style: italic; color: var(--red); }
+  .page-sub { font-size: 15px; color: var(--ink-light); margin-bottom: 40px; max-width: 540px; }
+  .layout { display: grid; grid-template-columns: 380px 1fr; gap: 32px; align-items: start; }
+  @media(max-width:860px){ .layout { grid-template-columns: 1fr; } }
+  .input-panel { background: var(--ink); color: var(--cream); padding: 28px; position: sticky; top: 68px; }
+  .panel-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(245,240,232,0.35); margin-bottom: 20px; }
+  .field { margin-bottom: 16px; }
+  .field-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(245,240,232,0.4); margin-bottom: 7px; }
+  .field input, .field select { width: 100%; background: rgba(245,240,232,0.07); border: 1px solid rgba(245,240,232,0.14); color: var(--cream); padding: 10px 12px; font-family: var(--font-body); font-size: 14px; outline: none; transition: border-color 0.2s; border-radius: 0; }
+  .field input:focus, .field select:focus { border-color: rgba(245,240,232,0.4); }
+  .field input::placeholder { color: rgba(245,240,232,0.22); }
+  .field select option { background: #1A1916; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .btn-analyse { width: 100%; margin-top: 6px; padding: 13px; background: var(--red); color: var(--cream); border: none; font-family: var(--font-body); font-size: 14px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: opacity 0.2s; }
+  .btn-analyse:hover { opacity: 0.88; }
+  .btn-analyse:disabled { opacity: 0.45; cursor: not-allowed; }
+  .api-note { font-family: var(--font-mono); font-size: 10px; color: rgba(245,240,232,0.25); margin-top: 14px; line-height: 1.6; }
+  .autocomplete-wrap { position: relative; }
+  .autocomplete-list { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #2A2926; border: 1px solid rgba(245,240,232,0.2); z-index: 100; max-height: 200px; overflow-y: auto; display: none; }
+  .autocomplete-item { padding: 9px 12px; font-size: 13px; color: var(--cream); cursor: pointer; border-bottom: 1px solid rgba(245,240,232,0.08); }
+  .autocomplete-item:hover { background: rgba(245,240,232,0.1); }
+  .status-bar { display: none; align-items: center; gap: 10px; padding: 12px 16px; background: var(--card-bg); border: 1px solid var(--rule); margin-bottom: 24px; font-family: var(--font-mono); font-size: 11px; color: var(--ink-light); }
+  .status-bar.visible { display: flex; }
+  .spinner { width: 14px; height: 14px; border: 2px solid var(--rule); border-top-color: var(--red); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .results { display: none; }
+  .results.visible { display: block; }
+  .error-box { background: #FDECEA; border: 1px solid rgba(200,55,26,0.25); padding: 16px 20px; font-size: 14px; color: var(--red); display: none; margin-bottom: 20px; }
+  .error-box.visible { display: block; }
+
+  /* ── RESULT HERO ─────────────────────────────────────────────── */
+  .result-hero {
+    background: var(--card-bg);
+    border: 1px solid var(--rule);
+    padding: 32px 36px;
+    margin-bottom: 16px;
+  }
+  .hero-address {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-light); margin-bottom: 16px;
+  }
+  .hero-inner { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: start; }
+  @media(max-width:640px){ .hero-inner { grid-template-columns: 1fr; } }
+  .hero-verdict {
+    font-family: var(--font-display);
+    font-size: clamp(28px,4vw,46px);
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .hero-subline {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-light);
+    margin-top: 10px;
+    letter-spacing: 0.02em;
+  }
+  .hero-context {
+    font-size: 14px;
+    color: var(--ink-mid);
+    margin-top: 8px;
+    line-height: 1.55;
+    max-width: 500px;
+  }
+  .hero-negotiation {
+    display: inline-block;
+    margin-top: 14px;
+    padding: 8px 14px;
+    background: rgba(26,25,22,0.04);
+    border: 1px solid var(--rule);
+    font-size: 13px;
+    color: var(--ink-mid);
+  }
+  .hero-negotiation strong { color: var(--ink); }
+  .hero-badge {
+    padding: 10px 18px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+    text-align: center;
+    min-width: 120px;
+  }
+  .badge-over   { background: #FDECEA; color: var(--red);   border: 1px solid rgba(200,55,26,0.25); }
+  .badge-over2  { background: #FDECEA; color: var(--red);   border: 1px solid rgba(200,55,26,0.4); }
+  .badge-fair   { background: #EDF6F0; color: var(--green); border: 1px solid rgba(45,122,79,0.25); }
+  .badge-under  { background: #EDF6F0; color: var(--green); border: 1px solid rgba(45,122,79,0.25); }
+  .badge-warn   { background: #FEF8EC; color: var(--amber); border: 1px solid rgba(160,112,32,0.25); }
+  .badge-loading{ background: rgba(26,25,22,0.05); color: var(--ink-light); border: 1px solid var(--rule); }
+
+  /* ── MARKET BAND ────────────────────────────────────────────── */
+  .market-band {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--rule);
+  }
+  .market-band-label {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-light); margin-bottom: 10px;
+  }
+  .band-track {
+    position: relative;
+    height: 8px;
+    background: linear-gradient(to right, #EDF6F0 0%, #EDF6F0 35%, #FEF8EC 45%, #FEF8EC 60%, #FDECEA 75%, #FDECEA 100%);
+    border: 1px solid var(--rule);
+  }
+  .band-ref-line {
+    position: absolute;
+    top: -6px; bottom: -6px;
+    width: 1px;
+    background: var(--ink-light);
+    left: 50%;
+    opacity: 0.5;
+  }
+  .band-ref-label {
+    position: absolute;
+    top: -22px;
+    transform: translateX(-50%);
+    left: 50%;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--ink-light);
+    white-space: nowrap;
+  }
+  .band-obj-marker {
+    position: absolute;
+    top: -7px;
+    width: 3px;
+    height: 22px;
+    background: var(--ink);
+    transform: translateX(-50%);
+    transition: left 0.8s cubic-bezier(0.4,0,0.2,1);
+  }
+
+    position: absolute;
+    top: 12px;
+    transform: translateX(-50%);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--ink);
+    font-weight: 500;
+    white-space: nowrap;
+    transition: left 0.8s cubic-bezier(0.4,0,0.2,1);
+  }
+  .band-labels {
+    display: flex; justify-content: space-between;
+    margin-top: 7px;
+    font-family: var(--font-mono); font-size: 9px; color: var(--ink-light);
+  }
+
+  /* ── DECISION REASONS ───────────────────────────────────────── */
+  .decision-reasons {
+    background: var(--ink);
+    color: var(--cream);
+    padding: 24px 28px;
+    margin-bottom: 16px;
+  }
+  .dr-header {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: rgba(245,240,232,0.35);
+    margin-bottom: 16px;
+  }
+  .dr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media(max-width:560px){ .dr-grid { grid-template-columns: 1fr; } }
+  .dr-col-title {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; margin-bottom: 10px;
+  }
+  .dr-neg .dr-col-title { color: rgba(200,55,26,0.7); }
+  .dr-pos .dr-col-title { color: rgba(45,122,79,0.75); }
+  .dr-item {
+    display: flex; align-items: flex-start; gap: 9px;
+    font-size: 13px; color: rgba(245,240,232,0.82);
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(245,240,232,0.07);
+    line-height: 1.4;
+  }
+  .dr-item:last-child { border-bottom: none; }
+  .dr-dot {
+    width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; margin-top: 6px;
+  }
+  .dr-neg .dr-dot { background: rgba(200,55,26,0.65); }
+  .dr-pos .dr-dot { background: rgba(45,122,79,0.7); }
+
+  /* ── AI INSIGHT SUMMARY ─────────────────────────────────────── */
+  .ai-insight {
+    background: var(--card-bg);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--ink);
+    padding: 22px 26px;
+    margin-bottom: 16px;
+    display: none;
+  }
+  .ai-insight.visible { display: block; }
+  .ai-insight-label {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--ink-light); margin-bottom: 10px;
+  }
+  .ai-insight-text {
+    font-size: 15px; color: var(--ink-mid); line-height: 1.65;
+  }
+  .ai-insight-link {
+    display: inline-block; margin-top: 12px;
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--ink); text-decoration: none;
+    border-bottom: 1px solid var(--ink); padding-bottom: 1px; cursor: pointer;
+  }
+  .ai-insight-link:hover { color: var(--red); border-color: var(--red); }
+
+  /* ── SECTION HEADER shared ──────────────────────────────────── */
+  .section-label {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--ink-light);
+    margin-bottom: 12px; display: flex; align-items: center; gap: 10px;
+  }
+  .section-label::after {
+    content: ''; flex: 1; height: 1px; background: var(--rule);
+  }
+
+  /* ── PRIMARY METRICS ────────────────────────────────────────── */
+  .primary-metrics { margin-bottom: 16px; }
+  .primary-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+  @media(max-width:700px){ .primary-grid { grid-template-columns: 1fr 1fr; } }
+  @media(max-width:440px){ .primary-grid { grid-template-columns: 1fr; } }
+  .metric-card {
+    background: var(--card-bg);
+    border: 1px solid var(--rule);
+    padding: 20px 22px;
+  }
+  .metric-card.primary { border-top: 2px solid var(--ink); }
+  .metric-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .metric-card-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-light); }
+  .metric-pill { font-family: var(--font-mono); font-size: 10px; padding: 3px 8px; border-radius: 20px; }
+  .pill-good { background: #EDF6F0; color: var(--green); }
+  .pill-mid  { background: #FEF8EC; color: var(--amber); }
+  .pill-bad  { background: #FDECEA; color: var(--red); }
+  .pill-load { background: rgba(26,25,22,0.05); color: var(--ink-light); }
+  .metric-value { font-family: var(--font-display); font-size: 30px; color: var(--ink); line-height: 1; }
+  .metric-detail { font-size: 12px; color: var(--ink-light); margin-top: 5px; line-height: 1.5; }
+  .metric-bar { height: 3px; margin-top: 14px; background: var(--rule); }
+  .metric-bar-fill { height: 100%; transition: width 0.6s ease; }
+
+  /* ── SECONDARY METRICS ──────────────────────────────────────── */
+  .secondary-metrics { margin-bottom: 16px; }
+  .secondary-toggle {
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; user-select: none; padding: 10px 14px;
+    background: var(--card-bg); border: 1px solid var(--rule);
+    transition: background 0.15s;
+  }
+  .secondary-toggle:hover { background: rgba(26,25,22,0.03); }
+  .secondary-toggle-hint {
+    font-family: var(--font-mono); font-size: 10px; color: var(--ink-light);
+    margin-left: 10px; letter-spacing: 0.06em;
+  }
+  .secondary-toggle-icon {
+    font-family: var(--font-mono); font-size: 13px; color: var(--ink-light);
+    transition: transform 0.2s; margin-left: 8px;
+  }
+  .secondary-toggle-icon.open { transform: rotate(180deg); }
+  .secondary-body { display: none; }
+  .secondary-body.open { display: block; }
+  .secondary-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-top: 12px; }
+  @media(max-width:700px){ .secondary-grid { grid-template-columns: 1fr 1fr; } }
+  .metric-card.secondary { border-top: none; padding: 16px 18px; }
+  .metric-card.secondary .metric-value { font-size: 22px; }
+
+  /* ── SCORE GRID (legacy, kept for befristung) ───────────────── */
+  .score-grid { display: none; } /* hidden, replaced by primary/secondary */
+
+  /* ── ENVIRONMENT / POI ──────────────────────────────────────── */
+  .environment-section { background: var(--card-bg); border: 1px solid var(--rule); padding: 24px 28px; margin-bottom: 16px; }
+  .poi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+  .poi-group-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-light); margin-bottom: 8px; }
+  .poi-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-mid); padding: 4px 0; border-bottom: 1px solid var(--rule); }
+  .poi-item:last-child { border-bottom: none; }
+  .poi-dist { font-family: var(--font-mono); font-size: 11px; color: var(--ink-light); margin-left: auto; }
+  .poi-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── CHECKLIST ──────────────────────────────────────────────── */
+  .checklist-section { background: var(--ink); color: var(--cream); padding: 24px 28px; margin-bottom: 16px; }
+  .checklist-section-label {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: rgba(245,240,232,0.3); margin-bottom: 6px;
+  }
+  .checklist-title { font-family: var(--font-display); font-size: 22px; margin-bottom: 4px; color: var(--cream); }
+  .checklist-sub { font-size: 13px; color: rgba(245,240,232,0.45); margin-bottom: 18px; }
+  .checklist-items { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  @media(max-width:600px){ .checklist-items { grid-template-columns: 1fr; } }
+  .checklist-item { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: rgba(245,240,232,0.8); line-height: 1.5; }
+  .checklist-item.priority { color: rgba(245,240,232,0.95); }
+  .check-icon { width: 15px; height: 15px; border: 1px solid rgba(245,240,232,0.22); flex-shrink: 0; margin-top: 2px; }
+  .checklist-item.priority .check-icon { border-color: rgba(200,55,26,0.55); }
+
+  /* ── BOTTOM CTA ─────────────────────────────────────────────── */
+  .bottom-cta { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  @media(max-width:560px){ .bottom-cta { grid-template-columns: 1fr; } }
+  .cta-primary {
+    padding: 16px 20px; background: var(--ink); color: var(--cream);
+    border: none; font-family: var(--font-body); font-size: 14px; font-weight: 700;
+    letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer;
+    text-align: center; transition: background 0.2s;
+  }
+  .cta-primary:hover { background: var(--red); }
+  .cta-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+  .cta-secondary {
+    padding: 16px 20px; background: transparent; color: var(--ink);
+    border: 1px solid var(--rule); font-family: var(--font-body); font-size: 14px;
+    font-weight: 500; letter-spacing: 0.03em; cursor: pointer;
+    text-align: center; transition: border-color 0.2s, color 0.2s;
+    text-decoration: none; display: block;
+  }
+  .cta-secondary:hover { border-color: var(--ink); }
+
+  /* ── SOURCES ────────────────────────────────────────────────── */
+  .sources-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+  .source-tag { font-family: var(--font-mono); font-size: 10px; padding: 4px 10px; border: 1px solid var(--rule); color: var(--ink-light); }
+</style>
+  <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+
+<header>
+  <a href="/" style="text-decoration:none;display:flex;align-items:center;gap:10px;">
+    <img src="logo.png" alt="Immoskop" style="height:36px;width:auto;">
+    <span style="font-family:'DM Serif Display',Georgia,serif;font-size:26px;font-weight:400;color:#1A1916;letter-spacing:-0.5px;line-height:1;">immo<em style="font-style:italic;color:#C8371A;">skop</em></span>
+  </a>
+  <span class="header-tag">Beta — Adress-Analyse</span>
+</header>
+
+<div class="page">
+  <h1 class="page-title">Inserat-<em>Analyse</em></h1>
+  <p class="page-sub">Geben Sie die Adresse ein — oder fügen Sie den Inseratstext direkt ein.</p>
+
+  <!-- INSERT TOGGLE -->
+  <div style="display:flex;gap:12px;margin-bottom:28px;">
+    <button id="btn-mode-manual" onclick="setMode('manual')" style="padding:10px 20px;background:var(--ink);color:var(--cream);border:none;font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;">
+      Manuell eingeben
+    </button>
+    <button id="btn-mode-paste" onclick="setMode('paste')" style="padding:10px 20px;background:var(--rule);color:var(--ink);border:1px solid var(--rule);font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;">
+      Inseratstext einfügen
+    </button>
+  </div>
+
+  <!-- PASTE PANEL -->
+  <div id="paste-panel" style="display:none;margin-bottom:28px;">
+    <div style="background:var(--ink);padding:24px;">
+      <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(245,240,232,0.35);margin-bottom:12px;">Inseratstext einfügen</div>
+      <!-- Anleitung -->
+      <div style="font-size:13px;color:rgba(245,240,232,0.6);margin-bottom:16px;line-height:1.8;">
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(245,240,232,0.35);margin-bottom:10px;">So geht's</div>
+
+        <div style="margin-bottom:12px;">
+          <span style="color:rgba(245,240,232,0.9);font-weight:600;">Auf dem Smartphone:</span><br>
+          1. Inserat auf Homegate, ImmoScout, Comparis etc. öffnen<br>
+          2. Beliebiges Wort im Text <strong style="color:var(--cream)">lang gedrückt halten</strong> bis es markiert ist<br>
+          3. <strong style="color:var(--cream)">«Alles auswählen»</strong> tippen<br>
+          4. <strong style="color:var(--cream)">«Kopieren»</strong> tippen<br>
+          5. Zurück zu Immoskop — hier ins Textfeld tippen und <strong style="color:var(--cream)">«Einsetzen»</strong> wählen
+        </div>
+
+        <div style="margin-bottom:12px;">
+          <span style="color:rgba(245,240,232,0.9);font-weight:600;">Am Computer:</span><br>
+          1. Inserat öffnen<br>
+          2. <strong style="color:var(--cream)">Ctrl+A</strong> (Windows) oder <strong style="color:var(--cream)">Cmd+A</strong> (Mac) — alles markieren<br>
+          3. <strong style="color:var(--cream)">Ctrl+C</strong> / <strong style="color:var(--cream)">Cmd+C</strong> — kopieren<br>
+          4. Hier ins Textfeld klicken und <strong style="color:var(--cream)">Ctrl+V</strong> / <strong style="color:var(--cream)">Cmd+V</strong> — einfügen
+        </div>
+
+        <div style="color:rgba(245,240,232,0.4);font-size:12px;">
+          Funktioniert mit allen Portalen: Homegate, ImmoScout24, Comparis, Tutti, Anibis, und mehr.
+        </div>
+      </div>
+
+      <textarea id="insert-text" placeholder="Inseratstext hier einfügen..." onkeydown="if(event.key==='Enter'){event.preventDefault();parseInserat();}" style="width:100%;height:160px;background:rgba(245,240,232,0.07);border:1px solid rgba(245,240,232,0.14);color:var(--cream);padding:12px;font-family:var(--font-body);font-size:13px;resize:vertical;outline:none;border-radius:0;"></textarea>
+      <button onclick="parseInserat()" id="btn-parse" style="width:100%;margin-top:12px;padding:13px;background:var(--red);color:var(--cream);border:none;font-family:var(--font-body);font-size:14px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;">
+        Inserat analysieren →
+      </button>
+      <div id="parse-status" style="font-family:var(--font-mono);font-size:11px;color:rgba(245,240,232,0.4);margin-top:10px;display:none;"></div>
+    </div>
+  </div>
+
+  <p class="page-sub" style="display:none" id="page-sub-orig"> IMMOSKOP ruft Lärm, Besonnung, ÖV, Umgebung und Marktpreisdaten ab.</p></div>
+
+  <div class="layout">
+    <div class="input-panel">
+      <div class="panel-label">Inserat-Daten</div>
+      <div class="field">
+        <div class="field-label">Adresse des Inserats</div>
+        <div class="autocomplete-wrap">
+          <input type="text" id="address" placeholder="z.B. Rigistrasse 8, Kilchberg" autocomplete="off" oninput="onAddressInput(this.value)">
+          <div class="autocomplete-list" id="autocomplete-list"></div>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <div class="field-label">Zimmer</div>
+          <select id="rooms">
+            <option value="" disabled selected>–</option>
+            <option>1</option><option>1.5</option><option>2</option><option>2.5</option>
+            <option>3</option><option>3.5</option><option>4</option>
+            <option>4.5</option><option>5</option><option>5.5+</option>
+          </select>
+        </div>
+        <div class="field">
+          <div class="field-label">Fläche m²</div>
+          <input type="number" id="area" value="75" min="20" max="500">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <div class="field-label">Typ</div>
+          <select id="type">
+            <option value="miete">Miete</option>
+            <option value="kauf">Kauf</option>
+          </select>
+        </div>
+        <div class="field">
+          <div class="field-label">Etage</div>
+          <input type="number" id="floor" value="2" min="0" max="30">
+        </div>
+      </div>
+      <div class="field">
+        <div class="field-label">Aussenraum</div>
+        <select id="outdoor">
+          <option value="none">Kein Aussenraum</option>
+          <option value="balkon" selected>Balkon</option>
+          <option value="terrasse">Terrasse</option>
+          <option value="garten">Garten / Sitzplatz</option>
+        </select>
+      </div>
+      <div class="field">
+        <div class="field-label">Zustand / Renovation</div>
+        <select id="condition">
+          <option value="neuwertig">Neuwertig / kürzlich renoviert</option>
+          <option value="gut" selected>Guter Zustand</option>
+          <option value="mittel">Normaler Unterhalt</option>
+          <option value="renovationsbed">Renovationsbedürftig</option>
+        </select>
+      </div>
+      <div class="field">
+        <div class="field-label" id="price-label">Mietzins CHF/Mt.</div>
+        <input type="number" id="price" value="2400" min="100">
+      </div>
+      <div class="field">
+        <div class="field-label">Baujahr</div>
+        <select id="year">
+          <option value="2020">ab 2020</option>
+          <option value="2010">2010–2019</option>
+          <option value="2000" selected>2000–2009</option>
+          <option value="1990">1990–1999</option>
+          <option value="1980">1980–1989</option>
+          <option value="alt">vor 1980</option>
+        </select>
+      </div>
+      <button class="btn-analyse" id="btn-analyse" onclick="runAnalysis()">Analyse starten →</button>
+      <div class="api-note">Datenquellen: swisstopo, OpenStreetMap, BFS PKS, RealAdvisor</div>
+    </div>
+
+    <div>
+      <div class="status-bar" id="status-bar">
+        <div class="spinner" id="spinner"></div>
+        <div id="status-text">Starte Analyse…</div>
+      </div>
+      <div class="error-box" id="error-box"></div>
+      <div class="results" id="results">
+
+        <!-- 1. RESULT HERO -->
+        <div class="result-hero" id="result-hero">
+          <div class="hero-address" id="hero-address"></div>
+          <div class="hero-inner">
+            <div>
+              <div class="hero-verdict" id="hero-verdict">Marktpreise werden geladen…</div>
+              <div class="hero-subline" id="hero-subline"></div>
+              <div class="hero-context" id="hero-context"></div>
+              <div class="hero-negotiation" id="hero-negotiation" style="display:none"></div>
+            </div>
+            <div>
+              <div class="hero-badge badge-loading" id="hero-badge">…</div>
+            </div>
+          </div>
+          <!-- Market Band -->
+          <div class="market-band" id="market-band">
+            <div class="market-band-label">Markteinordnung</div>
+            <div style="position:relative;margin:10px 0 6px;">
+              <div class="band-track">
+                <div class="band-ref-line"></div>
+                <div class="band-obj-marker" id="band-obj-marker" style="left:50%"></div>
+              </div>
+            </div>
+            <div class="band-labels">
+              <span>Deutlich günstiger</span>
+              <span>Marktpreis</span>
+              <span>Deutlich teurer</span>
+            </div>
+            <div id="verdict-source" style="font-family:var(--font-mono);font-size:10px;color:var(--ink-light);opacity:0.55;margin-top:8px;"></div>
+          </div>
+        </div>
+
+        <!-- 2. DECISION REASONS -->
+        <div class="decision-reasons" id="decision-reasons" style="display:none">
+          <div class="dr-header">Warum diese Einordnung?</div>
+          <div class="dr-grid">
+            <div class="dr-neg" id="dr-neg">
+              <div class="dr-col-title">Kritisch / Negativ</div>
+            </div>
+            <div class="dr-pos" id="dr-pos">
+              <div class="dr-col-title">Positiv / Für das Objekt</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. AI INSIGHT SUMMARY -->
+        <div class="ai-insight" id="ai-insight">
+          <div class="ai-insight-label">KI-Fazit</div>
+          <div class="ai-insight-text" id="ai-insight-text"></div>
+          <span class="ai-insight-link" onclick="scrollToReport()">Detaillierte Analyse lesen →</span>
+        </div>
+
+        <!-- 4. PRIMARY METRICS -->
+        <div class="primary-metrics" id="primary-metrics">
+          <div class="section-label">Wichtige Faktoren</div>
+          <div class="primary-grid" id="primary-grid"></div>
+        </div>
+
+        <!-- 5. SECONDARY METRICS -->
+        <div class="secondary-metrics" id="secondary-metrics">
+          <div class="secondary-toggle" onclick="toggleSecondary()">
+            <div style="display:flex;align-items:center;gap:0">
+              <div class="section-label" style="flex:none;margin-bottom:0">Weitere Standortfaktoren</div>
+              <span class="secondary-toggle-hint">— zum Ausklappen klicken</span>
+            </div>
+            <div class="secondary-toggle-icon" id="secondary-icon">▾</div>
+          </div>
+          <div class="secondary-body" id="secondary-body">
+            <div class="secondary-grid" id="secondary-grid"></div>
+          </div>
+        </div>
+
+        <!-- 6. ENVIRONMENT -->
+        <div class="environment-section" id="poi-section"></div>
+
+        <!-- 7. CHECKLIST -->
+        <div class="checklist-section" id="checklist-section"></div>
+
+        <!-- hidden legacy grid (score-grid kept for befristung compat) -->
+        <div class="score-grid" id="score-grid" style="display:none"></div>
+
+        <div class="sources-row" id="sources-row"></div>
+
+        <!-- 8. BOTTOM CTA -->
+        <div class="bottom-cta" style="margin-top:24px">
+          <button id="btn-report" class="cta-primary" onclick="generateReport()">
+            Detaillierten KI-Report generieren →
+          </button>
+          <a href="/checker" class="cta-secondary">
+            Weitere Wohnung prüfen →
+          </a>
+        </div>
+
+        <!-- REPORT SECTION -->
+        <div id="report-section" style="display:none;margin-top:20px;background:#fff;border:1px solid var(--rule);padding:32px 36px;">
+          <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-light);margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--rule)">Immoskop — Vollständige Inserat-Analyse</div>
+          <div id="report-content" style="font-size:15px;line-height:1.75;color:var(--ink)"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const OUTDOOR_F = { none:0.95, balkon:1.0, terrasse:1.05, garten:1.10 };
+const OUTDOOR_LABEL = { none:'Kein Aussenraum', balkon:'Balkon', terrasse:'Terrasse', garten:'Garten/Sitzplatz' };
+let selectedCoords = null, acTimer = null;
+
+// --- AUTOCOMPLETE -------------------------------------------------
+let acIndex = -1;
+async function onAddressInput(val) {
+  clearTimeout(acTimer);
+  acIndex = -1;
+  const list = document.getElementById('autocomplete-list');
+  if (val.length < 4) { list.style.display='none'; return; }
+  acTimer = setTimeout(async () => {
+    try {
+      const r = await fetch(`https://api3.geo.admin.ch/rest/services/api/SearchServer?searchText=${encodeURIComponent(val)}&type=locations&limit=6&origins=address,zipcode`);
+      const d = await r.json();
+      const results = d.results || [];
+      if (!results.length) { list.style.display='none'; return; }
+      list.innerHTML = '';
+      results.forEach((res, i) => {
+        const label = res.attrs.label.replace(/<[^>]+>/g,'');
+        const div = document.createElement('div');
+        div.className = 'autocomplete-item';
+        div.dataset.index = i;
+        div.textContent = label;
+        div.onclick = () => selectAcItem(div, res, label);
+        list.appendChild(div);
+      });
+      list.style.display = 'block';
+    } catch(e) { list.style.display='none'; }
+  }, 280);
+}
+function selectAcItem(div, res, label) {
+  document.getElementById('address').value = label;
+  const c = lv95ToWgs84(res.attrs.y, res.attrs.x);
+  selectedCoords = { lat:c.lat, lon:c.lon, label };
+  document.getElementById('autocomplete-list').style.display = 'none';
+  acIndex = -1;
+}
+document.getElementById('address').addEventListener('keydown', function(e) {
+  const list = document.getElementById('autocomplete-list');
+  const items = list.querySelectorAll('.autocomplete-item');
+  if (!items.length || list.style.display === 'none') return;
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    acIndex = Math.min(acIndex + 1, items.length - 1);
+    items.forEach((it, i) => it.style.background = i === acIndex ? 'rgba(245,240,232,0.15)' : '');
+    document.getElementById('address').value = items[acIndex].textContent;
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    acIndex = Math.max(acIndex - 1, 0);
+    items.forEach((it, i) => it.style.background = i === acIndex ? 'rgba(245,240,232,0.15)' : '');
+    document.getElementById('address').value = items[acIndex].textContent;
+  } else if (e.key === 'Enter' && acIndex >= 0) {
+    e.preventDefault();
+    items[acIndex].click();
+  } else if (e.key === 'Escape') {
+    list.style.display = 'none'; acIndex = -1;
+  }
+});
+function lv95ToWgs84(e, n) {
+  const E=(e-2600000)/1000000, N=(n-1200000)/1000000;
+  const lon=2.6779094+4.728982*E+0.791484*E*N+0.1306*E*N*N-0.0436*E*E*E;
+  const lat=16.9023892+3.238272*N-0.270978*E*E-0.002528*N*N-0.0447*E*E*N-0.0140*N*N*N;
+  return { lat:lat*100/36, lon:lon*100/36 };
+}
+document.addEventListener('click', e => { if (!e.target.closest('.autocomplete-wrap')) document.getElementById('autocomplete-list').style.display='none'; });
+document.getElementById('type').addEventListener('change', function() {
+  const isKauf = this.value==='kauf';
+  document.getElementById('price-label').textContent = isKauf ? 'Kaufpreis CHF' : 'Mietzins CHF/Mt.';
+  document.getElementById('price').value = isKauf ? '850000' : '2400';
+});
+
+// --- STATUS -------------------------------------------------------
+function setStatus(msg, done=false) {
+  document.getElementById('status-bar').classList.add('visible');
+  document.getElementById('status-text').textContent = msg;
+  if (done) document.getElementById('spinner').style.display='none';
+}
+function hideStatus() { document.getElementById('status-bar').classList.remove('visible'); }
+function showError(msg) { const b=document.getElementById('error-box'); b.textContent=msg; b.classList.add('visible'); }
+function clearError() { document.getElementById('error-box').classList.remove('visible'); }
+
+// --- GEOCODE ------------------------------------------------------
+async function geocodeAddress(address) {
+  const r = await fetch(`https://api3.geo.admin.ch/rest/services/api/SearchServer?searchText=${encodeURIComponent(address)}&type=locations&limit=1&origins=address`);
+  const d = await r.json();
+  if (!d.results?.length) throw new Error('Adresse nicht gefunden.');
+  const attrs = d.results[0].attrs;
+  const label = attrs.label.replace(/<[^>]+>/g,'');
+  const c = lv95ToWgs84(attrs.y, attrs.x);
+  return { lat:c.lat, lon:c.lon, label };
+}
+
+// --- OVERPASS -----------------------------------------------------
+async function fetchOverpass(lat, lon) {
+  const query = `[out:json][timeout:15];(
+    way["highway"~"motorway|trunk|primary|secondary|tertiary|residential|living_street"](around:150,${lat},${lon});
+    node["public_transport"="stop_position"](around:800,${lat},${lon});
+    node["highway"="bus_stop"](around:800,${lat},${lon});
+    node["railway"="tram_stop"](around:800,${lat},${lon});
+    node["railway"="station"](around:800,${lat},${lon});
+    node["amenity"="school"](around:800,${lat},${lon});
+    node["amenity"="kindergarten"](around:800,${lat},${lon});
+    node["shop"="supermarket"](around:800,${lat},${lon});
+    node["amenity"="restaurant"](around:600,${lat},${lon});
+    node["amenity"="cafe"](around:600,${lat},${lon});
+    node["leisure"="park"](around:800,${lat},${lon});
+    node["amenity"="pharmacy"](around:800,${lat},${lon});
+  );out body;`;
+
+  // Try up to 2 times
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      if (attempt > 0) await sleep(2000);
+      const r = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`, {
+        signal: AbortSignal.timeout(14000),
+        headers: { 'Accept': 'application/json' }
+      });
+      const text = await r.text();
+      if (!text.startsWith('{')) { console.warn('Overpass non-JSON, attempt', attempt+1); continue; }
+      const data = JSON.parse(text);
+      const elements = data.elements || [];
+
+      const ROAD_DB = { motorway:75, trunk:72, primary:65, secondary:60, tertiary:55, residential:48, living_street:42 };
+      const groups = { Bildung:[], Einkauf:[], Gastro:[], Parks:[], Gesundheit:[] };
+      const dotColors = { Bildung:'#378ADD', Einkauf:'#2D7A4F', Gastro:'#C8371A', Parks:'#639922', Gesundheit:'#7F77DD' };
+      let maxDb = 38, minOevDist = Infinity, nearestOev = null, oevCount = 0;
+
+      elements.forEach(el => {
+        const hw = el.tags?.highway;
+        const amenity = el.tags?.amenity || el.tags?.shop || el.tags?.leisure;
+
+        // Noise
+        if (el.type==='way' && hw && ROAD_DB[hw]) {
+          if (ROAD_DB[hw] > maxDb) maxDb = ROAD_DB[hw];
+        }
+        // ÖV
+        if (el.type==='node' && el.lat && (el.tags?.public_transport==='stop_position' || el.tags?.highway==='bus_stop' || el.tags?.railway==='tram_stop' || el.tags?.railway==='station')) {
+          oevCount++;
+          const dist = haversine(lat, lon, el.lat, el.lon);
+          if (dist < minOevDist) { minOevDist=dist; nearestOev=el; }
+        }
+        // Amenities
+        if (el.type==='node' && el.lat && amenity) {
+          const name = el.tags?.name || amenity;
+          const dist = Math.round(haversine(lat, lon, el.lat, el.lon));
+          if (['school','kindergarten'].includes(amenity) && groups.Bildung.length<3) groups.Bildung.push({name,dist});
+          if (amenity==='supermarket' && groups.Einkauf.length<3) groups.Einkauf.push({name,dist});
+          if (['restaurant','cafe'].includes(amenity) && groups.Gastro.length<3) groups.Gastro.push({name,dist});
+          if (amenity==='park' && groups.Parks.length<2) groups.Parks.push({name,dist});
+          if (amenity==='pharmacy' && groups.Gesundheit.length<2) groups.Gesundheit.push({name,dist});
+        }
+      });
+
+      return {
+        noise: maxDb,
+        oev: { dist: minOevDist<Infinity ? Math.round(minOevDist) : null, name: nearestOev?.tags?.name||'Haltestelle', count: oevCount },
+        amenities: groups,
+        dotColors
+      };
+    } catch(e) { console.warn('Overpass error:', e.message); }
+  }
+  return null;
+}
+
+// --- HAVERSINE ----------------------------------------------------
+function haversine(lat1,lon1,lat2,lon2) {
+  const R=6371000, dLat=(lat2-lat1)*Math.PI/180, dLon=(lon2-lon1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
+
+// --- SCORE HELPERS ------------------------------------------------
+function oevScore(dist) {
+  if (!dist) return {score:3,label:'Keine Daten',pill:'mid'};
+  if (dist<80)  return {score:5,label:'Ausgezeichnet',pill:'good'};
+  if (dist<200) return {score:4,label:'Sehr gut',pill:'good'};
+  if (dist<400) return {score:3,label:'Gut',pill:'mid'};
+  if (dist<700) return {score:2,label:'Mässig',pill:'mid'};
+  return {score:1,label:'Schlecht',pill:'bad'};
+}
+function noiseScore(db) {
+  if (!db) return {score:3,label:'Keine Daten',pill:'mid'};
+  if (db<45) return {score:5,label:'Sehr ruhig',pill:'good'};
+  if (db<52) return {score:4,label:'Ruhig',pill:'good'};
+  if (db<58) return {score:3,label:'Moderat',pill:'mid'};
+  if (db<65) return {score:2,label:'Laut',pill:'bad'};
+  return {score:1,label:'Sehr laut',pill:'bad'};
+}
+function solarScore(kwh) {
+  if (!kwh) return {score:3,label:'Keine Daten',pill:'mid'};
+  if (kwh>1100) return {score:5,label:'Sehr sonnig',pill:'good'};
+  if (kwh>900)  return {score:4,label:'Sonnig',pill:'good'};
+  if (kwh>700)  return {score:3,label:'Mässig',pill:'mid'};
+  return {score:2,label:'Wenig Sonne',pill:'bad'};
+}
+function crimeScore(h) {
+  if (h<25) return {score:5,label:'Sehr sicher',pill:'good'};
+  if (h<45) return {score:4,label:'Sicher',pill:'good'};
+  if (h<65) return {score:3,label:'Durchschnittlich',pill:'mid'};
+  if (h<85) return {score:2,label:'Erhöht',pill:'bad'};
+  return {score:1,label:'Hoch',pill:'bad'};
+}
+// ── VERDICT LABEL LOGIC ──────────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+// INSIGHT ENGINE + VERDICT ENGINE + TEXT ENGINE
+// ══════════════════════════════════════════════════════════
+
+function runInsightEngine(delta, noise, oevDist, fl, outdoor, cond, solar, crimeH, parsedInsert) {
+  const neg = [], pos = [], critical = [];
+  if (delta > 20)       neg.push({ key:'price', label: '+'+delta+'% über Referenzpreis', weight: 5 });
+  else if (delta > 10)  neg.push({ key:'price', label: '+'+delta+'% über Referenzpreis', weight: 3 });
+  else if (delta > 5)   neg.push({ key:'price', label: '+'+delta+'% über Referenzpreis', weight: 2 });
+  if (noise && noise >= 65)  neg.push({ key:'noise', label: 'Hohe Lärmbelastung ('+noise+' dB)', weight: 4 });
+  else if (noise && noise >= 55) neg.push({ key:'noise', label: 'Erhöhte Lärmbelastung ('+noise+' dB)', weight: 2 });
+  if (fl === 0 && outdoor === 'none') neg.push({ key:'floor', label: 'Erdgeschoss, kein Aussenraum', weight: 2 });
+  else if (fl === 0)                  neg.push({ key:'floor', label: 'Erdgeschoss – weniger Privatsphäre', weight: 1 });
+  if (cond === 'renovationsbed') neg.push({ key:'cond', label: 'Renovationsbedürftig', weight: 2 });
+  if (oevDist && oevDist > 800)  neg.push({ key:'oev', label: 'Schwache ÖV-Anbindung ('+oevDist+'m)', weight: 2 });
+  const hasContradictions = parsedInsert && parsedInsert.marketing_flags && parsedInsert.marketing_flags.length >= 3;
+  if (hasContradictions) critical.push({ key:'contradictions', label: 'Widersprüchliche Angaben – unbedingt klären', weight: 5 });
+  if (delta <= -15)    pos.push({ key:'price', label: delta+'% unter Referenzpreis', weight: 5 });
+  else if (delta <= -5) pos.push({ key:'price', label: delta+'% unter Referenzpreis', weight: 3 });
+  if (oevDist && oevDist < 100)      pos.push({ key:'oev', label: 'Sehr gute ÖV-Anbindung ('+oevDist+'m)', weight: 3 });
+  else if (oevDist && oevDist < 300) pos.push({ key:'oev', label: 'Gute ÖV-Anbindung ('+oevDist+'m)', weight: 2 });
+  if (cond === 'neuwertig') pos.push({ key:'cond', label: 'Sehr guter Zustand', weight: 2 });
+  else if (cond === 'gut')  pos.push({ key:'cond', label: 'Guter Zustand', weight: 1 });
+  if (outdoor === 'garten')   pos.push({ key:'outdoor', label: 'Garten vorhanden', weight: 2 });
+  else if (outdoor === 'terrasse') pos.push({ key:'outdoor', label: 'Terrasse vorhanden', weight: 1 });
+  else if (outdoor === 'balkon')   pos.push({ key:'outdoor', label: 'Balkon vorhanden', weight: 1 });
+  if (solar && solar > 950) pos.push({ key:'solar', label: 'Gute Besonnung', weight: 1 });
+  neg.sort((a,b)=>b.weight-a.weight); pos.sort((a,b)=>b.weight-a.weight);
+  return { neg: neg.slice(0,3), pos: pos.slice(0,3), critical };
+}
+
+function runVerdictEngine(delta, insights, noise, fl, outdoor, isKauf, price) {
+  const { neg, pos, critical } = insights;
+  const hasRisks = neg.length >= 2 || critical.length > 0;
+  const hasStrengths = pos.length >= 2;
+  const highNoise = noise && noise >= 65;
+  let baseLabel;
+  if      (delta <= -15) baseLabel = 'Deutlich unter Markt';
+  else if (delta <= -5)  baseLabel = 'Unter Marktpreis';
+  else if (delta <   4)  baseLabel = 'Nahe am Marktpreis';
+  else if (delta <  10)  baseLabel = 'Leicht überteuert';
+  else if (delta <  20)  baseLabel = 'Spürbar überteuert';
+  else                   baseLabel = 'Klar überteuert';
+  let suffix = '';
+  if (delta >= 4 && delta < 10) {
+    if (critical.length > 0)   suffix = ' – kritisch prüfen';
+    else if (hasRisks)         suffix = ' – Verhandlung sinnvoll';
+    else if (hasStrengths)     suffix = ' – noch im Rahmen';
+    else if (fl === 0)         suffix = ' – für Erdgeschoss ambitioniert';
+    else                       suffix = ' – noch im Rahmen';
+  } else if (delta >= 10 && delta < 20) {
+    suffix = hasStrengths ? ' – trotz guter Faktoren' : ' – Verhandlung empfohlen';
+  } else if (delta >= 20) {
+    suffix = ' – kritisch';
+  } else if (delta <= -5) {
+    suffix = hasRisks ? ' – aber mit Risiken' : ' – gutes Angebot';
+  } else {
+    if (critical.length > 0)  suffix = ' – aber kritisch zu prüfen';
+    else if (hasRisks)        suffix = ' – solide, Risiken prüfen';
+    else                      suffix = ' – solide bewertet';
+  }
+  let badgeCls, badgeText;
+  if      (delta <= -5)  { badgeCls='badge-under'; badgeText='Unter Markt'; }
+  else if (delta <   4)  { badgeCls='badge-fair';  badgeText='Nahe am Markt'; }
+  else if (delta <  10)  { badgeCls='badge-warn';  badgeText='Leicht überteuert'; }
+  else if (delta <  20)  { badgeCls='badge-over';  badgeText='Spürbar überteuert'; }
+  else                   { badgeCls='badge-over2'; badgeText='Klar überteuert'; }
+  let context = '';
+  if (delta >= 20) context = 'Der Preis liegt deutlich über dem Referenzwert – eine Verhandlung ist fast zwingend.';
+  else if (delta >= 10) context = highNoise ? 'Trotz erhöhtem Lärm und ambitioniertem Preis – Verhandlung sinnvoll.' : 'Der Preis liegt spürbar über dem Markt – Spielraum nach unten ist wahrscheinlich.';
+  else if (delta >= 4) {
+    if (fl === 0 && outdoor === 'none') context = 'Für ein Erdgeschoss ohne Aussenraum ist der Preis eher ambitioniert.';
+    else if (highNoise)                 context = 'Trotz erhöhtem Lärm liegt der Preis über dem Referenzwert.';
+    else if (hasStrengths)              context = 'Innerhalb der üblichen Bandbreite – die guten Faktoren rechtfertigen den Aufpreis teilweise.';
+    else                                context = 'Innerhalb der üblichen Bandbreite, aber an der oberen Grenze.';
+  } else if (delta <= -15) context = 'Deutlich günstiger als vergleichbare Objekte – die Gründe sollten geprüft werden.';
+  else if (delta <= -5) context = hasRisks ? 'Günstiger Preis, aber einzelne Faktoren sollten genauer geprüft werden.' : 'Günstiger als vergleichbare Objekte in dieser Lage.';
+  else { if (critical.length > 0) context = 'Preis im Marktbereich – kritische Punkte sollten jedoch geklärt werden.'; else if (hasRisks) context = 'Preis im Marktbereich, aber einzelne Faktoren verdienen Aufmerksamkeit.'; else context = 'Preis entspricht dem lokalen Marktumfeld.'; }
+  let negotiationHint = null;
+  if (delta >= 4) { const over=Math.round(price-price/(1+delta/100)); const step=isKauf?5000:50; const lo=Math.round(over*0.4/step)*step,hi=Math.round(over*0.7/step)*step; if(lo>=step) negotiationHint='Verhandlungsspielraum: CHF '+lo.toLocaleString('de-CH')+'–'+hi.toLocaleString('de-CH'); }
+  let heroWarning = null;
+  if (critical.length > 0) heroWarning = critical.sort((a,b)=>b.weight-a.weight)[0].label;
+  else if (highNoise && delta >= 4) heroWarning = 'Lärm ('+noise+' dB) – Schallschutz vor Ort prüfen';
+  return { headline: baseLabel+suffix, badgeCls, badgeText, context, negotiationHint, heroWarning };
+}
+  return { neg: neg.slice(0,3), pos: pos.slice(0,3) };
+}
+
+// ── METRIC CARD BUILDER ──────────────────────────────────────────
+function makeMetricCard(label, valueStr, detail, scoreOf5, pillClass, variant='primary') {
+  const pct=(scoreOf5/5*100).toFixed(0);
+  const barColor=pillClass==='good'?'#2D7A4F':pillClass==='mid'?'#A07020':'#C8371A';
+  const stars = ['','★','★★','★★★','★★★★','★★★★★'][scoreOf5]||'';
+  return `<div class="metric-card ${variant}">
+    <div class="metric-card-top">
+      <div class="metric-card-label">${label}</div>
+      <span class="metric-pill pill-${pillClass}">${stars||'-'}</span>
+    </div>
+    <div class="metric-value">${valueStr}</div>
+    <div class="metric-detail">${detail}</div>
+    <div class="metric-bar"><div class="metric-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
+  </div>`;
+}
+// Legacy alias so befristung code still works
+function makeScoreCard(label,v,d,s,p){return makeMetricCard(label,v,d,s,p,'primary');}
+
+// ── SECONDARY TOGGLE ─────────────────────────────────────────────
+function toggleSecondary() {
+  const body = document.getElementById('secondary-body');
+  const icon = document.getElementById('secondary-icon');
+  const open = body.classList.toggle('open');
+  icon.classList.toggle('open', open);
+}
+function scrollToReport() {
+  const r = document.getElementById('report-section');
+  if (r && r.style.display !== 'none') r.scrollIntoView({behavior:'smooth',block:'start'});
+  else generateReport();
+}
+
+
+// --- PARSE AMENITY SUMMARY ----------------------------------------
+// Backend format: "Schulen: Name1 100m, Name2 200m / Einkauf: usw."
+function parseAmenitySummary(summary) {
+  if (!summary) return {};
+  const MAP = { 'Schulen':'Bildung', 'Einkauf':'Einkauf', 'Gastro':'Gastro', 'Parks':'Parks', 'Gesundheit':'Gesundheit' };
+  const groups = {};
+  summary.split('\n').forEach(line => {
+    const colonIdx = line.indexOf(':');
+    if (colonIdx < 0) return;
+    const key = line.substring(0, colonIdx).trim();
+    const gname = MAP[key] || key;
+    const items = line.substring(colonIdx+1).split(',').map(s => {
+      const m = s.trim().match(/^(.+?)\s+(\d+)m?$/);
+      return m ? { name:m[1].trim(), dist:parseInt(m[2]) } : null;
+    }).filter(Boolean);
+    if (items.length) groups[gname] = items;
+  });
+  return groups;
+}
+
+// --- MAIN ANALYSIS ------------------------------------------------
+async function runAnalysis() {
+  clearError();
+  document.getElementById('results').classList.remove('visible');
+  document.getElementById('report-section').style.display='none';
+  document.getElementById('btn-analyse').disabled=true;
+  document.getElementById('spinner').style.display='';
+
+  const addressInput = document.getElementById('address').value.trim();
+  if (!addressInput) { showError('Bitte eine Adresse eingeben.'); document.getElementById('btn-analyse').disabled=false; return; }
+
+  // Formular-Werte
+  const price   = parseInt(document.getElementById('price').value)||2400;
+  const area    = parseInt(document.getElementById('area').value)||75;
+  const year    = document.getElementById('year').value;
+  const floor   = parseInt(document.getElementById('floor').value)||0;
+  const outdoor = document.getElementById('outdoor').value;
+  const isKauf  = document.getElementById('type').value==='kauf';
+  const rooms   = document.getElementById('rooms').value;
+  const pricePerQm = (price/area).toFixed(1);
+
+  // Crime (statisch)
+  const CRIME = {'zürich':{hzahl:98,label:'Zürich'},'bern':{hzahl:72,label:'Bern'},'basel':{hzahl:85,label:'Basel'},'genf':{hzahl:110,label:'Genf'},'winterthur':{hzahl:62,label:'Winterthur'},'luzern':{hzahl:58,label:'Luzern'},'lausanne':{hzahl:95,label:'Lausanne'},'kilchberg':{hzahl:18,label:'Kilchberg'},'küsnacht':{hzahl:16,label:'Küsnacht'},'thalwil':{hzahl:22,label:'Thalwil'},'zollikon':{hzahl:20,label:'Zollikon'},'uster':{hzahl:45,label:'Uster'},'st. gallen':{hzahl:54,label:'St. Gallen'}};
+
+  try {
+    // -- SCHRITT 1: Geocode (~0.5s) ------------------------------
+    setStatus('Adresse wird geocodiert...');
+    let coords = selectedCoords;
+    if (!coords || !addressInput.toLowerCase().includes((coords.label||'').toLowerCase().substring(0,8))) {
+      coords = await geocodeAddress(addressInput);
+    }
+    const { lat, lon, label } = coords;
+    const plzMatch = label.match(/\b(\d{4})\b/);
+    const plz = plzMatch ? plzMatch[1] : '8000';
+    const labelLower = label.toLowerCase();
+    let crime = {hzahl:38,label:'diese Gemeinde'};
+    for (const [k,v] of Object.entries(CRIME)) { if (labelLower.includes(k)) { crime=v; break; } }
+
+    // Analyse-Daten speichern
+    const condition = document.getElementById('condition').value;
+    window._lastAnalysis = { address:label, rooms, area, price, type:document.getElementById('type').value, year, floor, outdoor, condition, insertText: window._insertText||null, parsedInsert: window._parsedInsert||null };
+
+    // -- SCHRITT 2: Daten-Call (~5s: Preise + Overpass + Solar)
+    setStatus('Umgebung & Marktpreise werden abgerufen...');
+    const dataRes = await fetch('/api/data', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(window._lastAnalysis)
+    });
+    const dataData = await dataRes.json();
+    if (dataData.error) throw new Error(dataData.error);
+    const meta = dataData.meta || {};
+    console.log('META received:', JSON.stringify({
+      noiseDay: meta.noiseDay,
+      oevDist: meta.oevDist,
+      oevName: meta.oevName,
+      amenitySummaryLen: (meta.amenitySummary||'').length,
+      solarKwh: meta.solarKwh,
+      delta: meta.delta
+    }));
+
+    // Overpass-Daten aus Backend-Meta
+    const noise  = meta.noiseDay || null;
+    const oev    = { dist:meta.oevDist||null, name:meta.oevName||'-', count:meta.oevCount||0 };
+    // Amenities aus amenitySummary parsen (Backend-Format: "Schulen: x 200m / Einkauf: usw.")
+    const amenities = parseAmenitySummary(meta.amenitySummary || '');
+    const dotColors = { Bildung:'#378ADD', Einkauf:'#2D7A4F', Gastro:'#C8371A', Parks:'#639922', Gesundheit:'#7F77DD' };
+
+    setStatus('Kacheln werden erstellt...');
+
+    // -- SCHRITT 3: Sofort anzeigen (ohne Preise) ----------------
+    document.getElementById('hero-address').textContent = label;
+    document.getElementById('hero-verdict').textContent = 'Marktpreise werden geladen…';
+    document.getElementById('hero-subline').textContent = '';
+    document.getElementById('hero-context').textContent = '';
+    document.getElementById('hero-negotiation').style.display = 'none';
+    const heroBadge = document.getElementById('hero-badge');
+    heroBadge.textContent = '…'; heroBadge.className = 'hero-badge badge-loading';
+    document.getElementById('band-obj-marker').style.left = '50%';
+
+    document.getElementById('verdict-source').textContent = '';
+
+    const noiseS = noiseScore(noise);
+    const oevS   = oevScore(oev.dist);
+    const crimeS = crimeScore(crime.hzahl);
+
+    // Befristung warning
+    const metaBefristet = meta.befristet || false;
+    if (metaBefristet) {
+      const befWarn = document.createElement('div');
+      befWarn.style.cssText = 'background:#FDECEA;border:2px solid #C8371A;padding:16px 20px;margin-bottom:20px;';
+      befWarn.innerHTML = `<div style="font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#C8371A;margin-bottom:8px;">!! BEFRISTETER MIETVERTRAG !!</div><div style="font-size:14px;color:#C8371A;font-weight:600;">${meta.befristetDetails || 'Dieser Mietvertrag ist befristet. Prüfen Sie die Bedingungen sorgfältig.'}</div>`;
+      document.getElementById('results').insertBefore(befWarn, document.getElementById('result-hero'));
+    }
+
+    // Secondary metric constants (needed in both passes)
+    const conditionVal    = { neuwertig:'Neuwertig', gut:'Gut', mittel:'Mittel', renovationsbed:'Renov.bed.' }[condition]||condition;
+    const conditionDetail = { neuwertig:'Kürzlich renoviert', gut:'Guter Unterhalt', mittel:'Normaler Unterhalt', renovationsbed:'Renovationsbedürftig' }[condition]||'';
+    const conditionScore  = { neuwertig:5, gut:4, mittel:3, renovationsbed:1 }[condition]||3;
+    const conditionPill   = { neuwertig:'good', gut:'good', mittel:'mid', renovationsbed:'bad' }[condition]||'mid';
+    const outdoorScore    = outdoor==='none'?2:outdoor==='balkon'?3:outdoor==='terrasse'?4:5;
+    const outdoorPill     = outdoor==='none'?'bad':outdoor==='balkon'?'mid':'good';
+
+    // Primary metrics (ÖV + Lärm sofort; Preis folgt)
+    document.getElementById('primary-grid').innerHTML =
+      makeMetricCard('Preisbewertung', '…', 'Marktpreise werden geladen', 3, 'load', 'primary') +
+      makeMetricCard('Lärmsituation', noise?`${noise} dB`:'N/A', noise?(noiseS.score>=4?'Ruhige Lage':noiseS.score>=3?'Moderate Belastung':'Erhöhte Lärmbelastung'):'Keine Daten', noiseS.score, noiseS.pill, 'primary') +
+      makeMetricCard('ÖV-Anbindung', oev.dist?`${oev.dist}m`:'N/A', oev.dist?(oevS.score>=4?`Gute Anbindung · ${oev.name}`:`${oev.name} · ${oev.count} Haltestellen`):'Keine Daten', oevS.score, oevS.pill, 'primary');
+
+    // Secondary metrics
+    document.getElementById('secondary-grid').innerHTML =
+      makeMetricCard('Besonnung', '…', 'Wird geladen (swisstopo)', 3, 'load', 'secondary') +
+      makeMetricCard('Sicherheit', `${crime.hzahl}/1000`, `${crime.label} · PKS`, crimeS.score, crimeS.pill, 'secondary') +
+      makeMetricCard('Aussenraum', OUTDOOR_LABEL[outdoor], `Etage ${floor}`, outdoorScore, outdoorPill, 'secondary') +
+      makeMetricCard('Zustand', conditionVal, conditionDetail, conditionScore, conditionPill, 'secondary') +
+      makeMetricCard('Einkommenssteuer', '…', 'ESTV 2025 · wird geladen', 3, 'load', 'secondary');
+
+    // POI / Environment
+    let poiHtml = `<div class="section-label">Umgebung <span style="font-size:10px;color:var(--ink-light);margin-left:4px;font-family:var(--font-mono);text-transform:lowercase;letter-spacing:0">(800m Radius)</span></div>`;
+    const hasAmenities = Object.values(amenities).some(g=>g.length>0);
+    if (hasAmenities) {
+      poiHtml += '<div class="poi-grid">';
+      Object.entries(amenities).forEach(([gname, items]) => {
+        if (!items.length) return;
+        const color = dotColors[gname]||'#888';
+        poiHtml += `<div><div class="poi-group-label">${gname}</div>`;
+        items.sort((a,b)=>a.dist-b.dist).forEach(item => {
+          poiHtml += `<div class="poi-item"><div class="poi-dot" style="background:${color}"></div>${item.name}<span class="poi-dist">${item.dist}m</span></div>`;
+        });
+        poiHtml += '</div>';
+      });
+      poiHtml += '</div>';
+    } else {
+      poiHtml += '<p style="font-size:13px;color:var(--ink-light)">Umgebungsdaten nicht verfügbar.</p>';
+    }
+    document.getElementById('poi-section').innerHTML = poiHtml;
+
+    // Checklist
+    const isPriority = (txt) => txt.startsWith('!');
+    const checkItems = [
+      noise&&noise>58 ? '! Lärm hoch – Fensterverglasung & Schalldämmung prüfen' : 'Fensterverglasung und Schalldämmung kontrollieren',
+      floor===0&&outdoor==='none' ? '! Erdgeschoss ohne Aussenraum – Privatsphäre und Licht prüfen' : `Etage ${floor} – Lift vorhanden und in Betrieb?`,
+      oev.dist&&oev.dist>500 ? `! ÖV-Haltestelle weit (${oev.dist}m) – Taktfrequenz erfragen` : `Nächste Haltestelle: ${oev.name} (${oev.dist||'–'}m) – Frequenz prüfen`,
+      crime.hzahl>60 ? '! Erhöhte Kriminalitätszahl – Quartier zu verschiedenen Zeiten besuchen' : 'Quartier zu Stosszeiten und abends besichtigen',
+      outdoor==='garten' ? 'Gartenfläche und Nutzungsrecht klären' : outdoor==='terrasse' ? 'Terrassenzustand und Abdichtung prüfen' : 'Balkonzustand und Abdichtung kontrollieren',
+      'Heizungsart, Energieklasse und Nebenkosten erfragen',
+      'Zustand Küche, Bäder und Böden dokumentieren',
+      'Bisherigen Mietzins beim Vermieter erfragen',
+      'Nebenkosten-Abrechnung der letzten zwei Jahre',
+      'Waschküche, Keller und Veloabstellplatz prüfen',
+      'Mobilfunkempfang und Glasfaser-Anschluss checken',
+    ];
+    document.getElementById('checklist-section').innerHTML = `
+      <div class="checklist-section-label">Immoskop</div>
+      <div class="checklist-title">Worauf du bei dieser Wohnung achten solltest</div>
+      <div class="checklist-sub">Basierend auf Preis, Lage und den Angaben im Inserat.</div>
+      <div class="checklist-items">${checkItems.map(i=>{
+        const prio=isPriority(i); const txt=prio?i.substring(2):i;
+        return `<div class="checklist-item"><div class="check-icon"></div>${txt}</div>`;
+      }).join('')}</div>`;
+
+    document.getElementById('sources-row').innerHTML =
+      ['swisstopo Geocoder','OpenStreetMap','BFS PKS','RealAdvisor Marktpreise'].map(s=>`<span class="source-tag">${s}</span>`).join('');
+
+    setStatus('Umgebungsdaten geladen – Marktpreise folgen…');
+    document.getElementById('results').classList.add('visible');
+    document.getElementById('results').scrollIntoView({ behavior:'smooth', block:'start' });
+
+    // -- SCHRITT 4: Preise & vollständige Aktualisierung --------
+    const delta      = meta.delta || 0;
+    const expected   = meta.expected || 0;
+    const priceSource= meta.priceSource || 'Modell';
+    const priceRange = meta.priceRangeText || '';
+    const solarKwh   = meta.solarKwh;
+
+    const insights = runInsightEngine(delta, noise, oev.dist, floor, outdoor, condition, solarKwh, crime.hzahl, window._parsedInsert);
+    const verdict  = runVerdictEngine(delta, insights, noise, floor, outdoor, isKauf, price);
+
+    document.getElementById('hero-verdict').textContent = verdict.headline;
+    document.getElementById('hero-subline').textContent =
+      `${delta>0?'+':''}${delta}% ${delta>=0?'über':'unter'} Marktpreis · Referenz: CHF ${expected.toLocaleString('de-CH')}${isKauf?'':'/Mt.'}`;
+    if (verdict.context) document.getElementById('hero-context').textContent = verdict.context;
+    const heroWarnEl = document.getElementById('hero-negotiation');
+    if (verdict.heroWarning && !verdict.negotiationHint) {
+      heroWarnEl.innerHTML = `<strong style="color:var(--red)">⚠ ${verdict.heroWarning}</strong>`;
+      heroWarnEl.style.cssText = 'display:inline-block;border-color:rgba(200,55,26,0.3);background:#FDECEA;';
+    } else if (verdict.negotiationHint) {
+      heroWarnEl.innerHTML = `<strong>${verdict.negotiationHint}</strong>`;
+      heroWarnEl.style.cssText = 'display:inline-block;';
+    } else {
+      heroWarnEl.style.display = 'none';
+    }
+    const heroBadge2 = document.getElementById('hero-badge');
+    heroBadge2.textContent = verdict.badgeText; heroBadge2.className = 'hero-badge ' + verdict.badgeCls;
+
+    const bandPct = Math.min(Math.max(50 + delta * 1.4, 4), 96);
+    document.getElementById('band-obj-marker').style.left = bandPct + '%';
+    document.getElementById('verdict-source').textContent =
+      `Quelle: ${priceSource}${meta.streetData?` · ${meta.streetData.name} (${meta.streetData.percentile}. Perz.)`:''}${priceRange?' · '+priceRange:''}`;
+
+    const allNeg = [...insights.critical, ...insights.neg].slice(0,3);
+    if (allNeg.length || insights.pos.length) {
+      document.getElementById('dr-neg').innerHTML =
+        `<div class="dr-col-title">Kritisch / Negativ</div>` +
+        (allNeg.length ? allNeg.map(r=>`<div class="dr-item"><div class="dr-dot"></div>${r.label}</div>`).join('') : '<div class="dr-item" style="opacity:0.4">–</div>');
+      document.getElementById('dr-pos').innerHTML =
+        `<div class="dr-col-title">Positiv / Für das Objekt</div>` +
+        (insights.pos.length ? insights.pos.map(r=>`<div class="dr-item"><div class="dr-dot"></div>${r.label}</div>`).join('') : '<div class="dr-item" style="opacity:0.4">–</div>');
+      document.getElementById('decision-reasons').style.display = 'block';
+    }
+
+    const priceScore = Math.max(1, Math.min(5, Math.round(3 - delta/10)));
+    const pricePill  = delta>10?'bad':delta<-10?'good':'mid';
+    document.getElementById('primary-grid').innerHTML =
+      makeMetricCard('Preisbewertung', `CHF ${(price/area).toFixed(1)}/m²`, `Referenz: CHF ${expected?(expected/area).toFixed(1):'–'}/m² · Marktdaten CH`, priceScore, pricePill, 'primary') +
+      makeMetricCard('Lärmsituation', noise?`${noise} dB`:'N/A', noise?(noiseS.score>=4?'Ruhige Lage':noiseS.score>=3?'Moderate Belastung':'Erhöhte Lärmbelastung'):'Keine Daten', noiseS.score, noiseS.pill, 'primary') +
+      makeMetricCard('ÖV-Anbindung', oev.dist?`${oev.dist}m`:'N/A', oev.dist?(oevS.score>=4?`Gute Anbindung · ${oev.name}`:`${oev.name} · ${oev.count} Haltestellen`):'Keine Daten', oevS.score, oevS.pill, 'primary');
+
+    const solarS = solarScore(solarKwh);
+    const taxCHF     = meta.taxBurdenCHF || null;
+    const taxNatPct  = meta.estvNatPctVal || null;
+    const taxKtPct   = meta.estvKtPctVal  || null;
+    const taxKanton  = meta.estvKanton    || null;
+    let taxCard = '';
+    if (taxCHF) {
+      const taxScore = taxNatPct <= 20 ? 5 : taxNatPct <= 40 ? 4 : taxNatPct <= 60 ? 3 : taxNatPct <= 80 ? 2 : 1;
+      const taxPill  = taxScore >= 4 ? 'good' : taxScore >= 3 ? 'mid' : 'bad';
+      const taxLabel = taxScore >= 4 ? 'Günstig' : taxScore >= 3 ? 'Mittel' : 'Hoch';
+      const taxDetail = `${taxLabel} · ${taxNatPct}. Perz. CH${taxKanton ? ' · ' + taxKtPct + '. Perz. ' + taxKanton.toUpperCase() : ''} · ESTV 2025`;
+      taxCard = makeMetricCard('Einkommenssteuer', `CHF ${taxCHF.toLocaleString('de-CH')}/J`, taxDetail, taxScore, taxPill, 'secondary');
+    }
+    document.getElementById('secondary-grid').innerHTML =
+      makeMetricCard('Besonnung', solarKwh?`${Math.round(solarKwh)} kWh`:'N/A', solarKwh?'Jahressumme Fassade (swisstopo)':'Keine Daten', solarS.score, solarS.pill, 'secondary') +
+      makeMetricCard('Sicherheit', `${crime.hzahl}/1000`, `${crime.label} · PKS`, crimeS.score, crimeS.pill, 'secondary') +
+      makeMetricCard('Aussenraum', OUTDOOR_LABEL[outdoor], `Etage ${floor}`, outdoorScore, outdoorPill, 'secondary') +
+      makeMetricCard('Zustand', conditionVal, conditionDetail, conditionScore, conditionPill, 'secondary') +
+      taxCard;
+
+    setStatus('Analyse vollständig.', true);
+    setTimeout(hideStatus, 1500);
+
+  } catch(err) {
+    showError(err.message||'Fehler bei der Analyse.');
+    hideStatus();
+  }
+  document.getElementById('btn-analyse').disabled=false;
+}
+
+// --- REPORT -------------------------------------------------------
+function renderReport(text) {
+  const html = text
+    .replace(/^## (.+)$/gm,'<h2 style="font-family:var(--font-display);font-size:20px;margin:28px 0 10px;padding-top:20px;border-top:1px solid var(--rule)">$1</h2>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/^- (.+)$/gm,'<li style="margin:4px 0;padding-left:4px">$1</li>')
+    .replace(/(<li.*<\/li>\n?)+/g,'<ul style="padding-left:20px;margin:8px 0">$&</ul>')
+    .replace(/\n\n/g,'</p><p style="margin:8px 0">')
+    .replace(/\n/g,'<br>');
+  document.getElementById('report-content').innerHTML=`<p style="margin:8px 0">${html}</p>`;
+  document.getElementById('report-section').style.display='block';
+  document.getElementById('report-section').scrollIntoView({behavior:'smooth',block:'start'});
+
+  // Populate AI Insight Summary from report conclusion
+  const aiEl = document.getElementById('ai-insight');
+  const aiText = document.getElementById('ai-insight-text');
+  if (aiEl && aiText) {
+    // Extract first 1-3 sentences from report (first paragraph or TL;DR/Fazit section)
+    const fazitMatch = text.match(/(?:fazit|tldr|tl;dr|zusammenfassung)[:\s]*([^\n#]{40,300})/i);
+    const firstPara = text.replace(/^##[^\n]+\n/m,'').replace(/\*\*/g,'').trim().split('\n\n')[0];
+    const summary = fazitMatch ? fazitMatch[1].trim() : firstPara.substring(0,280).trim();
+    if (summary) {
+      aiText.textContent = summary + (summary.length >= 278 ? '…' : '');
+      aiEl.classList.add('visible');
+      aiEl.scrollIntoView({behavior:'smooth', block:'nearest'});
+    }
+  }
+}
+
+// ─── MODE TOGGLE ─────────────────────────────────────────────────
+function setMode(mode) {
+  const pastePanel = document.getElementById('paste-panel');
+  const layout = document.querySelector('.layout');
+  const btnManual = document.getElementById('btn-mode-manual');
+  const btnPaste = document.getElementById('btn-mode-paste');
+
+  if (mode === 'paste') {
+    pastePanel.style.display = 'block';
+    layout.style.display = 'none';
+    btnPaste.style.background = 'var(--ink)';
+    btnPaste.style.color = 'var(--cream)';
+    btnManual.style.background = 'rgba(26,25,22,0.05)';
+    btnManual.style.color = 'var(--ink)';
+  } else {
+    pastePanel.style.display = 'none';
+    layout.style.display = 'grid';
+    btnManual.style.background = 'var(--ink)';
+    btnManual.style.color = 'var(--cream)';
+    btnPaste.style.background = 'rgba(26,25,22,0.05)';
+    btnPaste.style.color = 'var(--ink)';
+  }
+}
+
+// ─── PARSE INSERAT ────────────────────────────────────────────────
+async function parseInserat() {
+  const text = document.getElementById('insert-text').value.trim();
+  if (text.length < 50) { alert('Bitte mehr Text einfügen.'); return; }
+
+  const btn = document.getElementById('btn-parse');
+  const status = document.getElementById('parse-status');
+  btn.disabled = true;
+  btn.textContent = 'Wird analysiert...';
+  status.style.display = 'block';
+  status.textContent = 'Claude liest den Inseratstext...';
+
+  try {
+    const res = await fetch('/api/parse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    const p = data.parsed;
+    window._insertText = text;
+    window._parsedInsert = p;
+
+    // Fill form fields
+    if (p.adresse) document.getElementById('address').value = p.adresse;
+    if (p.preis) document.getElementById('price').value = p.preis;
+    if (p.preistyp) document.getElementById('type').value = p.preistyp;
+    if (p.flaeche) document.getElementById('area').value = p.flaeche;
+    if (p.zimmer) {
+      const zStr = String(p.zimmer).replace('.', '[.,½]?');
+      const zRex = new RegExp('(' + zStr + ')\\s*(zimmer|zi\\b|pièces|rooms)', 'i');
+      if (zRex.test(text)) {
+        const roomSel = document.getElementById('rooms');
+        const roomVal = String(p.zimmer);
+        for (let opt of roomSel.options) { if (opt.value === roomVal || opt.text === roomVal) { roomSel.value = opt.value; break; } }
+      }
+    }
+    if (p.etage !== null && p.etage !== undefined) document.getElementById('floor').value = p.etage;
+    if (p.baujahr_kategorie) {
+      const yearKeywords = /baujahr|erbaut|erstellt|renovation|renoviert|neubau|année de construction/i;
+      if (yearKeywords.test(text)) document.getElementById('year').value = p.baujahr_kategorie;
+    }
+    if (p.aussenraum) document.getElementById('outdoor').value = p.aussenraum;
+    if (p.zustand) document.getElementById('condition').value = p.zustand;
+
+    // Update price label
+    const isKauf = p.preistyp === 'kauf';
+    document.getElementById('price-label').textContent = isKauf ? 'Kaufpreis CHF' : 'Mietzins CHF/Mt.';
+
+    // Show befristung warning
+    if (p.befristet) {
+      status.style.color = '#C8371A';
+      status.textContent = '!! BEFRISTETER MIETVERTRAG: ' + (p.befristet_details || 'Details im Report');
+    } else {
+      status.style.color = 'rgba(245,240,232,0.6)';
+      status.textContent = 'Felder ausgefüllt. Bitte prüfen und Analyse starten.';
+    }
+
+    // Switch to manual mode to show filled form
+    setMode('manual');
+
+    // Auto-run analysis directly
+    status.style.color = 'rgba(245,240,232,0.6)';
+    status.textContent = 'Starte Analyse...';
+    await runAnalysis();
+
+  } catch(e) {
+    status.style.color = '#C8371A';
+    status.textContent = 'Fehler: ' + e.message;
+  }
+  btn.disabled = false;
+  btn.textContent = 'Inserat analysieren ->';
+}
+
+async function generateReport() {
+  const btn = document.getElementById('btn-report');
+  if (!window._lastAnalysis) return;
+  btn.disabled = true;
+  btn.textContent = 'Wird generiert...';
+  try {
+    const r = await fetch('/api/report', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(window._lastAnalysis)
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    renderReport(d.report);
+    document.getElementById('report-section').scrollIntoView({behavior:'smooth',block:'start'});
+  } catch(e) {
+    alert('Fehler: ' + e.message);
+  }
+  btn.disabled = false;
+  btn.textContent = 'KI-Report aktualisieren';
+}
+</script>
+</body>
+</html>
