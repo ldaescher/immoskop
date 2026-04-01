@@ -1581,6 +1581,17 @@ function renderEnginesOnly() {
   // Re-render checklist
   renderChecklist(meta, outdoor, condition, propertyKind, isKauf);
 
+  // Re-translate POI section (category labels + heading)
+  const _poiCats = {de:{Bildung:'Bildung',Einkauf:'Einkauf',Gastro:'Gastro',Parks:'Parks',Gesundheit:'Gesundheit'},en:{Bildung:'Education',Einkauf:'Shopping',Gastro:'Dining',Parks:'Parks',Gesundheit:'Health'},fr:{Bildung:'Éducation',Einkauf:'Commerces',Gastro:'Restauration',Parks:'Parcs',Gesundheit:'Santé'}};
+  const _revCats = {}; Object.values(_poiCats).forEach(m => Object.entries(m).forEach(([k,v]) => { _revCats[v]=k; }));
+  const _tgt = _poiCats[currentLang]||_poiCats.de;
+  document.querySelectorAll('#poi-section .poi-group-label').forEach(el => {
+    const deKey = _revCats[el.textContent.trim()] || el.textContent.trim();
+    if (_tgt[deKey]) el.textContent = _tgt[deKey];
+  });
+  const _poiHead = document.querySelector('#poi-section > div');
+  if (_poiHead && _poiHead.style.fontFamily) _poiHead.textContent = {de:'Umgebung',en:'Surroundings',fr:'Environs'}[currentLang]||'Umgebung';
+
   // Translate any remaining German in metric card details
   translateTileLabels(document.getElementById('results-section'), currentLang);
 
@@ -2500,10 +2511,12 @@ async function runAnalysis() {
     // ── POI ───────────────────────────────────────────────────────
     const dotColors={Bildung:'#378ADD',Einkauf:'#2D7A4F',Gastro:'#C8371A',Parks:'#639922',Gesundheit:'#7F77DD'};
     const poiTitle={de:'Umgebung',en:'Surroundings',fr:'Environs'}[currentLang]||'Umgebung';
+    const poiCats={de:{Bildung:'Bildung',Einkauf:'Einkauf',Gastro:'Gastro',Parks:'Parks',Gesundheit:'Gesundheit'},en:{Bildung:'Education',Einkauf:'Shopping',Gastro:'Dining',Parks:'Parks',Gesundheit:'Health'},fr:{Bildung:'Éducation',Einkauf:'Commerces',Gastro:'Restauration',Parks:'Parcs',Gesundheit:'Santé'}}[currentLang]||{};
+    const noPoiData={de:'Keine Umgebungsdaten verfügbar.',en:'No surroundings data available.',fr:'Pas de données de proximité disponibles.'}[currentLang]||'Keine Umgebungsdaten verfügbar.';
     let poiHtml='<div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-light);margin-bottom:12px;">'+poiTitle+'</div>';
     const amenities=parseAmenitySummary(meta.amenitySummary||'');
-    if(Object.keys(amenities).length){poiHtml+='<div class="poi-grid">';Object.entries(amenities).forEach(([g,items])=>{if(!items.length)return;const col=dotColors[g]||'#888';poiHtml+='<div><div class="poi-group-label">'+g+'</div>';items.sort((a,b)=>a.dist-b.dist).forEach(i=>{poiHtml+='<div class="poi-item"><div class="poi-dot" style="background:'+col+'"></div>'+i.name+'<span class="poi-dist">'+i.dist+'m</span></div>';});poiHtml+='</div>';});poiHtml+='</div>';}
-    else{poiHtml+='<p style="font-size:12px;color:var(--ink-light)">Keine Umgebungsdaten verfügbar.</p>';}
+    if(Object.keys(amenities).length){poiHtml+='<div class="poi-grid">';Object.entries(amenities).forEach(([g,items])=>{if(!items.length)return;const col=dotColors[g]||'#888';poiHtml+='<div><div class="poi-group-label">'+(poiCats[g]||g)+'</div>';items.sort((a,b)=>a.dist-b.dist).forEach(i=>{poiHtml+='<div class="poi-item"><div class="poi-dot" style="background:'+col+'"></div>'+i.name+'<span class="poi-dist">'+i.dist+'m</span></div>';});poiHtml+='</div>';});poiHtml+='</div>';}
+    else{poiHtml+='<p style="font-size:12px;color:var(--ink-light)">'+noPoiData+'</p>';}
     document.getElementById('poi-section').innerHTML=poiHtml;
 
     // ── CHECKLIST ─────────────────────────────────────────────────
