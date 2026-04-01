@@ -1,0 +1,1842 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Immoskop — Immobilieninserate unabhängig analysiert</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #F5F0E8;
+    --ink: #1A1916;
+    --ink-mid: #3A3835;
+    --ink-light: #6A6864;
+    --red: #C8371A;
+    --green: #2D7A4F;
+    --amber: #A07020;
+    --rule: rgba(26,25,22,0.12);
+    --font-display: 'DM Serif Display', Georgia, serif;
+    --font-body: 'Schibsted Grotesk', Helvetica, sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--cream); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.6; }
+
+  /* HEADER */
+  header {
+    border-bottom: 1px solid var(--rule);
+    padding: 0 clamp(16px,4vw,80px);
+    display: flex; align-items: center; justify-content: space-between;
+    height: 68px; background: var(--cream);
+    position: sticky; top: 0; z-index: 100;
+    overflow: hidden;
+  }
+  @media(max-width:600px) {
+    header nav { display: none !important; }
+    .nav-hide-sm { display: none !important; }
+    .lang-switch { gap: 1px; }
+    .lang-btn { padding: 4px 6px; font-size: 9px; }
+    .logo-wordmark { font-size: 20px !important; }
+    /* Hero */
+    .hero { padding: clamp(24px,5vw,40px) clamp(16px,4vw,24px) 0; gap: 24px; }
+    .hero-sub { font-size: 14px; margin-bottom: 20px; }
+    .data-badges { margin-bottom: 24px; }
+    /* Results */
+    .results-section { padding: 20px 16px; }
+    .hero-verdict { font-size: clamp(22px,6vw,32px) !important; }
+    .primary-grid { grid-template-columns: 1fr 1fr !important; }
+    .secondary-grid { grid-template-columns: 1fr 1fr !important; }
+    .bottom-cta { grid-template-columns: 1fr !important; }
+    /* Features section */
+    #features > div { grid-template-columns: 1fr !important; gap: 32px !important; }
+    /* Stats bar */
+    .stats-inner { grid-template-columns: 1fr 1fr !important; }
+    /* Steps */
+    .steps { grid-template-columns: 1fr !important; }
+    .sources-grid { grid-template-columns: 1fr 1fr !important; }
+    /* Prevent horizontal scroll */
+    body { overflow-x: hidden; }
+    .results-section, .hero, section, .below-fold, .section { max-width: 100vw; }
+  }
+  .logo-link { text-decoration: none; display: flex; align-items: center; gap: 4px; }
+  .logo-svg { width: 34px; height: 34px; }
+  .logo-wordmark { font-family: var(--font-display); font-size: 30px; font-weight: 400; color: var(--ink); letter-spacing: -0.5px; line-height: 1; }
+  .logo-wordmark em { font-style: italic; color: var(--red); }
+
+  /* LANGUAGE SWITCHER */
+  .lang-switch { display: flex; gap: 2px; }
+  .lang-btn {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 4px 8px; border: 1px solid var(--rule);
+    background: none; color: var(--ink-light); cursor: pointer; transition: all 0.15s;
+  }
+  .lang-btn:hover { border-color: var(--ink-light); color: var(--ink); }
+  .lang-btn.active { background: var(--ink); color: var(--cream); border-color: var(--ink); }
+
+  /* HERO */
+  .hero {
+    padding: clamp(40px,6vw,80px) clamp(20px,5vw,80px) 0;
+    max-width: 1200px; margin: 0 auto;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start;
+  }
+  @media(max-width:900px) { .hero { grid-template-columns: 1fr; gap: 32px; } }
+  @media(max-width:700px) { .stats-bar { grid-template-columns: 1fr 1fr; } }
+  @media(max-width:800px) {
+    .warum-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+    .hero-grid { grid-template-columns: 1fr !important; gap: 28px !important; }
+  }
+  @media(max-width:600px) {
+    .score-grid { grid-template-columns: 1fr 1fr !important; }
+    .steps { grid-template-columns: 1fr !important; }
+    .sources-grid { grid-template-columns: 1fr 1fr !important; }
+    .kpi-grid { grid-template-columns: 1fr 1fr !important; }
+    .charts-grid { grid-template-columns: 1fr !important; }
+  }
+
+  .hero-left { padding-top: 8px; }
+  .hero-tag {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--red); margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .hero-tag::before { content: ''; display: block; width: 24px; height: 1px; background: var(--red); }
+  .hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(30px, 8vw, 64px);
+    line-height: 1.05; letter-spacing: -0.02em;
+    margin-bottom: 20px;
+  }
+  .hero-title em { font-style: italic; color: var(--red); }
+  .hero-sub { font-size: 16px; color: var(--ink-light); max-width: 420px; line-height: 1.7; margin-bottom: 32px; }
+
+  /* DATA BADGES */
+  .data-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 40px; }
+  .badge {
+    font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 5px 10px;
+    border: 1px solid var(--rule); color: var(--ink-light);
+  }
+
+  /* DIVIDER */
+  .hero-divider { width: 1px; background: var(--rule); align-self: stretch; }
+  @media(max-width:900px) { .hero-divider { display: none; } }
+
+  /* TOOL PANEL */
+  .hero-right { }
+  .tool-toggle {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+    border: 1px solid var(--rule); margin-bottom: 0;
+    background: var(--cream);
+  }
+  .tool-tab {
+    padding: 16px 20px; cursor: pointer; border: none; background: none;
+    font-family: var(--font-body); font-size: 14px; font-weight: 500;
+    color: var(--ink-light); text-align: center;
+    transition: all 0.2s; position: relative;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .tool-tab:first-child { border-right: 1px solid var(--rule); }
+  .tool-tab.active { background: var(--ink); color: var(--cream); }
+  .tool-tab .tab-icon { font-size: 20px; line-height: 1; }
+  .tool-tab .tab-label { font-size: 13px; font-weight: 500; }
+  .tool-tab .tab-sub { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.08em; opacity: 0.6; text-transform: uppercase; }
+
+  /* TOOL CONTENT */
+  .tool-panel { border: 1px solid var(--rule); border-top: none; background: var(--ink); padding: clamp(16px,3vw,24px); }
+  .tool-section { display: none; }
+  .tool-section.active { display: block; }
+
+  /* FORM FIELDS */
+  .field { margin-bottom: 14px; }
+  .field-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(245,240,232,0.4); margin-bottom: 6px; }
+  .field input, .field select, .field textarea {
+    width: 100%; background: rgba(245,240,232,0.07); border: 1px solid rgba(245,240,232,0.14);
+    color: var(--cream); padding: 9px 12px; font-family: var(--font-body); font-size: 13px;
+    outline: none; transition: border-color 0.2s; border-radius: 0;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: rgba(245,240,232,0.35); }
+  .field input::placeholder, .field textarea::placeholder { color: rgba(245,240,232,0.22); }
+  .field select option { background: #1A1916; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .field-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+  .btn-primary {
+    width: 100%; padding: 13px; background: var(--red); color: var(--cream);
+    border: none; font-family: var(--font-body); font-size: 13px; font-weight: 700;
+    letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
+    transition: opacity 0.2s; margin-top: 4px;
+  }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* PASTE SECTION */
+  .paste-instructions {
+    font-size: 12px; color: rgba(245,240,232,0.55); line-height: 1.8; margin-bottom: 14px;
+  }
+  .paste-instructions strong { color: rgba(245,240,232,0.85); }
+  .paste-step { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+  .paste-step-num { font-family: var(--font-mono); font-size: 9px; color: var(--red); min-width: 16px; }
+
+  /* AUTOCOMPLETE */
+  .autocomplete-wrap { position: relative; }
+  .autocomplete-list {
+    position: absolute; top: calc(100% + 2px); left: 0; right: 0;
+    background: #2A2926; border: 1px solid rgba(245,240,232,0.2);
+    z-index: 100; max-height: 180px; overflow-y: auto; display: none;
+  }
+  .autocomplete-item { padding: 8px 12px; font-size: 13px; color: var(--cream); cursor: pointer; border-bottom: 1px solid rgba(245,240,232,0.06); }
+  .autocomplete-item:hover { background: rgba(245,240,232,0.1); }
+
+  /* STATUS */
+  .status-bar { display: none; align-items: center; gap: 10px; padding: 11px 14px; background: rgba(245,240,232,0.05); border: 1px solid rgba(245,240,232,0.1); margin-top: 12px; font-family: var(--font-mono); font-size: 10px; color: rgba(245,240,232,0.5); }
+  .status-bar.visible { display: flex; }
+  .spinner { width: 12px; height: 12px; border: 1.5px solid rgba(245,240,232,0.2); border-top-color: var(--red); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* RESULTS */
+  .results-section { max-width: 1200px; margin: 0 auto; padding: 32px clamp(16px,5vw,80px); display: none; overflow-x: hidden; }
+  .results-section.visible { display: block; }
+
+  /* VERDICT */
+  .verdict-hero { background: white; border: 1px solid var(--rule); padding: clamp(16px,3vw,28px); margin-bottom: 16px; display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: start; }
+  @media(max-width:500px) { .verdict-hero { grid-template-columns: 1fr; } .verdict-badge { align-self: start; } }
+  .verdict-address { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; color: var(--ink-light); margin-bottom: 8px; }
+  .verdict-main { font-family: var(--font-display); font-size: clamp(22px,3vw,36px); line-height: 1.1; }
+  .verdict-sub { font-size: 13px; color: var(--ink-light); margin-top: 6px; }
+  .verdict-range { font-size: 11px; color: var(--ink-light); margin-top: 4px; font-family: var(--font-mono); }
+  .verdict-source { font-size: 10px; color: var(--ink-light); margin-top: 3px; font-family: var(--font-mono); opacity: 0.6; }
+  .verdict-badge { padding: 7px 16px; font-family: var(--font-mono); font-size: 11px; font-weight: 500; letter-spacing: 0.08em; white-space: nowrap; }
+  .badge-over { background: #FDECEA; color: var(--red); border: 1px solid rgba(200,55,26,0.25); }
+  .badge-fair { background: #EDF6F0; color: var(--green); border: 1px solid rgba(45,122,79,0.25); }
+  .badge-under { background: #EDF6F0; color: var(--green); border: 1px solid rgba(45,122,79,0.25); }
+  .badge-warn { background: #FEF8EC; color: var(--amber); border: 1px solid rgba(160,112,32,0.25); }
+  .badge-loading { background: rgba(26,25,22,0.05); color: var(--ink-light); border: 1px solid var(--rule); }
+  .meter-wrap { margin-top: 14px; }
+  .meter-track { height: 4px; background: var(--rule); position: relative; }
+  .meter-fill { height: 100%; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
+  .meter-marker { position: absolute; top: -5px; width: 1px; height: 14px; background: var(--ink-light); left: 50%; }
+  .meter-labels { display: flex; justify-content: space-between; margin-top: 5px; font-family: var(--font-mono); font-size: 9px; color: var(--ink-light); }
+
+  /* SCORE GRID */
+  .score-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(160px,1fr)); gap: 10px; margin-bottom: 16px; }
+  @media(max-width:700px) { .score-grid { grid-template-columns: 1fr 1fr; } }
+  .score-card { background: white; border: 1px solid var(--rule); padding: 16px; }
+  .score-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .score-card-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-light); }
+  .score-pill { font-family: var(--font-mono); font-size: 9px; padding: 2px 7px; border-radius: 20px; }
+  .pill-good { background: #EDF6F0; color: var(--green); }
+  .pill-mid  { background: #FEF8EC; color: var(--amber); }
+  .pill-bad  { background: #FDECEA; color: var(--red); }
+  .pill-load { background: rgba(26,25,22,0.05); color: var(--ink-light); }
+  .score-value { font-family: var(--font-display); font-size: 24px; line-height: 1; }
+  .score-detail { font-size: 11px; color: var(--ink-light); margin-top: 3px; line-height: 1.4; }
+  .score-bar { height: 2px; margin-top: 10px; background: var(--rule); }
+  .score-bar-fill { height: 100%; transition: width 0.6s ease; }
+
+  /* POI */
+  .poi-section { background: white; border: 1px solid var(--rule); padding: 20px 24px; margin-bottom: 16px; }
+  .poi-title { font-family: var(--font-display); font-size: 18px; margin-bottom: 14px; border-bottom: 1px solid var(--rule); padding-bottom: 12px; }
+  .poi-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(180px,1fr)); gap: 12px; }
+  .poi-group-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-light); margin-bottom: 6px; }
+  .poi-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-mid); padding: 3px 0; border-bottom: 1px solid var(--rule); }
+  .poi-item:last-child { border-bottom: none; }
+  .poi-dist { font-family: var(--font-mono); font-size: 10px; color: var(--ink-light); margin-left: auto; }
+  .poi-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+
+  /* CHECKLIST */
+  .checklist-section { background: var(--ink); color: var(--cream); padding: 20px 24px; margin-bottom: 16px; }
+  .checklist-title { font-family: var(--font-display); font-size: 18px; margin-bottom: 14px; }
+  .checklist-items { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  @media(max-width:700px) { .checklist-items { grid-template-columns: 1fr; } }
+  .checklist-item { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: rgba(245,240,232,0.8); line-height: 1.5; }
+  .check-icon { width: 14px; height: 14px; border: 1px solid rgba(245,240,232,0.25); flex-shrink: 0; margin-top: 2px; }
+
+  /* ERROR */
+  .error-box { background: #FDECEA; border: 1px solid rgba(200,55,26,0.25); padding: 12px 16px; font-size: 13px; color: var(--red); display: none; margin-top: 10px; }
+  .error-box.visible { display: block; }
+
+  /* REPORT */
+  .btn-report { width: 100%; margin-top: 16px; padding: 14px; background: var(--red); color: var(--cream); border: none; font-family: var(--font-body); font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: background 0.2s; }
+  .btn-report:hover { opacity: 0.88; }
+  .btn-report.generated { background: var(--ink); }
+  .report-section { display: none; margin-top: 16px; background: white; border: 1px solid var(--rule); padding: clamp(16px,3vw,32px); }
+  .report-section h2 { font-family: var(--font-display); font-size: 20px; font-weight: 400; margin: 0; }
+  .report-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-light); margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--rule); }
+  .report-content { font-size: 14px; line-height: 1.75; color: var(--ink); }
+
+  /* SOURCES */
+  .sources-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+  .source-tag { font-family: var(--font-mono); font-size: 9px; padding: 3px 8px; border: 1px solid var(--rule); color: var(--ink-light); }
+
+  /* BELOW FOLD */
+  .below-fold { border-top: 1px solid var(--rule); margin-top: 60px; }
+  .section { max-width: 1200px; margin: 0 auto; padding: clamp(28px,5vw,80px) clamp(16px,4vw,80px); }
+  .section-tag { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--red); margin-bottom: 12px; }
+  .section-title { font-family: var(--font-display); font-size: clamp(28px,4vw,44px); line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 32px; }
+  .section-title em { font-style: italic; color: var(--red); }
+
+  /* HOW IT WORKS */
+  .steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 2px; }
+  @media(max-width:700px) { .steps { grid-template-columns: 1fr; } }
+  .step { background: white; padding: 28px 24px; border: 1px solid var(--rule); }
+  .step-num { font-family: var(--font-mono); font-size: 11px; color: var(--red); margin-bottom: 12px; }
+  .step-title { font-family: var(--font-display); font-size: 20px; margin-bottom: 8px; }
+  .step-text { font-size: 13px; color: var(--ink-light); line-height: 1.7; }
+
+  /* DATA SOURCES */
+  .sources-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(200px,1fr)); gap: 2px; }
+  .source-card { background: white; border: 1px solid var(--rule); padding: 20px; }
+  .source-name { font-family: var(--font-mono); font-size: 11px; font-weight: 500; color: var(--ink); margin-bottom: 6px; }
+  .source-desc { font-size: 12px; color: var(--ink-light); line-height: 1.6; }
+
+  /* FOOTER */
+  footer { border-top: 1px solid var(--rule); padding: 24px clamp(20px,5vw,80px); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+  .footer-text { font-family: var(--font-mono); font-size: 10px; color: var(--ink-light); letter-spacing: 0.06em; }
+
+  /* ── NEW RESULT COMPONENTS ──────────────────────────────────────── */
+  .result-hero { background: white; border: 1px solid var(--rule); padding: clamp(20px,3vw,32px); margin-bottom: 14px; }
+  .hero-address { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; color: var(--ink-light); margin-bottom: 14px; }
+  .hero-inner { display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: start; }
+  @media(max-width:560px){ .hero-inner { grid-template-columns: 1fr; } }
+  .hero-verdict { font-family: var(--font-display); font-size: clamp(24px,3.5vw,42px); line-height: 1.05; letter-spacing: -0.01em; }
+  .hero-subline { font-family: var(--font-mono); font-size: 11px; color: var(--ink-light); margin-top: 9px; }
+  .hero-context { font-size: 13px; color: var(--ink-mid); margin-top: 7px; line-height: 1.55; max-width: 480px; }
+  .hero-negotiation { display: inline-block; margin-top: 12px; padding: 7px 12px; background: rgba(26,25,22,0.04); border: 1px solid var(--rule); font-size: 13px; color: var(--ink-mid); }
+  .hero-negotiation strong { color: var(--ink); }
+  .hero-badge { padding: 8px 16px; font-family: var(--font-mono); font-size: 11px; font-weight: 500; letter-spacing: 0.08em; white-space: nowrap; text-align: center; min-width: 110px; }
+
+  .market-band { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--rule); }
+  .market-band-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-light); margin-bottom: 10px; }
+  .band-track { position: relative; height: 7px; background: linear-gradient(to right,#EDF6F0 0%,#EDF6F0 35%,#FEF8EC 45%,#FEF8EC 60%,#FDECEA 75%,#FDECEA 100%); border: 1px solid var(--rule); }
+  .band-ref-line { position: absolute; top: -5px; bottom: -5px; width: 1px; background: var(--ink-light); left: 50%; opacity: 0.4; }
+  .band-ref-label { position: absolute; top: -20px; transform: translateX(-50%); left: 50%; font-family: var(--font-mono); font-size: 9px; color: var(--ink-light); white-space: nowrap; }
+  .band-obj-marker { position: absolute; top: -6px; width: 3px; height: 19px; background: var(--ink); transform: translateX(-50%); transition: left 0.8s cubic-bezier(0.4,0,0.2,1); }
+
+  .band-labels { display: flex; justify-content: space-between; margin-top: 6px; font-family: var(--font-mono); font-size: 9px; color: var(--ink-light); }
+
+  .decision-reasons { background: var(--ink); color: var(--cream); padding: 20px 24px; margin-bottom: 14px; }
+  .dr-header { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(245,240,232,0.35); margin-bottom: 14px; }
+  .dr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media(max-width:520px){ .dr-grid { grid-template-columns: 1fr; } }
+  .dr-col-title { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
+  .dr-neg .dr-col-title { color: rgba(200,55,26,0.7); }
+  .dr-pos .dr-col-title { color: rgba(45,122,79,0.75); }
+  .dr-item { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: rgba(245,240,232,0.82); padding: 6px 0; border-bottom: 1px solid rgba(245,240,232,0.07); line-height: 1.4; }
+  .dr-item:last-child { border-bottom: none; }
+  .dr-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+  .dr-neg .dr-dot { background: rgba(200,55,26,0.65); }
+  .dr-pos .dr-dot { background: rgba(45,122,79,0.7); }
+
+  .ai-insight { background: white; border: 1px solid var(--rule); border-left: 3px solid var(--ink); padding: 18px 22px; margin-bottom: 14px; display: none; }
+  .ai-insight.visible { display: block; }
+  .ai-insight-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-light); margin-bottom: 8px; }
+  .ai-insight-text { font-size: 14px; color: var(--ink-mid); line-height: 1.65; }
+  .ai-insight-link { display: inline-block; margin-top: 10px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--ink); padding-bottom: 1px; cursor: pointer; }
+  .ai-insight-link:hover { color: var(--red); border-color: var(--red); }
+
+  .section-divider { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-light); margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+  .section-divider::after { content: ''; flex: 1; height: 1px; background: var(--rule); }
+
+  .primary-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 14px; }
+  @media(max-width:640px){ .primary-grid { grid-template-columns: 1fr 1fr; } }
+  .metric-card { background: white; border: 1px solid var(--rule); padding: 16px; }
+  .metric-card.primary { border-top: 2px solid var(--ink); }
+  .metric-card.secondary { padding: 13px 15px; }
+  .metric-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .metric-card-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-light); }
+  .metric-pill { font-family: var(--font-mono); font-size: 9px; padding: 2px 7px; border-radius: 20px; }
+  .metric-value { font-family: var(--font-display); font-size: 26px; color: var(--ink); line-height: 1; }
+  .metric-card.secondary .metric-value { font-size: 20px; }
+  .metric-detail { font-size: 11px; color: var(--ink-light); margin-top: 4px; line-height: 1.5; }
+  .metric-bar { height: 2px; margin-top: 12px; background: var(--rule); }
+  .metric-bar-fill { height: 100%; transition: width 0.6s ease; }
+
+  .secondary-metrics { margin-bottom: 14px; }
+  .secondary-toggle { display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; padding: 9px 14px; background: white; border: 1px solid var(--rule); transition: background 0.15s; }
+  .secondary-toggle:hover { background: rgba(26,25,22,0.02); }
+  .secondary-toggle-hint { font-family: var(--font-mono); font-size: 9px; color: var(--ink-light); margin-left: 8px; letter-spacing: 0.06em; }
+  .secondary-toggle-icon { font-family: var(--font-mono); font-size: 13px; color: var(--ink-light); transition: transform 0.2s; margin-left: 8px; }
+  .secondary-toggle-icon.open { transform: rotate(180deg); }
+  .secondary-body { display: none; }
+  .secondary-body.open { display: block; }
+  .secondary-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-top: 10px; }
+  @media(max-width:640px){ .secondary-grid { grid-template-columns: 1fr 1fr; } }
+
+  .bottom-cta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+  @media(max-width:520px){ .bottom-cta { grid-template-columns: 1fr; } }
+  .cta-primary { padding: 14px; background: var(--ink); color: var(--cream); border: none; font-family: var(--font-body); font-size: 13px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer; text-align: center; transition: background 0.2s; }
+  .cta-primary:hover { background: var(--red); }
+  .cta-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+  .cta-secondary { padding: 14px; background: transparent; color: var(--ink); border: 1px solid var(--rule); font-family: var(--font-body); font-size: 13px; font-weight: 500; cursor: pointer; text-align: center; text-decoration: none; display: block; transition: border-color 0.2s; }
+  .cta-secondary:hover { border-color: var(--ink); }
+</style>
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="Immobilieninserate unabhängig analysieren: Marktpreisvergleich, Lärm, Besonnung, ÖV und KI-Report für Miet- und Kaufinserate in der ganzen Schweiz. Kostenlos.">
+  <meta name="keywords" content="Mietpreise Schweiz, Immobilien Analyse, Wohnung mieten Schweiz, Mietpreisvergleich, Immoskop, Homegate Preise prüfen, überteuerte Miete">
+  <meta name="author" content="Immoskop">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://www.immoskop.ch/">
+
+  <!-- Open Graph (für Social Media Vorschauen) -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://www.immoskop.ch/">
+  <meta property="og:title" content="Immoskop — Immobilieninserate unabhängig analysiert">
+  <meta property="og:description" content="Marktpreisvergleich, Lärm, Besonnung, ÖV und KI-Report für Miet- und Kaufinserate in der ganzen Schweiz. Kostenlos und unabhängig.">
+  <meta property="og:image" content="https://www.immoskop.ch/logo.png">
+  <meta property="og:locale" content="de_CH">
+  <meta property="og:site_name" content="Immoskop">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Immoskop — Immobilieninserate unabhängig analysiert">
+  <meta name="twitter:description" content="Ist dein Inserat fair bewertet? Marktpreisvergleich + KI-Report. Kostenlos.">
+  <meta name="twitter:image" content="https://www.immoskop.ch/logo.png">
+
+  <!-- Schema.org Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Immoskop",
+    "url": "https://www.immoskop.ch",
+    "description": "Unabhängige Analyse von Schweizer Immobilieninseraten: Marktpreisvergleich, Lärm-, Solar- und ÖV-Daten sowie KI-Report. Kostenlos.",
+    "applicationCategory": "FinanceApplication",
+    "operatingSystem": "Web",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "CHF"
+    },
+    "areaServed": {
+      "@type": "Country",
+      "name": "Switzerland"
+    },
+    "inLanguage": ["de", "en", "fr"],
+    "provider": {
+      "@type": "Organization",
+      "name": "Däscher & Partner Immobilien GmbH",
+      "url": "https://www.immoskop.ch",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Cresta 3",
+        "postalCode": "7415",
+        "addressLocality": "Pratval",
+        "addressCountry": "CH"
+      }
+    },
+    "featureList": [
+      "Marktpreisvergleich für Miet- und Kaufinserate",
+      "BAFU Strassenlärmdaten",
+      "Solareignung (swisstopo)",
+      "ÖV-Anbindung",
+      "Kriminalstatistik (BFS PKS)",
+      "KI-generierter Analysebericht",
+      "Besichtigungs-Checkliste"
+    ]
+  }
+  </script>
+
+  <!-- FAQ Schema for common questions -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Wie erkenne ich ob eine Miete zu teuer ist?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Immoskop vergleicht den Inseratspreis mit dem lokalen Marktmedian (PLZ- und strassengenau) und zeigt die prozentuale Abweichung. Über 10% gilt als überteuert."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Welche Datenquellen verwendet Immoskop?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Immoskop verwendet Marktpreisdaten aus Schweizer Immobilientransaktionen, Lärmdaten des BAFU (sonBASE), Solardaten von swisstopo/BFE, ÖV-Daten via OpenStreetMap und Kriminalstatistiken des BFS."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Ist Immoskop kostenlos?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Ja. Die Basisanalyse inklusive KI-Report ist vollständig kostenlos. Immoskop finanziert sich nicht durch Werbung."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Funktioniert Immoskop für alle Schweizer Gemeinden?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Immoskop hat Marktpreisdaten für 155+ Schweizer Gemeinden und strassengenaue Daten für über 5800 Strassen. Für alle anderen Gemeinden wird ein statistisches Modell verwendet."
+        }
+      }
+    ]
+  }
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <a href="/" class="logo-link">
+    <img src="/logo.png" alt="Immoskop" style="height:clamp(36px,6vw,52px);width:auto;transform:scaleX(-1);">
+    <span class="logo-wordmark">immo<em>skop</em></span>
+  </a>
+  <nav style="display:flex;gap:28px;align-items:center;">
+    <a href="#checker" style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-light);text-decoration:none;" class="nav-hide-sm" data-i18n="nav_analyse">Analyse</a>
+    <a href="#how" style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-light);text-decoration:none;" class="nav-hide-sm" data-i18n="nav_how">So funktioniert's</a>
+    <a href="#features" style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-light);text-decoration:none;" class="nav-hide-sm" data-i18n="nav_features">Features</a>
+  </nav>
+  <div class="lang-switch">
+    <button class="lang-btn active" onclick="setLang('de')">DE</button>
+    <button class="lang-btn" onclick="setLang('en')">EN</button>
+    <button class="lang-btn" onclick="setLang('fr')">FR</button>
+  </div>
+</header>
+
+<!-- HERO -->
+<section style="max-width:1200px;margin:0 auto;padding:clamp(28px,5vw,72px) clamp(16px,4vw,80px) 0;" id="checker">
+  <!-- TICKER -->
+  <div style="overflow:hidden;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:10px 0;margin-bottom:32px;">
+    <div id="ticker" style="display:flex;gap:40px;white-space:nowrap;animation:ticker 30s linear infinite;font-family:var(--font-mono);font-size:11px;color:var(--ink-light);">
+      <span>Zürich 8005 — 3.5 Zi. — <span style="color:var(--red)">+18% über Markt</span></span>
+      <span>Basel 4051 — 2.5 Zi. — <span style="color:var(--green)">−6% unter Markt</span></span>
+      <span>Bern 3014 — 4.5 Zi. — <span style="color:var(--red)">+11% über Markt</span></span>
+      <span>Zürich 8002 — 1.5 Zi. — <span style="color:var(--green)">−2% Marktpreis</span></span>
+      <span>Winterthur 8400 — 3 Zi. — <span style="color:var(--amber)">+7% über Markt</span></span>
+      <span>Luzern 6003 — 2 Zi. — <span style="color:var(--green)">−12% unter Markt</span></span>
+      <span>Genf 1201 — 4 Zi. — <span style="color:var(--red)">+22% über Markt</span></span>
+      <span>Zürich 8005 — 3.5 Zi. — <span style="color:var(--red)">+18% über Markt</span></span>
+      <span>Basel 4051 — 2.5 Zi. — <span style="color:var(--green)">−6% unter Markt</span></span>
+      <span>Bern 3014 — 4.5 Zi. — <span style="color:var(--red)">+11% über Markt</span></span>
+    </div>
+  </div>
+  <style>@keyframes ticker { from{transform:translateX(0)} to{transform:translateX(-50%)} }</style>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:start;" class="hero-grid">
+
+    <!-- LEFT: Claim -->
+    <div>
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;">
+    <div class="hero-tag" style="margin-bottom:0;" data-i18n="tag">Beta</div>
+    <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;background:var(--green);color:white;padding:3px 10px;" data-i18n="free_badge">100% Kostenlos</div>
+  </div>
+      <h1 class="hero-title" data-i18n="title">Immobilieninserate<br><em>unabhängig analysiert</em></h1>
+      <p class="hero-sub" data-i18n="sub">Inserate-Daten manuell eingeben oder kompletten Inseratstext einfügen. Immoskop liefert Marktpreisvergleich und diverse Angaben zum Objekt. Auf Wunsch mit kostenlosem KI-Report und individueller Checkliste für die Besichtigung. Alles basierend auf unabhängigen Schweizer Datenquellen.</p>
+      <div class="data-badges">
+        <span class="badge">Marktdaten CH</span>
+        <span class="badge">swisstopo</span>
+        <span class="badge">BAFU</span>
+        <span class="badge">OpenStreetMap</span>
+        <span class="badge">BFS PKS</span>
+        <span class="badge">Geoapify</span>
+      </div>
+    </div>
+
+    <!-- RIGHT: Tool -->
+    <div>
+      <!-- TAB TOGGLE -->
+      <div class="tool-toggle">
+        <button class="tool-tab active" id="tab-form" onclick="switchTab('form')">
+          <span class="tab-icon">&#9998;</span>
+          <span class="tab-label" data-i18n="tab_form">Formular</span>
+          <span class="tab-sub" data-i18n="tab_form_sub">Adresse eingeben</span>
+        </button>
+        <button class="tool-tab" id="tab-paste" onclick="switchTab('paste')">
+          <span class="tab-icon">&#9113;</span>
+          <span class="tab-label" data-i18n="tab_paste">Inserat einfügen</span>
+          <span class="tab-sub" data-i18n="tab_paste_sub">Text kopieren & einfügen</span>
+        </button>
+      </div>
+
+      <!-- TOOL PANEL -->
+      <div class="tool-panel">
+
+        <!-- FORM TAB -->
+        <div class="tool-section active" id="section-form">
+          <div class="field">
+            <div class="field-label" data-i18n="lbl_address">Adresse</div>
+            <div class="autocomplete-wrap">
+              <input type="text" id="address" autocomplete="off" oninput="onAddressInput(this.value)" data-i18n-placeholder="ph_address" placeholder="z.B. Seestrasse 12, Zürich">
+              <div class="autocomplete-list" id="autocomplete-list"></div>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <div class="field-label" data-i18n="lbl_type">Typ</div>
+              <select id="type" onchange="onTypeChange()">
+                <option value="miete" data-i18n="opt_rent">Miete</option>
+                <option value="kauf" data-i18n="opt_buy">Kauf</option>
+              </select>
+            </div>
+            <div class="field">
+              <div class="field-label" data-i18n="lbl_object">Objekt</div>
+              <select id="propertyKind" onchange="onPropertyKindChange()">
+                <option value="wohnung" data-i18n="opt_wohnung">Wohnung</option>
+                <option value="haus" data-i18n="opt_haus">Haus / EFH</option>
+              </select>
+            </div>
+            <div class="field">
+              <div class="field-label" id="price-label" data-i18n="lbl_price_rent">Mietzins CHF/Mt.</div>
+              <input type="number" id="price" value="2400" min="100">
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <div class="field-label" data-i18n="lbl_rooms">Zimmer</div>
+              <select id="rooms">
+                <option>1</option><option>1.5</option><option>2</option><option>2.5</option>
+                <option selected>3</option><option>3.5</option><option>4</option>
+                <option>4.5</option><option>5</option><option>5.5+</option>
+              </select>
+            </div>
+            <div class="field">
+              <div class="field-label" data-i18n="lbl_area">Fläche m²</div>
+              <input type="number" id="area" value="75" min="20" max="500">
+            </div>
+          </div>
+          <div class="field-row3">
+            <div class="field" id="floor-field">
+              <div class="field-label" data-i18n="lbl_floor">Etage</div>
+              <input type="number" id="floor" value="2" min="0" max="30">
+            </div>
+            <div class="field">
+              <div class="field-label" data-i18n="lbl_outdoor">Aussenraum</div>
+              <select id="outdoor">
+                <option value="none" data-i18n="opt_none">Kein</option>
+                <option value="balkon" selected data-i18n="opt_balcony">Balkon</option>
+                <option value="terrasse" data-i18n="opt_terrace">Terrasse</option>
+                <option value="garten" data-i18n="opt_garden">Garten</option>
+              </select>
+            </div>
+            <div class="field">
+              <div class="field-label" data-i18n="lbl_condition">Zustand</div>
+              <select id="condition">
+                <option value="neuwertig" data-i18n="opt_new">Neuwertig</option>
+                <option value="gut" selected data-i18n="opt_good">Gut</option>
+                <option value="mittel" data-i18n="opt_medium">Mittel</option>
+                <option value="renovationsbed" data-i18n="opt_reno">Renov.bed.</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <div class="field-label" data-i18n="lbl_year">Baujahr</div>
+            <select id="year">
+              <option value="2020" data-i18n="opt_2020">ab 2020</option>
+              <option value="2010" data-i18n="opt_2010">2010–2019</option>
+              <option value="2000" selected data-i18n="opt_2000">2000–2009</option>
+              <option value="1990" data-i18n="opt_1990">1990–1999</option>
+              <option value="1980" data-i18n="opt_1980">1980–1989</option>
+              <option value="alt" data-i18n="opt_alt">vor 1980</option>
+            </select>
+          </div>
+          <div class="field">
+            <div class="field-label" data-i18n="lbl_extra">Weitere Infos (optional)</div>
+            <textarea id="extra-info" rows="3" data-i18n-placeholder="ph_extra" placeholder="z.B. Seesicht, Minergie-Standard, neue Küche, ruhige Lage, Kellerabteil, Parkplatz inbegriffen..." style="width:100%;background:rgba(245,240,232,0.07);border:1px solid rgba(245,240,232,0.14);color:var(--cream);padding:9px 12px;font-family:var(--font-body);font-size:12px;outline:none;resize:vertical;border-radius:0;"></textarea>
+          </div>
+          <button class="btn-primary" id="btn-analyse" onclick="runAnalysis()" data-i18n="btn_analyse">Analyse starten →</button>
+          <div class="error-box" id="error-box"></div>
+          <div class="status-bar" id="status-bar">
+            <div class="spinner" id="spinner"></div>
+            <div id="status-text">...</div>
+          </div>
+        </div>
+
+        <!-- PASTE TAB -->
+        <div class="tool-section" id="section-paste">
+          <div class="paste-instructions">
+            <div class="paste-step"><span class="paste-step-num">01</span><span data-i18n="paste_step1"><strong>Smartphone:</strong> Inserat öffnen → Wort lang drücken → «Alles auswählen» → «Kopieren»</span></div>
+            <div class="paste-step"><span class="paste-step-num">02</span><span data-i18n="paste_step2"><strong>Computer:</strong> Inserat öffnen → Ctrl+A → Ctrl+C</span></div>
+            <div class="paste-step"><span class="paste-step-num">03</span><span data-i18n="paste_step3">Hier einfügen und Enter drücken</span></div>
+          </div>
+          <div class="field">
+            <textarea id="insert-text" rows="8" maxlength="8000" onkeydown="if(event.key==='Enter'){event.preventDefault();parseInserat();}" data-i18n-placeholder="ph_paste" placeholder="Inseratstext hier einfügen..."></textarea>
+          </div>
+          <button class="btn-primary" id="btn-parse" onclick="parseInserat()" data-i18n="btn_parse">Inserat analysieren →</button>
+          <div id="parse-status" style="font-family:var(--font-mono);font-size:10px;color:rgba(245,240,232,0.45);margin-top:10px;display:none;"></div>
+        </div>
+
+      </div><!-- /tool-panel -->
+    </div><!-- /hero-right -->
+
+  </div><!-- /hero-grid -->
+</section>
+
+<!-- RESULTS -->
+<div class="results-section" id="results-section">
+  <div id="befristung-warn" style="display:none;background:#FDECEA;border:2px solid #C8371A;padding:14px 20px;margin-bottom:14px;">
+    <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#C8371A;margin-bottom:6px;" data-i18n="warn_befristet">!! Befristeter Mietvertrag !!</div>
+    <div id="befristung-details" style="font-size:14px;color:#C8371A;font-weight:500;"></div>
+  </div>
+
+  <!-- 1. RESULT HERO -->
+  <div class="result-hero" id="result-hero">
+    <div class="hero-address" id="hero-address"></div>
+    <div class="hero-inner">
+      <div>
+        <div class="hero-verdict" id="hero-verdict">Marktpreise werden geladen…</div>
+        <div class="hero-subline" id="hero-subline"></div>
+        <div class="hero-context" id="hero-context"></div>
+        <div class="hero-negotiation" id="hero-negotiation" style="display:none"></div>
+        <div id="price-note" style="display:none;margin:10px 0 0;padding:10px 14px;background:#fff8e1;border-left:3px solid #f59e0b;font-size:12px;color:#92400e;line-height:1.5;"></div>
+      </div>
+      <div><div class="hero-badge badge-loading" id="hero-badge">…</div></div>
+    </div>
+    <div class="market-band">
+      <div class="market-band-label" data-i18n="res_market_label">Markteinordnung</div>
+      <div style="position:relative;margin:10px 0 6px;">
+        <div class="band-track">
+          <div class="band-ref-line"></div>
+          <div class="band-obj-marker" id="band-obj-marker" style="left:50%"></div>
+        </div>
+      </div>
+      <div class="band-labels"><span data-i18n="res_band_low">Günstiger</span><span data-i18n="res_band_mid">Marktpreis</span><span data-i18n="res_band_high">Teurer</span></div>
+      <div id="verdict-source" style="font-family:var(--font-mono);font-size:9px;color:var(--ink-light);opacity:0.55;margin-top:6px;"></div>
+    </div>
+  </div>
+
+  <!-- 2. DECISION REASONS -->
+  <div class="decision-reasons" id="decision-reasons" style="display:none">
+    <div class="dr-header" data-i18n="res_why">Warum diese Einordnung?</div>
+    <div class="dr-grid">
+      <div class="dr-neg" id="dr-neg"><div class="dr-col-title" data-i18n="res_neg">Kritisch / Negativ</div></div>
+      <div class="dr-pos" id="dr-pos"><div class="dr-col-title" data-i18n="res_pos">Positiv / Für das Objekt</div></div>
+    </div>
+  </div>
+
+  <!-- 3. AI INSIGHT -->
+  <div class="ai-insight" id="ai-insight">
+    <div class="ai-insight-label" data-i18n="res_ai_label">KI-Fazit</div>
+    <div class="ai-insight-text" id="ai-insight-text"></div>
+    <span class="ai-insight-link" onclick="scrollToReport()" data-i18n="res_ai_link">Detaillierte Analyse lesen →</span>
+  </div>
+
+  <!-- 4. PRIMARY METRICS -->
+  <div style="margin-bottom:14px;">
+    <div class="section-divider" data-i18n="res_primary">Wichtige Faktoren</div>
+    <div class="primary-grid" id="primary-grid"></div>
+  </div>
+
+  <!-- 5. SECONDARY METRICS -->
+  <div class="secondary-metrics">
+    <div class="secondary-toggle" onclick="toggleSecondary()">
+      <div style="display:flex;align-items:center;">
+        <div class="section-divider" style="margin-bottom:0;flex:none" data-i18n="res_secondary">Weitere Standortfaktoren</div>
+        <span class="secondary-toggle-hint" data-i18n="res_secondary_hint">— zum Ausklappen klicken</span>
+      </div>
+      <div class="secondary-toggle-icon" id="secondary-icon">▾</div>
+    </div>
+    <div class="secondary-body" id="secondary-body">
+      <div class="secondary-grid" id="secondary-grid"></div>
+    </div>
+  </div>
+
+  <!-- 6. ENVIRONMENT -->
+  <div class="poi-section" id="poi-section"></div>
+
+  <!-- 7. CHECKLIST -->
+  <div class="checklist-section" id="checklist-section"></div>
+
+  <!-- hidden legacy -->
+  <div class="score-grid" id="score-grid" style="display:none"></div>
+  <div class="sources-row" id="sources-row"></div>
+
+  <!-- 8. BOTTOM CTA -->
+  <div class="bottom-cta">
+    <button id="btn-report" class="cta-primary" onclick="generateReport()" data-i18n="res_cta_report">Detaillierten KI-Report generieren →</button>
+    <a href="/" class="cta-secondary" data-i18n="res_cta_new">Weitere Wohnung prüfen →</a>
+  </div>
+
+  <div class="report-section" id="report-section">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid var(--ink);">
+      <div>
+        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-light);margin-bottom:4px;">KI-generierter Report</div>
+        <div style="font-family:var(--font-display);font-size:22px;" id="report-address"></div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="printReport()" style="padding:10px 16px;background:white;color:var(--ink);border:1px solid var(--rule);font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;">Drucken / PDF</button>
+        <button onclick="shareReport()" style="padding:10px 16px;background:var(--ink);color:var(--cream);border:none;font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;">Teilen</button>
+      </div>
+    </div>
+    <div class="report-content" id="report-content"></div>
+    <div id="report-tiles-summary" style="margin-top:28px;padding-top:24px;border-top:1px solid var(--rule);"></div>
+  </div>
+</div>
+
+<!-- STATS BAR -->
+<div style="border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);background:var(--ink);margin-top:48px;">
+  <div style="max-width:1200px;margin:0 auto;padding:0 clamp(16px,4vw,80px);display:grid;grid-template-columns:repeat(4,1fr);text-align:center;" class="stats-inner">
+<style>@media(max-width:600px){.stats-inner{grid-template-columns:1fr 1fr!important;}.stats-inner>div{border-right:none!important;border-bottom:1px solid rgba(245,240,232,0.1);}}</style>
+    <div style="padding:24px 16px;border-right:1px solid rgba(245,240,232,0.1);">
+      <div style="font-family:var(--font-display);font-size:32px;color:var(--cream);">26</div>
+      <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;color:rgba(245,240,232,0.45);text-transform:uppercase;margin-top:4px;" data-i18n="stat_kantone">Kantone abgedeckt</div>
+    </div>
+    <div style="padding:24px 16px;border-right:1px solid rgba(245,240,232,0.1);">
+      <div style="font-family:var(--font-display);font-size:32px;color:var(--cream);">155+</div>
+      <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;color:rgba(245,240,232,0.45);text-transform:uppercase;margin-top:4px;" data-i18n="stat_gemeinden">Gemeinden mit Marktdaten</div>
+    </div>
+    <div style="padding:24px 16px;border-right:1px solid rgba(245,240,232,0.1);">
+      <div style="font-family:var(--font-display);font-size:32px;color:var(--cream);">5800+</div>
+      <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;color:rgba(245,240,232,0.45);text-transform:uppercase;margin-top:4px;" data-i18n="stat_strassen">Strassen mit Preisdaten</div>
+    </div>
+    <div style="padding:24px 16px;">
+      <div style="font-family:var(--font-display);font-size:32px;color:var(--cream);">CHF 0</div>
+      <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;color:rgba(245,240,232,0.45);text-transform:uppercase;margin-top:4px;" data-i18n="stat_kosten">Kosten für die Analyse</div>
+    </div>
+  </div>
+</div>
+
+<!-- BELOW FOLD -->
+<div class="below-fold">
+
+  <!-- HOW IT WORKS -->
+  <div id="how" style="scroll-margin-top:80px;"></div>
+  <div class="section">
+    <div id="how" style="scroll-margin-top:76px;"></div><div class="section-tag" data-i18n="how_tag">So funktioniert's</div>
+    <h2 class="section-title" data-i18n="how_title">Drei Schritte zur <em>unabhängigen Analyse</em></h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-title" data-i18n="step1_title">Adresse eingeben</div>
+        <div class="step-text" data-i18n="step1_text">Daten manuell eingeben oder den Inseratstext direkt aus Homegate, ImmoScout, Comparis oder einem anderen Portal kopieren und einfügen.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-title" data-i18n="step2_title">Daten werden abgerufen</div>
+        <div class="step-text" data-i18n="step2_text">Immoskop ruft automatisch Marktpreise, Lärmdaten (BAFU), Besonnung (swisstopo), ÖV-Anbindung, Kriminalitätsstatistiken und Umgebungsinfos ab.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-title" data-i18n="step3_title">Analyse erhalten</div>
+        <div class="step-text" data-i18n="step3_text">Sofortige Übersicht mit Preisbewertung, Lage-Score und optionalem KI-Report mit detaillierter Einschätzung und Besichtigungs-Checkliste.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DATA SOURCES -->
+  <div class="section" style="border-top:1px solid var(--rule);padding-top:clamp(40px,6vw,80px);">
+    <div class="section-tag" data-i18n="data_tag">Datenquellen</div>
+    <h2 class="section-title" data-i18n="data_title">Offizielle Daten, <em>keine Werbung</em></h2>
+    <div class="sources-grid">
+      <div class="source-card"><div class="source-name" data-i18n="src_name_markt">Marktdaten</div><div class="source-desc" data-i18n="src_realadvisor">Aktuelle Marktpreise pro m² für Miete und Kauf — PLZ- und strassengenau für 155+ Schweizer Gemeinden.</div></div>
+      <div class="source-card"><div class="source-name">BAFU</div><div class="source-desc" data-i18n="src_bafu">Offizielle Strassenlärmdaten des Bundesamts für Umwelt (sonBASE).</div></div>
+      <div class="source-card"><div class="source-name">swisstopo BFE</div><div class="source-desc" data-i18n="src_solar">Solareignung der Fassaden und Dächer aus der nationalen Sonnendach-Datenbank.</div></div>
+      <div class="source-card"><div class="source-name">OpenStreetMap</div><div class="source-desc" data-i18n="src_osm">ÖV-Haltestellen, Schulen, Supermärkte, Parks und weitere Infrastruktur im Umkreis.</div></div>
+      <div class="source-card"><div class="source-name">BFS PKS</div><div class="source-desc" data-i18n="src_pks">Polizeiliche Kriminalstatistik des Bundesamts für Statistik.</div></div>
+      <div class="source-card"><div class="source-name" data-i18n="src_name_ki">KI-Analyse</div><div class="source-desc" data-i18n="src_claude">KI-gestützte Analyse und Kommentierung des Inseratstexts und der Marktdaten.</div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- WARUM IMMOSKOP -->
+<div style="background:var(--ink);margin-top:0;overflow:hidden;">
+  <div class="section" style="border-top:none;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;" id="features" class="warum-grid">
+      <div>
+        <div class="section-tag" style="color:rgba(245,240,232,0.4);" data-i18n="independence_tag">Unabhängigkeit</div>
+        <h2 style="font-family:var(--font-display);font-size:clamp(28px,4vw,44px);line-height:1.1;letter-spacing:-0.02em;color:var(--cream);margin-bottom:20px;"><span data-i18n="independence_title">Wohnen ist keine Verhandlungssache —</span><br><em style="font-style:italic;color:var(--red);" data-i18n="independence_title2">Preistransparenz schon.</em></h2>
+        <p style="font-size:14px;color:rgba(245,240,232,0.55);line-height:1.8;max-width:420px;"><span data-i18n="independence_text">Der Schweizer Immobilienmarkt ist undurchsichtig by design. Plattformen, die von Inserierenden bezahlt werden, haben kein Interesse daran, dass Sie wissen, ob ein Preis fair ist. Immoskop schon.</span></p>
+      </div>
+      <div>
+        <!-- FEATURES LIST -->
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(245,240,232,0.3);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid rgba(245,240,232,0.1);" data-i18n="features_title">Features</div>
+        <div id="features-list">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(245,240,232,0.08);">
+            <span style="font-size:14px;color:var(--cream);" data-i18n="feat_price">Preisbewertung — <em style="font-style:italic;color:rgba(245,240,232,0.5);">über oder unter Markt?</em></span>
+            <span style="font-family:var(--font-mono);font-size:10px;color:var(--green);letter-spacing:0.08em;">GRATIS</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(245,240,232,0.08);">
+            <span style="font-size:14px;color:var(--cream);" data-i18n="feat_oev">ÖV-Score — <em style="font-style:italic;color:rgba(245,240,232,0.5);">Distanz zu Haltestellen</em></span>
+            <span style="font-family:var(--font-mono);font-size:10px;color:var(--green);letter-spacing:0.08em;">GRATIS</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(245,240,232,0.08);">
+            <span style="font-size:14px;color:var(--cream);" data-i18n="feat_noise">Lärmanalyse — <em style="font-style:italic;color:rgba(245,240,232,0.5);">BAFU Messdaten</em></span>
+            <span style="font-family:var(--font-mono);font-size:10px;color:var(--green);letter-spacing:0.08em;">GRATIS</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(245,240,232,0.08);">
+            <span style="font-size:14px;color:var(--cream);" data-i18n="feat_checklist">Besichtigungs-Checkliste — <em style="font-style:italic;color:rgba(245,240,232,0.5);">KI-generiert</em></span>
+            <span style="font-family:var(--font-mono);font-size:10px;color:var(--green);letter-spacing:0.08em;">GRATIS</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(245,240,232,0.08);">
+            <span style="font-size:14px;color:var(--cream);" data-i18n="feat_amenities">Umgebungsdaten — <em style="font-style:italic;color:rgba(245,240,232,0.5);">ÖV, Schulen, Einkauf, Parks</em></span>
+            <span style="font-family:var(--font-mono);font-size:10px;color:var(--green);letter-spacing:0.08em;">GRATIS</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(245,240,232,0.08);">
+            <span style="font-size:14px;color:var(--cream);" data-i18n="feat_report">Umfassender KI-Report — <em style="font-style:italic;color:rgba(245,240,232,0.5);">vollständige Analyse</em></span>
+            <span style="font-family:var(--font-mono);font-size:10px;color:var(--green);letter-spacing:0.08em;">GRATIS</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;">
+            <span style="font-size:14px;color:rgba(245,240,232,0.4);" data-i18n="feat_more">Weitere Features — <em style="font-style:italic;">in Entwicklung</em></span>
+            <span style="font-family:var(--font-mono);font-size:10px;color:var(--amber);letter-spacing:0.08em;">BALD</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <span class="footer-text">© 2026 Immoskop — Zürich, Schweiz</span>
+  <div style="display:flex;gap:20px;">
+    <a href="/ueber-uns.html" style="font-family:var(--font-mono);font-size:10px;color:var(--ink-light);text-decoration:none;" data-i18n="footer_ueber">Über uns</a>
+    <a href="/datenschutz.html" style="font-family:var(--font-mono);font-size:10px;color:var(--ink-light);text-decoration:none;" data-i18n="footer_datenschutz">Datenschutz</a>
+    <a href="/impressum.html" style="font-family:var(--font-mono);font-size:10px;color:var(--ink-light);text-decoration:none;" data-i18n="footer_impressum">Impressum</a>
+    <a href="/kontakt.html" style="font-family:var(--font-mono);font-size:10px;color:var(--ink-light);text-decoration:none;" data-i18n="footer_kontakt">Kontakt</a>
+  </div>
+  <span class="footer-text" data-i18n="footer_note">Keine Anlageberatung. Alle Angaben ohne Gewähr.</span>
+</footer>
+
+<script>
+// ─── I18N ─────────────────────────────────────────────────────────
+const TRANSLATIONS = {
+  de: {
+    tag: 'Beta — Schweiz',
+    title: 'Immobilieninserate<br><em>unabhängig analysiert</em>',
+    sub: 'Inserate-Daten manuell eingeben oder kompletten Inseratstext einfügen. Immoskop liefert Marktpreisvergleich und diverse Angaben zum Objekt. Auf Wunsch mit kostenlosem KI-Report und individueller Checkliste für die Besichtigung. Alles basierend auf unabhängigen Schweizer Datenquellen.',
+    tab_form: 'Formular', tab_form_sub: 'Daten eingeben',
+    tab_paste: 'Inserat einfügen', tab_paste_sub: 'Text kopieren & einfügen',
+    lbl_address: 'Adresse', ph_address: 'z.B. Seestrasse 12, Zürich',
+    lbl_type: 'Typ', opt_rent: 'Miete', opt_buy: 'Kauf',
+    lbl_price_rent: 'Mietzins CHF/Mt.', lbl_price_buy: 'Kaufpreis CHF',
+    lbl_rooms: 'Zimmer', lbl_area: 'Fläche m²', lbl_floor: 'Etage',
+    lbl_outdoor: 'Aussenraum', opt_none: 'Kein', opt_balcony: 'Balkon', opt_terrace: 'Terrasse', opt_garden: 'Garten',
+    lbl_condition: 'Zustand', opt_new: 'Neuwertig', opt_good: 'Gut', opt_medium: 'Mittel', opt_reno: 'Renov.bed.',
+    lbl_year: 'Baujahr', opt_2020: 'ab 2020', opt_2010: '2010–2019', opt_2000: '2000–2009', opt_1990: '1990–1999', opt_1980: '1980–1989', opt_alt: 'vor 1980',
+    free_badge: '100% Kostenlos',
+    btn_analyse: 'Analyse starten →',
+    paste_step1: '<strong>Smartphone:</strong> Inserat öffnen → Wort lang drücken → «Alles auswählen» → «Kopieren»',
+    paste_step2: '<strong>Computer:</strong> Inserat öffnen → Ctrl+A → Ctrl+C',
+    paste_step3: 'Hier einfügen und Enter drücken',
+    ph_paste: 'Inseratstext hier einfügen...', btn_parse: 'Inserat analysieren →',
+    warn_befristet: '!! Befristeter Mietvertrag !!',
+    meter_low: 'Sehr günstig', meter_mid: 'Marktpreis', meter_high: 'Sehr teuer',
+    btn_report: 'KI-Report generieren (kostenlos) →',
+    lbl_extra: 'Weitere Infos (optional)', ph_extra: 'z.B. Seesicht, Minergie-Standard, neue Küche, ruhige Lage, Kellerabteil, Parkplatz inbegriffen...', report_label: 'Immoskop — KI-generierter Report',
+    how_tag: "So funktionierts", how_title: 'Drei Schritte zur <em>unabhängigen Analyse</em>',
+    step1_title: 'Daten eingeben', step1_text: 'Daten manuell eingeben oder den Inseratstext direkt aus Homegate, ImmoScout, Comparis oder einem anderen Portal kopieren und einfügen.',
+    step2_title: 'Daten werden abgerufen', step2_text: 'Immoskop ruft automatisch Marktpreise, Lärmdaten (BAFU), Besonnung (swisstopo), ÖV-Anbindung, Kriminalitätsstatistiken und Umgebungsinfos ab.',
+    step3_title: 'Analyse erhalten', step3_text: 'Sofortige Übersicht mit Preisbewertung, Lage-Score und optionalem KI-Report mit detaillierter Einschätzung und Besichtigungs-Checkliste.',
+    data_tag: 'Datenquellen', data_title: 'Offizielle Daten, <em>keine Werbung</em>',
+    src_realadvisor: 'Aktuelle Marktpreise pro m² für Miete und Kauf — PLZ- und strassengenau für 155+ Schweizer Gemeinden.',
+    src_bafu: 'Offizielle Strassenlärmdaten des Bundesamts für Umwelt (sonBASE).',
+    src_solar: 'Solareignung aus der nationalen Sonnendach-Datenbank (swisstopo/BFE).',
+    src_osm: 'ÖV-Haltestellen, Schulen, Supermärkte, Parks und weitere Infrastruktur im Umkreis.',
+    src_pks: 'Polizeiliche Kriminalstatistik des Bundesamts für Statistik.',
+    src_claude: 'KI-gestützte Analyse und Kommentierung des Inseratstexts und der Marktdaten.',
+    footer_note: 'Keine Anlageberatung. Alle Angaben ohne Gewähr.',
+    lbl_object: 'Objekt', opt_wohnung: 'Wohnung', opt_haus: 'Haus / EFH',
+    nav_analyse: 'Analyse', nav_how: 'So funktioniert’s', nav_features: 'Features',
+    stat_kantone: 'Kantone abgedeckt', stat_gemeinden: 'Gemeinden mit Marktdaten',
+    stat_strassen: 'Strassen mit Preisdaten', stat_kosten: 'Kosten für die Analyse',
+    src_name_markt: 'Marktdaten', src_name_ki: 'KI-Analyse',
+    independence_tag: 'Unabhängigkeit',
+    independence_title: 'Wohnen ist keine Verhandlungssache —',
+    independence_title2: 'Preistransparenz schon.',
+    independence_text: 'Der Schweizer Immobilienmarkt ist undurchsichtig by design. Plattformen, die von Inserierenden bezahlt werden, haben kein Interesse daran, dass Sie wissen, ob ein Preis fair ist. Immoskop schon.',
+    features_title: 'Features',
+        feat_price: 'Preisbewertung — <em style="font-style:italic;color:rgba(245,240,232,0.5);">über oder unter Markt?</em>',
+    feat_oev: 'ÖV-Score — <em style="font-style:italic;color:rgba(245,240,232,0.5);">Distanz zu Haltestellen</em>',
+    feat_noise: 'Lärmanalyse — <em style="font-style:italic;color:rgba(245,240,232,0.5);">BAFU Messdaten</em>',
+    feat_checklist: 'Besichtigungs-Checkliste — <em style="font-style:italic;color:rgba(245,240,232,0.5);">KI-generiert</em>',
+    feat_amenities: 'Umgebungsdaten — <em style="font-style:italic;color:rgba(245,240,232,0.5);">ÖV, Schulen, Einkauf, Parks</em>',
+    feat_report: 'Umfassender KI-Report — <em style="font-style:italic;color:rgba(245,240,232,0.5);">vollständige Analyse</em>',
+    feat_more: 'Weitere Features — <em style="font-style:italic;">in Entwicklung</em>',
+    footer_ueber: 'Über uns', footer_datenschutz: 'Datenschutz',
+    footer_impressum: 'Impressum', footer_kontakt: 'Kontakt',
+    // Resultatseite
+    res_market_label: 'Markteinordnung',
+    res_band_low: 'Günstiger', res_band_mid: 'Marktpreis', res_band_high: 'Teurer',
+    res_why: 'Warum diese Einordnung?',
+    res_neg: 'Kritisch / Negativ', res_pos: 'Positiv / Für das Objekt',
+    res_ai_label: 'KI-Fazit',
+    res_ai_link: 'Detaillierte Analyse lesen →',
+    res_primary: 'Wichtige Faktoren',
+    res_secondary: 'Weitere Standortfaktoren',
+    res_secondary_hint: '— zum Ausklappen klicken',
+    res_cta_report: 'Detaillierten KI-Report generieren →',
+    res_cta_new: 'Weitere Wohnung prüfen →',
+    // Verdicts
+    v_far_under: 'Deutlich unter Marktpreis', v_under: 'Unter Marktpreis',
+    v_fair: 'Nahe am Marktpreis', v_slight: 'Leicht überteuert',
+    v_notable: 'Spürbar überteuert', v_over: 'Klar überteuert',
+    v_sfx_eg: ' – für Erdgeschoss ambitioniert', v_sfx_noise: ' – trotz erhöhtem Lärm',
+    v_sfx_ok: ' – noch im Rahmen', v_sfx_neg: ' – Verhandlung empfohlen',
+    v_sfx_high: ' – deutlich über Markt', v_sfx_cheap: ' – günstiges Angebot',
+    v_ctx_eg: 'Für ein Erdgeschoss ohne Aussenraum ist der Preis eher ambitioniert.',
+    v_ctx_top: 'Innerhalb der üblichen Bandbreite, aber an der oberen Grenze.',
+    v_ctx_high: 'Der Preis liegt deutlich über dem Referenzwert für diese Lage.',
+    v_ctx_cheap: 'Günstiger als vergleichbare Objekte in dieser Lage.',
+    b_far_under: 'Deutlich günstig', b_under: 'Unter Markt', b_fair: 'Nahe am Marktpreis',
+    b_slight: 'Leicht überteuert', b_notable: 'Spürbar überteuert', b_over: 'Klar überteuert',
+    // Reasons
+    r_eg_no_out: 'Erdgeschoss ohne Aussenraum', r_eg: 'Erdgeschoss – eingeschränktes Licht',
+    r_reno: 'Renovationsbedürftiger Zustand',
+    r_new: 'Neuwertig / kürzlich renoviert', r_good: 'Guter Zustand',
+    r_terrace: 'Terrasse vorhanden', r_garden: 'Garten vorhanden', r_solar: 'Sehr gute Besonnung',
+    // Metric cards
+    m_price: 'Preisbewertung', m_noise: 'Lärmsituation', m_oev: 'ÖV-Anbindung',
+    m_solar: 'Besonnung', m_safety: 'Sicherheit', m_outdoor: 'Aussenraum',
+    m_condition: 'Zustand', m_tax: 'Einkommenssteuer',
+    m_quiet: 'Ruhige Lage', m_moderate: 'Moderate Belastung', m_loud: 'Erhöhte Lärmbelastung',
+    m_solar_detail: 'Jahressumme Fassade (swisstopo)', m_no_data: 'Keine Daten',
+    m_bafu_na: 'BAFU-Daten nicht verfügbar',
+    m_tax_cheap: 'Sehr günstig', m_tax_good: 'Günstig', m_tax_mid: 'Moderat',
+    m_tax_exp: 'Teuer', m_tax_vexp: 'Sehr teuer',
+    m_ref: 'Referenz:', m_source: 'Quelle: Marktdaten CH'
+  },
+  en: {
+    tag: 'Beta — Switzerland',
+    title: 'Property listings.<br><em>Independently analysed.</em>',
+    sub: 'Enter the listing details manually or paste the complete listing text — Immoskop delivers market prices, noise, solar, public transport data and more. With optional free AI report and personalised viewing checklist. All based on independent Swiss data sources.',
+    tab_form: 'Form', tab_form_sub: 'Enter details',
+    tab_paste: 'Paste listing', tab_paste_sub: 'Copy & paste text',
+    lbl_address: 'Address', ph_address: 'e.g. Seestrasse 12, Zurich',
+    lbl_type: 'Type', opt_rent: 'Rent', opt_buy: 'Buy',
+    lbl_price_rent: 'Rent CHF/mo.', lbl_price_buy: 'Purchase price CHF',
+    lbl_rooms: 'Rooms', lbl_area: 'Area m²', lbl_floor: 'Floor',
+    lbl_outdoor: 'Outdoor', opt_none: 'None', opt_balcony: 'Balcony', opt_terrace: 'Terrace', opt_garden: 'Garden',
+    lbl_condition: 'Condition', opt_new: 'New/renovated', opt_good: 'Good', opt_medium: 'Average', opt_reno: 'Needs work',
+    lbl_year: 'Built', opt_2020: 'from 2020', opt_2010: '2010–2019', opt_2000: '2000–2009', opt_1990: '1990–1999', opt_1980: '1980–1989', opt_alt: 'before 1980',
+    free_badge: '100% Free',
+    btn_analyse: 'Analyse →',
+    paste_step1: '<strong>Smartphone:</strong> Open listing → long press a word → "Select all" → "Copy"',
+    paste_step2: '<strong>Computer:</strong> Open listing → Ctrl+A → Ctrl+C',
+    paste_step3: 'Paste here and press Enter',
+    ph_paste: 'Paste listing text here...', btn_parse: 'Analyse listing →',
+    warn_befristet: '!! Fixed-term tenancy !!',
+    meter_low: 'Very cheap', meter_mid: 'Market price', meter_high: 'Very expensive',
+    btn_report: 'Generate AI report (free) →',
+    lbl_extra: 'Additional info (optional)', ph_extra: 'e.g. lake view, Minergie standard, new kitchen, quiet location, cellar, parking included...', report_label: 'Immoskop — AI-generated Report',
+    how_tag: 'How it works', how_title: 'Three steps to an <em>independent analysis</em>',
+    step1_title: 'Enter details', step1_text: 'Enter the listing details manually or copy and paste the listing text directly from Homegate, ImmoScout, Comparis or any other portal.',
+    step2_title: 'Data is retrieved', step2_text: 'Immoskop automatically retrieves market prices, noise data (BAFU), solar data (swisstopo), public transport, crime statistics and neighbourhood info.',
+    step3_title: 'Get your analysis', step3_text: 'Instant overview with price assessment, location score and optional AI report with detailed commentary and a viewing checklist.',
+    data_tag: 'Data sources', data_title: 'Official data, <em>no advertising</em>',
+    src_realadvisor: 'Current market prices per m² for rent and purchase — at postcode and street level for 155+ Swiss municipalities.',
+    src_bafu: 'Official road noise data from the Federal Office for the Environment (sonBASE).',
+    src_solar: 'Solar suitability from the national Sonnendach database (swisstopo/BFE).',
+    src_osm: 'Public transport stops, schools, supermarkets, parks and other local infrastructure.',
+    src_pks: 'Police crime statistics from the Federal Statistical Office.',
+    src_claude: 'AI-powered analysis and commentary of the listing text and market data.',
+    footer_note: 'Not financial advice. All information without warranty.',
+    lbl_object: 'Type', opt_wohnung: 'Apartment', opt_haus: 'House / SFH',
+    nav_analyse: 'Analyse', nav_how: 'How it works', nav_features: 'Features',
+    stat_kantone: 'Cantons covered', stat_gemeinden: 'Municipalities with data',
+    stat_strassen: 'Streets with price data', stat_kosten: 'Cost for analysis',
+    src_name_markt: 'Market data', src_name_ki: 'AI analysis',
+    independence_tag: 'Independence',
+    independence_title: 'Housing is non-negotiable —',
+    independence_title2: 'Price transparency is.',
+    independence_text: 'The Swiss real estate market is opaque by design. Platforms funded by listers have no interest in telling you whether a price is fair. Immoskop does.',
+    features_title: 'Features',
+        feat_price: 'Price assessment — <em style="font-style:italic;color:rgba(245,240,232,0.5);">above or below market?</em>',
+    feat_oev: 'Public transport score — <em style="font-style:italic;color:rgba(245,240,232,0.5);">distance to stops</em>',
+    feat_noise: 'Noise analysis — <em style="font-style:italic;color:rgba(245,240,232,0.5);">BAFU measurements</em>',
+    feat_checklist: 'Viewing checklist — <em style="font-style:italic;color:rgba(245,240,232,0.5);">AI-generated</em>',
+    feat_amenities: 'Neighbourhood data — <em style="font-style:italic;color:rgba(245,240,232,0.5);">transport, schools, shops, parks</em>',
+    feat_report: 'Full AI report — <em style="font-style:italic;color:rgba(245,240,232,0.5);">complete analysis</em>',
+    feat_more: 'More features — <em style="font-style:italic;">coming soon</em>',
+    footer_ueber: 'About', footer_datenschutz: 'Privacy',
+    footer_impressum: 'Legal', footer_kontakt: 'Contact',
+    res_market_label: 'Market position',
+    res_band_low: 'Cheaper', res_band_mid: 'Market price', res_band_high: 'More expensive',
+    res_why: 'Why this assessment?',
+    res_neg: 'Critical / Negative', res_pos: 'Positive / In favour',
+    res_ai_label: 'AI summary',
+    res_ai_link: 'Read full analysis →',
+    res_primary: 'Key factors',
+    res_secondary: 'More location factors',
+    res_secondary_hint: '— click to expand',
+    res_cta_report: 'Generate detailed AI report →',
+    res_cta_new: 'Check another property →',
+    v_far_under: 'Significantly below market', v_under: 'Below market price',
+    v_fair: 'Close to market price', v_slight: 'Slightly overpriced',
+    v_notable: 'Noticeably overpriced', v_over: 'Clearly overpriced',
+    v_sfx_eg: ' – ambitious for ground floor', v_sfx_noise: ' – despite elevated noise',
+    v_sfx_ok: ' – still within range', v_sfx_neg: ' – negotiation recommended',
+    v_sfx_high: ' – well above market', v_sfx_cheap: ' – a good deal',
+    v_ctx_eg: 'For a ground-floor flat without outdoor space, the price is rather ambitious.',
+    v_ctx_top: 'Within the typical range, but at the upper end.',
+    v_ctx_high: 'The price is well above the reference value for this location.',
+    v_ctx_cheap: 'Cheaper than comparable properties in this area.',
+    b_far_under: 'Significantly cheaper', b_under: 'Below market', b_fair: 'Close to market',
+    b_slight: 'Slightly overpriced', b_notable: 'Noticeably overpriced', b_over: 'Clearly overpriced',
+    r_eg_no_out: 'Ground floor without outdoor space', r_eg: 'Ground floor – limited light',
+    r_reno: 'Property needs renovation',
+    r_new: 'New / recently renovated', r_good: 'Good condition',
+    r_terrace: 'Terrace available', r_garden: 'Garden available', r_solar: 'Excellent solar exposure',
+    m_price: 'Price assessment', m_noise: 'Noise', m_oev: 'Public transport',
+    m_solar: 'Solar', m_safety: 'Safety', m_outdoor: 'Outdoor space',
+    m_condition: 'Condition', m_tax: 'Income tax',
+    m_quiet: 'Quiet location', m_moderate: 'Moderate noise', m_loud: 'Elevated noise',
+    m_solar_detail: 'Annual facade total (swisstopo)', m_no_data: 'No data',
+    m_bafu_na: 'BAFU data not available',
+    m_tax_cheap: 'Very low', m_tax_good: 'Low', m_tax_mid: 'Moderate',
+    m_tax_exp: 'High', m_tax_vexp: 'Very high',
+    m_ref: 'Ref:', m_source: 'Source: Swiss market data'
+  },
+  fr: {
+    tag: "Beta — Suisse",
+    title: "Annonces immobilières<br><em>analysées indépendamment</em>",
+    sub: "Saisissez les données manuellement ou collez le texte complet. Immoskop fournit les prix du marché, bruit, ensoleillement, transports et plus. Rapport IA gratuit sur demande.",
+    tab_form: "Formulaire", tab_form_sub: "Saisir les données",
+    tab_paste: "Coller l'annonce", tab_paste_sub: "Copier & coller",
+    lbl_address: "Adresse", ph_address: "p.ex. Rue du Lac 12, Genève",
+    lbl_type: "Type", opt_rent: "Location", opt_buy: "Achat",
+    lbl_price_rent: "Loyer CHF/mois", lbl_price_buy: "Prix achat CHF",
+    lbl_rooms: "Pièces", lbl_area: "Surface m²", lbl_floor: "Étage",
+    lbl_outdoor: "Extérieur", opt_none: "Aucun", opt_balcony: "Balcon", opt_terrace: "Terrasse", opt_garden: "Jardin",
+    lbl_condition: "État", opt_new: "Neuf/rénové", opt_good: "Bon état", opt_medium: "Moyen", opt_reno: "À rénover",
+    lbl_year: "Construit", opt_2020: "dès 2020", opt_2010: "2010–2019", opt_2000: "2000–2009", opt_1990: "1990–1999", opt_1980: "1980–1989", opt_alt: "avant 1980",
+    free_badge: "100% Gratuit",
+    btn_analyse: "Lancer l'analyse →",
+    paste_step1: "<strong>Smartphone:</strong> Ouvrir l'annonce → appui long → Tout sélectionner → Copier",
+    paste_step2: "<strong>Ordinateur:</strong> Ouvrir l'annonce → Ctrl+A → Ctrl+C",
+    paste_step3: "Coller ici et appuyer sur Entrée",
+    ph_paste: "Coller le texte ici...", btn_parse: "Analyser l'annonce →",
+    warn_befristet: "!! Bail à durée déterminée !!",
+    meter_low: "Très bon marché", meter_mid: "Prix du marché", meter_high: "Très cher",
+    btn_report: "Générer rapport IA (gratuit) →",
+    lbl_extra: "Infos supplémentaires (optionnel)", ph_extra: "p.ex. vue lac, standard Minergie, cuisine neuve, emplacement calme, cave, parking inclus...", report_label: "Immoskop — Rapport IA",
+    how_tag: "Comment ça marche", how_title: "Trois étapes pour une <em>analyse indépendante</em>",
+    step1_title: "Saisir les données", step1_text: "Entrez l'adresse ou copiez-collez le texte depuis Homegate, ImmoScout, Comparis ou tout autre portail.",
+    step2_title: "Les données sont récupérées", step2_text: "Immoskop récupère automatiquement les prix du marché, données acoustiques, ensoleillement, transports et criminalité.",
+    step3_title: "Recevoir l'analyse", step3_text: "Aperçu immédiat avec évaluation du prix et rapport IA optionnel avec liste de contrôle pour la visite.",
+    data_tag: "Sources", data_title: "Données officielles, <em>sans publicité</em>",
+    src_realadvisor: "Prix actuels par m² pour 155+ communes suisses.",
+    src_bafu: "Données officielles sur le bruit routier (OFEV/sonBASE).",
+    src_solar: "Aptitude solaire nationale (swisstopo/OFEN).",
+    src_osm: "Transports publics, écoles, supermarchés, parcs et infrastructures.",
+    src_pks: "Statistiques policières (OFS).",
+    src_claude: "Analyse IA du texte et des données de marché.",
+    footer_note: "Pas de conseil en investissement. Toutes informations sans garantie.",
+    lbl_object: "Type", opt_wohnung: "Appartement", opt_haus: "Maison / Villa",
+    nav_analyse: "Analyse", nav_how: "Comment ça marche", nav_features: "Fonctionnalités",
+    stat_kantone: "Cantons couverts", stat_gemeinden: "Communes avec données",
+    stat_strassen: "Rues avec données de prix", stat_kosten: "Coût de l'analyse",
+    src_name_markt: "Données marché", src_name_ki: "Analyse IA",
+    independence_tag: "Indépendance",
+    independence_title: "Le logement ne se négocie pas —",
+    independence_title2: "la transparence des prix, si.",
+    independence_text: "Le marché immobilier suisse est opaque par conception. Les plateformes financées par les annonceurs n'ont aucun intérêt à vous dire si un prix est juste. Immoskop, si.",
+    features_title: "Fonctionnalités",
+    feat_price: 'Évaluation du prix — <em style="font-style:italic;color:rgba(245,240,232,0.5);">au-dessus ou en dessous du marché?</em>',
+    feat_oev: 'Score transports — <em style="font-style:italic;color:rgba(245,240,232,0.5);">distance aux arrêts</em>',
+    feat_noise: 'Analyse acoustique — <em style="font-style:italic;color:rgba(245,240,232,0.5);">mesures OFEV</em>',
+    feat_checklist: 'Liste de contrôle visite — <em style="font-style:italic;color:rgba(245,240,232,0.5);">générée par IA</em>',
+    feat_amenities: 'Données de quartier — <em style="font-style:italic;color:rgba(245,240,232,0.5);">transports, écoles, commerces, parcs</em>',
+    feat_report: 'Rapport IA complet — <em style="font-style:italic;color:rgba(245,240,232,0.5);">analyse complète</em>',
+    feat_more: 'Plus de fonctionnalités — <em style="font-style:italic;">bientôt</em>',
+    footer_ueber: "À propos", footer_datenschutz: "Confidentialité",
+    footer_impressum: "Mentions légales", footer_kontakt: "Contact",
+    res_market_label: "Position marché",
+    res_band_low: "Moins cher", res_band_mid: "Prix du marché", res_band_high: "Plus cher",
+    res_why: "Pourquoi cette évaluation ?",
+    res_neg: "Critique / Négatif", res_pos: "Positif / En faveur",
+    res_ai_label: "Résumé IA",
+    res_ai_link: "Lire l'analyse complète →",
+    res_primary: "Facteurs clés",
+    res_secondary: "Autres facteurs de localisation",
+    res_secondary_hint: "— cliquer pour développer",
+    res_cta_report: "Générer un rapport IA détaillé →",
+    res_cta_new: "Analyser un autre bien →",
+    v_far_under: "Nettement en dessous du marché", v_under: "En dessous du prix du marché",
+    v_fair: "Proche du prix du marché", v_slight: "Légèrement surévalué",
+    v_notable: "Sensiblement surévalué", v_over: "Clairement surévalué",
+    v_sfx_eg: " – ambitieux pour un rez-de-chaussée", v_sfx_noise: " – malgré un bruit élevé",
+    v_sfx_ok: " – encore dans la norme", v_sfx_neg: " – négociation recommandée",
+    v_sfx_high: " – nettement au-dessus du marché", v_sfx_cheap: " – une bonne affaire",
+    v_ctx_eg: "Pour un rez-de-chaussée sans espace extérieur, le prix est plutôt ambitieux.",
+    v_ctx_top: "Dans la fourchette habituelle, mais en haut de la tranche.",
+    v_ctx_high: "Le prix est nettement supérieur à la valeur de référence pour cet emplacement.",
+    v_ctx_cheap: "Moins cher que les biens comparables dans ce secteur.",
+    b_far_under: "Nettement moins cher", b_under: "Sous le marché", b_fair: "Proche du marché",
+    b_slight: "Légèrement surévalué", b_notable: "Sensiblement surévalué", b_over: "Clairement surévalué",
+    r_eg_no_out: "Rez-de-chaussée sans espace extérieur", r_eg: "Rez-de-chaussée – luminosité réduite",
+    r_reno: "Bien à rénover",
+    r_new: "Neuf / récemment rénové", r_good: "Bon état",
+    r_terrace: "Terrasse disponible", r_garden: "Jardin disponible", r_solar: "Très bon ensoleillement",
+    m_price: "Évaluation prix", m_noise: "Bruit", m_oev: "Transports publics",
+    m_solar: "Ensoleillement", m_safety: "Sécurité", m_outdoor: "Extérieur",
+    m_condition: "État", m_tax: "Impôt revenu",
+    m_quiet: "Emplacement calme", m_moderate: "Bruit modéré", m_loud: "Bruit élevé",
+    m_solar_detail: "Total annuel façade (swisstopo)", m_no_data: "Pas de données",
+    m_bafu_na: "Données OFEV non disponibles",
+    m_tax_cheap: "Très faible", m_tax_good: "Faible", m_tax_mid: "Modéré",
+    m_tax_exp: "Élevé", m_tax_vexp: "Très élevé",
+    m_ref: "Réf.:", m_source: "Source : données marché CH"
+  }
+};
+
+
+// ── TRANSLATION HELPERS (functions, not touched by setLang) ──────
+const HELPERS = {
+  de: {
+    v_ctx_noise: (db) => `Hohe Lärmbelastung (${db} dB) ist ein wesentlicher Faktor.`,
+    v_neg_hint: (lo,hi) => `Verhandlungsspielraum: CHF ${lo}\u2013${hi}`,
+    r_price_over: (d) => `${d}% über dem Referenzpreis`,
+    r_noise_high: (db) => `Hohe Lärmbelastung (${db} dB)`,
+    r_noise_mid: (db) => `Erhöhte Lärmbelastung (${db} dB)`,
+    r_price_under: (d) => `${d}% unter dem Referenzpreis`,
+    r_oev_exc: (m) => `Ausgezeichnete ÖV-Anbindung (${m}m)`,
+    r_oev_good: (m) => `Gute ÖV-Anbindung (${m}m)`,
+    m_oev_good: (n) => `Gute Anbindung · ${n}`,
+    m_oev_stops: (n,c) => `${n} · ${c} Haltest.`,
+  },
+  en: {
+    v_ctx_noise: (db) => `High noise level (${db} dB) is a significant factor.`,
+    v_neg_hint: (lo,hi) => `Negotiation range: CHF ${lo}\u2013${hi}`,
+    r_price_over: (d) => `${d}% above reference price`,
+    r_noise_high: (db) => `High noise level (${db} dB)`,
+    r_noise_mid: (db) => `Elevated noise level (${db} dB)`,
+    r_price_under: (d) => `${d}% below reference price`,
+    r_oev_exc: (m) => `Excellent public transport (${m}m)`,
+    r_oev_good: (m) => `Good public transport (${m}m)`,
+    m_oev_good: (n) => `Good access · ${n}`,
+    m_oev_stops: (n,c) => `${n} · ${c} stops`,
+  },
+  fr: {
+    v_ctx_noise: (db) => `Niveau sonore élevé (${db} dB) — facteur important.`,
+    v_neg_hint: (lo,hi) => `Marge de négociation\u00a0: CHF ${lo}\u2013${hi}`,
+    r_price_over: (d) => `${d}% au-dessus du prix de référence`,
+    r_noise_high: (db) => `Niveau sonore élevé (${db} dB)`,
+    r_noise_mid: (db) => `Niveau sonore modéré (${db} dB)`,
+    r_price_under: (d) => `${d}% en dessous du prix de référence`,
+    r_oev_exc: (m) => `Excellente desserte TP (${m}m)`,
+    r_oev_good: (m) => `Bonne desserte TP (${m}m)`,
+    m_oev_good: (n) => `Bonne desserte · ${n}`,
+    m_oev_stops: (n,c) => `${n} · ${c} arrêts`,
+  }
+};
+let currentLang = 'de';
+
+function detectLang() {
+  const saved = localStorage.getItem('immoskop_lang');
+  if (saved && ['de','en','fr'].includes(saved)) return saved;
+  const bl = (navigator.language || navigator.userLanguage || 'de').toLowerCase();
+  if (bl.startsWith('fr')) return 'fr';
+  if (bl.startsWith('en')) return 'en';
+  return 'de';
+}
+
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('immoskop_lang', lang);
+  const titles = {
+    de: 'Immoskop — Immobilieninserate unabhängig analysiert',
+    en: 'Immoskop — Property listings independently analysed',
+    fr: 'Immoskop — Annonces immobilières analysées indépendamment'
+  };
+  document.title = titles[lang] || titles.de;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent.trim().toLowerCase() === lang));
+  const t = TRANSLATIONS[lang];
+  if (!t) return;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (t[key] !== undefined) el.innerHTML = t[key];
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (t[key] !== undefined) el.placeholder = t[key];
+  });
+  const isKauf = document.getElementById('type') && document.getElementById('type').value === 'kauf';
+  const priceLabel = document.getElementById('price-label');
+  if (priceLabel) priceLabel.innerHTML = isKauf ? t.lbl_price_buy : t.lbl_price_rent;
+  document.documentElement.lang = lang;
+  // If report exists and language changed, show retranslate button
+  const reportSection = document.getElementById('report-section');
+  const reportLang = reportSection?.getAttribute('data-lang');
+  if (reportSection && reportSection.style.display !== 'none' && reportLang && reportLang !== lang) {
+    let retranslateBtn = document.getElementById('btn-retranslate');
+    if (!retranslateBtn) {
+      retranslateBtn = document.createElement('button');
+      retranslateBtn.id = 'btn-retranslate';
+      retranslateBtn.style.cssText = 'width:100%;margin-top:8px;padding:10px;background:white;color:var(--ink);border:1px solid var(--rule);font-family:var(--font-body);font-size:12px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;cursor:pointer;';
+      retranslateBtn.onclick = () => {
+      const labels = {de:'Report auf Deutsch neu generieren →', en:'Regenerate report in English →', fr:'Régénérer le rapport en français →'};
+      retranslateBtn.textContent = {de:'Wird generiert...', en:'Generating...', fr:'Génération...'}[currentLang] || 'Generating...';
+      retranslateBtn.style.background = 'var(--ink)';
+      retranslateBtn.style.color = 'var(--cream)';
+      retranslateBtn.disabled = true;
+      generateReport().finally(() => {
+        retranslateBtn.disabled = false;
+        retranslateBtn.style.background = 'white';
+        retranslateBtn.style.color = 'var(--ink)';
+        retranslateBtn.textContent = labels[currentLang] || labels.de;
+      });
+    };
+      document.getElementById('btn-report').insertAdjacentElement('afterend', retranslateBtn);
+    }
+    const labels = {de:'Report auf Deutsch neu generieren →', en:'Regenerate report in English →', fr:'Régénérer le rapport en français →'};
+    retranslateBtn.textContent = labels[lang] || labels.de;
+    retranslateBtn.style.display = 'block';
+  } else {
+    const rb = document.getElementById('btn-retranslate');
+    if (rb) rb.style.display = 'none';
+  }
+}
+
+// ─── TAB SWITCH ───────────────────────────────────────────────────
+function switchTab(tab) {
+  document.getElementById('tab-form').classList.toggle('active', tab === 'form');
+  document.getElementById('tab-paste').classList.toggle('active', tab === 'paste');
+  document.getElementById('section-form').classList.toggle('active', tab === 'form');
+  document.getElementById('section-paste').classList.toggle('active', tab === 'paste');
+}
+
+// ─── TYPE CHANGE ──────────────────────────────────────────────────
+function onTypeChange() {
+  const isKauf = document.getElementById('type').value === 'kauf';
+  const t = TRANSLATIONS[currentLang];
+  document.getElementById('price-label').innerHTML = isKauf ? t.lbl_price_buy : t.lbl_price_rent;
+  document.getElementById('price').value = isKauf ? '850000' : '2400';
+}
+
+function onPropertyKindChange() {
+  const isHaus = document.getElementById('propertyKind').value === 'haus';
+  const floorField = document.getElementById('floor-field');
+  if (floorField) floorField.style.display = isHaus ? 'none' : '';
+}
+
+// ─── AUTOCOMPLETE ─────────────────────────────────────────────────
+let selectedCoords = null, acTimer = null;
+async function onAddressInput(val) {
+  clearTimeout(acTimer);
+  const list = document.getElementById('autocomplete-list');
+  if (val.length < 4) { list.style.display = 'none'; return; }
+  acTimer = setTimeout(async () => {
+    try {
+      const r = await fetch(`https://api3.geo.admin.ch/rest/services/api/SearchServer?searchText=${encodeURIComponent(val)}&type=locations&limit=6&origins=address,zipcode`);
+      const d = await r.json();
+      const results = d.results || [];
+      if (!results.length) { list.style.display = 'none'; return; }
+      list.innerHTML = '';
+      results.forEach(res => {
+        const label = res.attrs.label.replace(/<[^>]+>/g, '');
+        const div = document.createElement('div');
+        div.className = 'autocomplete-item';
+        div.textContent = label;
+        div.onclick = () => {
+          document.getElementById('address').value = label;
+          const c = lv95ToWgs84(res.attrs.y, res.attrs.x);
+          selectedCoords = { lat: c.lat, lon: c.lon, label };
+          list.style.display = 'none';
+        };
+        list.appendChild(div);
+      });
+      list.style.display = 'block';
+    } catch(e) { list.style.display = 'none'; }
+  }, 280);
+}
+function lv95ToWgs84(e, n) {
+  const E = (e-2600000)/1000000, N = (n-1200000)/1000000;
+  const lon = 2.6779094+4.728982*E+0.791484*E*N+0.1306*E*N*N-0.0436*E*E*E;
+  const lat = 16.9023892+3.238272*N-0.270978*E*E-0.002528*N*N-0.0447*E*E*N-0.0140*N*N*N;
+  return { lat: lat*100/36, lon: lon*100/36 };
+}
+document.addEventListener('click', e => { if (!e.target.closest('.autocomplete-wrap')) document.getElementById('autocomplete-list').style.display = 'none'; });
+
+// ── SECONDARY TOGGLE + REPORT SCROLL ────────────────────────────
+function toggleSecondary() {
+  const body=document.getElementById('secondary-body');
+  const icon=document.getElementById('secondary-icon');
+  const open=body.classList.toggle('open');
+  icon.classList.toggle('open',open);
+}
+function scrollToReport() {
+  const r=document.getElementById('report-section');
+  if(r&&r.style.display!=='none')r.scrollIntoView({behavior:'smooth',block:'start'});
+  else generateReport();
+}
+
+// ── AUTOCOMPLETE KEYBOARD NAVIGATION ────────────────────────────
+let acKbIndex = -1;
+document.getElementById('address').addEventListener('keydown', function(e) {
+  const list=document.getElementById('autocomplete-list');
+  const items=list.querySelectorAll('.autocomplete-item');
+  if(!items.length||list.style.display==='none')return;
+  if(e.key==='ArrowDown'){e.preventDefault();acKbIndex=Math.min(acKbIndex+1,items.length-1);items.forEach((it,i)=>it.style.background=i===acKbIndex?'rgba(245,240,232,0.15)':'');this.value=items[acKbIndex].textContent;}
+  else if(e.key==='ArrowUp'){e.preventDefault();acKbIndex=Math.max(acKbIndex-1,0);items.forEach((it,i)=>it.style.background=i===acKbIndex?'rgba(245,240,232,0.15)':'');this.value=items[acKbIndex].textContent;}
+  else if(e.key==='Enter'&&acKbIndex>=0){e.preventDefault();items[acKbIndex].click();}
+  else if(e.key==='Escape'){list.style.display='none';acKbIndex=-1;}
+});
+
+// ─── STATUS ───────────────────────────────────────────────────────
+function setStatus(msg, done=false) {
+  const bar = document.getElementById('status-bar');
+  bar.classList.add('visible');
+  document.getElementById('status-text').textContent = msg;
+  if (done) document.getElementById('spinner').style.display = 'none';
+}
+function hideStatus() { document.getElementById('status-bar').classList.remove('visible'); }
+function showError(msg) { const b = document.getElementById('error-box'); b.textContent = msg; b.classList.add('visible'); }
+function clearError() { document.getElementById('error-box').classList.remove('visible'); }
+
+// ─── SCORE HELPERS ────────────────────────────────────────────────
+function oevScore(d) { if(!d)return{s:3,p:'load'}; if(d<80)return{s:5,p:'good'}; if(d<200)return{s:4,p:'good'}; if(d<400)return{s:3,p:'mid'}; if(d<700)return{s:2,p:'mid'}; return{s:1,p:'bad'}; }
+function noiseScore(db) { if(!db)return{s:3,p:'mid'}; if(db<45)return{s:5,p:'good'}; if(db<52)return{s:4,p:'good'}; if(db<58)return{s:3,p:'mid'}; if(db<65)return{s:2,p:'bad'}; return{s:1,p:'bad'}; }
+function solarScore(k) { if(!k)return{s:3,p:'mid'}; if(k>1100)return{s:5,p:'good'}; if(k>900)return{s:4,p:'good'}; if(k>700)return{s:3,p:'mid'}; return{s:2,p:'bad'}; }
+function crimeScore(h) { if(h<25)return{s:5,p:'good'}; if(h<45)return{s:4,p:'good'}; if(h<65)return{s:3,p:'mid'}; if(h<85)return{s:2,p:'bad'}; return{s:1,p:'bad'}; }
+
+function makeCard(label, val, detail, score, pill) {
+  const pct = (score/5*100).toFixed(0);
+  const col = pill==='good'?'#2D7A4F':pill==='mid'?'#A07020':pill==='bad'?'#C8371A':'#888';
+  return `<div class="score-card">
+    <div class="score-card-top"><div class="score-card-label">${label}</div><span class="score-pill pill-${pill}">${['',' ★','★★','★★★','★★★★','★★★★★'][score]||'-'}</span></div>
+    <div class="score-value">${val}</div>
+    <div class="score-detail">${detail}</div>
+    <div class="score-bar"><div class="score-bar-fill" style="width:${pct}%;background:${col}"></div></div>
+  </div>`;
+}
+
+// ─── GEOCODE ─────────────────────────────────────────────────────
+async function geocodeAddress(address) {
+  const r = await fetch(`https://api3.geo.admin.ch/rest/services/api/SearchServer?searchText=${encodeURIComponent(address)}&type=locations&limit=1&origins=address`);
+  const d = await r.json();
+  if (!d.results?.length) throw new Error('Adresse nicht gefunden.');
+  const attrs = d.results[0].attrs;
+  const label = attrs.label.replace(/<[^>]+>/g, '');
+  const c = lv95ToWgs84(attrs.y, attrs.x);
+  return { lat: c.lat, lon: c.lon, label };
+}
+async function geocodeCommune(address) {
+  const r = await fetch(`https://api3.geo.admin.ch/rest/services/api/SearchServer?searchText=${encodeURIComponent(address)}&type=locations&limit=1&origins=gg25,zipcode`);
+  const d = await r.json();
+  if (!d.results?.length) throw new Error('Gemeinde nicht gefunden.');
+  const attrs = d.results[0].attrs;
+  const label = attrs.label.replace(/<[^>]+>/g, '');
+  const c = lv95ToWgs84(attrs.y, attrs.x);
+  return { lat: c.lat, lon: c.lon, label };
+}
+
+// ─── MAIN ANALYSIS ────────────────────────────────────────────────
+async function runAnalysis() {
+  clearError();
+  document.getElementById('results-section').classList.remove('visible');
+  document.getElementById('report-section').style.display = 'none';
+  document.getElementById('btn-analyse').disabled = true;
+  document.getElementById('btn-analyse').textContent = {'de':'Wird analysiert...','en':'Analyzing...','fr':'Analyse en cours...'}[currentLang]||'Analyzing...';
+  document.getElementById('spinner').style.display = '';
+
+  const addressInput = document.getElementById('address').value.trim();
+  if (!addressInput) { showError('Bitte eine Adresse eingeben.'); document.getElementById('btn-analyse').disabled = false;
+  document.getElementById('btn-analyse').textContent = TRANSLATIONS[currentLang]?.btn_analyse || 'Analyse starten →'; return; }
+
+  const price = parseInt(document.getElementById('price').value) || 2400;
+  const area = parseInt(document.getElementById('area').value) || 75;
+  const year = document.getElementById('year').value;
+  const floor = parseInt(document.getElementById('floor').value) || 0;
+  const outdoor = document.getElementById('outdoor').value;
+  const condition = document.getElementById('condition').value;
+  const rooms = document.getElementById('rooms').value;
+  const propertyKind = document.getElementById('propertyKind').value;
+  const extraInfo = document.getElementById('extra-info')?.value?.trim() || null;
+
+  try {
+    setStatus('Adresse wird geocodiert...');
+    let coords = selectedCoords;
+    if (!coords || !addressInput.toLowerCase().includes((coords.label||'').toLowerCase().substring(0,8))) {
+      try { coords = await geocodeAddress(addressInput); }
+      catch(geoErr) {
+        try { coords = await geocodeCommune(addressInput); }
+        catch(e2) { throw new Error('Adresse nicht gefunden. Bitte Gemeindename oder PLZ eingeben.'); }
+      }
+    }
+    window._lastAnalysis = { address: coords.label, rooms, area, price, type: document.getElementById('type').value, propertyKind, year, floor, outdoor, condition, insertText: window._insertText||null, parsedInsert: window._parsedInsert||null, extraInfo, reportDate: new Date().toLocaleDateString('de-CH', {day:'2-digit',month:'long',year:'numeric'}) };
+
+    setStatus('Marktpreise & Umgebung werden abgerufen...');
+    const dataRes = await fetch('/api/data', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(window._lastAnalysis) });
+    const dataData = await dataRes.json();
+    if (dataData.error) throw new Error(dataData.error);
+    const meta = dataData.meta || {};
+
+    window._insertText = null; window._parsedInsert = null;
+
+    const delta = meta.delta || 0;
+    const expected = meta.expected || 0;
+    const pricePerQm = (price/area).toFixed(1);
+    const isKauf = document.getElementById('type').value === 'kauf';
+
+    const CRIME = {'zuerich':{h:98,l:'Zürich'},'zurich':{h:98,l:'Zürich'},'bern':{h:72,l:'Bern'},'basel':{h:85,l:'Basel'},'genf':{h:110,l:'Genf'},'geneve':{h:110,l:'Genf'},'winterthur':{h:62,l:'Winterthur'},'luzern':{h:58,l:'Luzern'},'lausanne':{h:95,l:'Lausanne'},'kilchberg':{h:18,l:'Kilchberg'},'kuesnacht':{h:16,l:'Küsnacht'},'thalwil':{h:22,l:'Thalwil'},'st. gallen':{h:54,l:'St. Gallen'}};
+    const ll = coords.label.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+    let crime = {h:38,l:'diese Gemeinde'};
+    for (const [k,v] of Object.entries(CRIME)) { if (ll.includes(k)) { crime=v; break; } }
+
+    // Befristung
+    if (meta.befristet) {
+      document.getElementById('befristung-warn').style.display = 'block';
+      document.getElementById('befristung-details').textContent = meta.befristetDetails || 'Dieser Mietvertrag ist befristet.';
+    } else {
+      document.getElementById('befristung-warn').style.display = 'none';
+    }
+
+    // ── HELPER FUNCTIONS ─────────────────────────────────────────
+    const t = TRANSLATIONS[currentLang] || TRANSLATIONS.de;
+    const h = HELPERS[currentLang] || HELPERS.de;
+    function getVerdictLabel(d) {
+      if(d<=-15)return t.v_far_under; if(d<=-5)return t.v_under;
+      if(d<4)return t.v_fair; if(d<10)return t.v_slight;
+      if(d<20)return t.v_notable; return t.v_over;
+    }
+    function getVerdictSuffix(d,noise,fl) {
+      if(d>=4&&d<10){ if(fl===0)return t.v_sfx_eg; if(noise&&noise>58)return t.v_sfx_noise; return t.v_sfx_ok; }
+      if(d>=10&&d<20)return t.v_sfx_neg; if(d>=20)return t.v_sfx_high;
+      if(d<=-5)return t.v_sfx_cheap; return'';
+    }
+    function getBadgeInfo(d) {
+      if(d<=-15)return{cls:'badge-under',text:t.b_far_under}; if(d<=-5)return{cls:'badge-under',text:t.b_under};
+      if(d<4)return{cls:'badge-fair',text:t.b_fair}; if(d<10)return{cls:'badge-warn',text:t.b_slight};
+      if(d<20)return{cls:'badge-over',text:t.b_notable}; return{cls:'badge-over',text:t.b_over};
+    }
+    function makeMetricCard(label,val,detail,score,pill,variant) {
+      const pct=(score/5*100).toFixed(0);
+      const col=pill==='good'?'#2D7A4F':pill==='mid'?'#A07020':'#C8371A';
+      const stars=['','★','★★','★★★','★★★★','★★★★★'][score]||'';
+      return `<div class="metric-card ${variant||'primary'}"><div class="metric-card-top"><div class="metric-card-label">${label}</div><span class="metric-pill pill-${pill}">${stars||'-'}</span></div><div class="metric-value">${val}</div><div class="metric-detail">${detail}</div><div class="metric-bar"><div class="metric-bar-fill" style="width:${pct}%;background:${col}"></div></div></div>`;
+    }
+    function extractReasons(d,noise,oevDist,fl,outdoor,cond,solar,crimeH) {
+      const neg=[],pos=[];
+      if(d>=5)neg.push(h.r_price_over(d));
+      if(noise&&noise>62)neg.push(h.r_noise_high(noise)); else if(noise&&noise>55)neg.push(h.r_noise_mid(noise));
+      if(fl===0&&outdoor==='none')neg.push(t.r_eg_no_out); else if(fl===0)neg.push(t.r_eg);
+      if(cond==='renovationsbed')neg.push(t.r_reno);
+      if(d<=-5)pos.push(h.r_price_under(Math.abs(d)));
+      if(oevDist&&oevDist<150)pos.push(h.r_oev_exc(oevDist)); else if(oevDist&&oevDist<350)pos.push(h.r_oev_good(oevDist));
+      if(cond==='neuwertig')pos.push(t.r_new); else if(cond==='gut')pos.push(t.r_good);
+      if(outdoor==='terrasse')pos.push(t.r_terrace); else if(outdoor==='garten')pos.push(t.r_garden);
+      if(solar&&solar>950)pos.push(t.r_solar);
+      return{neg:neg.slice(0,3),pos:pos.slice(0,3)};
+    }
+
+    // ── HERO ─────────────────────────────────────────────────────
+    const verdictLabel = getVerdictLabel(delta);
+    const verdictSuffix = getVerdictSuffix(delta, meta.noiseDay, floor);
+    const badge = getBadgeInfo(delta);
+    document.getElementById('hero-address').textContent = coords.label;
+    document.getElementById('hero-verdict').textContent = verdictLabel + verdictSuffix;
+    document.getElementById('hero-subline').textContent = (delta>0?'+':'')+delta+'% '+(delta>=0?'über':'unter')+' Marktpreis · Referenz: CHF '+expected.toLocaleString('de-CH')+(isKauf?'':'/Mt.');
+    const ctxParts=[];
+    if(delta>=4&&delta<10){if(floor===0&&outdoor==='none')ctxParts.push(t.v_ctx_eg);else ctxParts.push(t.v_ctx_top);}
+    else if(delta>=10)ctxParts.push(t.v_ctx_high);
+    else if(delta<-5)ctxParts.push(t.v_ctx_cheap);
+    if(meta.noiseDay&&meta.noiseDay>62)ctxParts.push(h.v_ctx_noise(meta.noiseDay));
+    if(ctxParts.length)document.getElementById('hero-context').textContent=ctxParts.slice(0,2).join(' ');
+    if(delta>=4){const over=Math.round((price-price/(1+delta/100)));const lo=Math.round(over*0.4/50)*50,hi=Math.round(over*0.7/50)*50;if(lo>=50){const negEl=document.getElementById('hero-negotiation');negEl.innerHTML='<strong>'+h.v_neg_hint(lo.toLocaleString('de-CH'),hi.toLocaleString('de-CH'))+'</strong>';negEl.style.display='inline-block';}}
+    const heroBadge=document.getElementById('hero-badge');
+    heroBadge.textContent=badge.text; heroBadge.className='hero-badge '+badge.cls;
+    const bandPct=Math.min(Math.max(50+delta*1.4,4),96);
+    document.getElementById('band-obj-marker').style.left=bandPct+'%';
+
+    const geoNote=meta.geoAccuracy==='gemeinde'?' · Nur Gemeinde bekannt':'';
+    const streetNote=meta.streetData?' · '+meta.streetData.name+' ('+meta.streetData.percentile+'. Perz.)':'';
+    document.getElementById('verdict-source').textContent=t.m_source+streetNote+geoNote+(meta.priceRangeText?' · '+meta.priceRangeText:'');
+    const priceNoteEl=document.getElementById('price-note');
+    if(priceNoteEl){if(meta.priceNote){priceNoteEl.textContent='⚠ '+meta.priceNote;priceNoteEl.style.display='block';}else{priceNoteEl.style.display='none';}}
+
+    // ── DECISION REASONS ─────────────────────────────────────────
+    const reasons=extractReasons(delta,meta.noiseDay,meta.oevDist,floor,outdoor,condition,meta.solarKwh,crime.h);
+    if(reasons.neg.length||reasons.pos.length){
+      document.getElementById('dr-neg').innerHTML='<div class="dr-col-title">Kritisch / Negativ</div>'+(reasons.neg.length?reasons.neg.map(r=>'<div class="dr-item"><div class="dr-dot"></div>'+r+'</div>').join(''):'<div class="dr-item" style="opacity:0.4">–</div>');
+      document.getElementById('dr-pos').innerHTML='<div class="dr-col-title">Positiv / Für das Objekt</div>'+(reasons.pos.length?reasons.pos.map(r=>'<div class="dr-item"><div class="dr-dot"></div>'+r+'</div>').join(''):'<div class="dr-item" style="opacity:0.4">–</div>');
+      document.getElementById('decision-reasons').style.display='block';
+    }
+
+    // ── PRIMARY METRICS ───────────────────────────────────────────
+    const ns=noiseScore(meta.noiseDay); const os=oevScore(meta.oevDist); const ss=solarScore(meta.solarKwh); const cs=crimeScore(crime.h);
+    const ps=Math.max(1,Math.min(5,Math.round(3-delta/10))); const pp=delta>10?'bad':delta<-10?'good':'mid';
+    document.getElementById('primary-grid').innerHTML=
+      makeMetricCard(t.m_price,'CHF '+(price/area).toFixed(1)+'/m²',t.m_ref+' CHF '+(expected?(expected/area).toFixed(1):'–')+'/m²',ps,pp,'primary')+
+      makeMetricCard(t.m_noise,meta.noiseDay?meta.noiseDay+' dB':t.m_no_data,meta.noiseDay?(ns.s>=4?t.m_quiet:ns.s>=3?t.m_moderate:t.m_loud):t.m_bafu_na,meta.noiseDay?ns.s:3,meta.noiseDay?ns.p:'mid','primary')+
+      makeMetricCard(t.m_oev,meta.oevDist?meta.oevDist+'m':t.m_no_data,meta.oevDist?(os.s>=4?h.m_oev_good(meta.oevName||'–'):h.m_oev_stops(meta.oevName||'–',meta.oevCount||0)):t.m_no_data,meta.oevDist?os.s:3,meta.oevDist?os.p:'mid','primary');
+
+    // ── SECONDARY METRICS ─────────────────────────────────────────
+    const COND_LABEL={neuwertig:t.opt_new||'Neuwertig',gut:t.opt_good||'Gut',mittel:t.opt_medium||'Mittel',renovationsbed:t.opt_reno||'Renov.bed.'};
+    const COND_SCORE={neuwertig:5,gut:4,mittel:3,renovationsbed:1};
+    const COND_PILL={neuwertig:'good',gut:'good',mittel:'mid',renovationsbed:'bad'};
+    const OUTDOOR_LABEL2={none:t.opt_none||'Kein',balkon:t.opt_balcony||'Balkon',terrasse:t.opt_terrace||'Terrasse',garten:t.opt_garden||'Garten'};
+    const outScore=outdoor==='none'?2:outdoor==='balkon'?3:outdoor==='terrasse'?4:5;
+    const outPill=outdoor==='none'?'bad':outdoor==='balkon'?'mid':'good';
+    let taxCard2='';
+    if(meta.taxBurdenCHF){const np=meta.estvNatPctVal||50;const cp=meta.estvKtPctVal||50;const ts=np<=5?5:np<=20?4:np<=45?3:np<=80?2:1;const tp=np<=20?'good':np<=60?'mid':'bad';const tl=np<=5?t.m_tax_cheap:np<=20?t.m_tax_good:np<=45?t.m_tax_mid:np<=80?t.m_tax_exp:t.m_tax_vexp;taxCard2=makeMetricCard(t.m_tax,'CHF '+meta.taxBurdenCHF.toLocaleString('de-CH')+'/J',tl+' · '+cp+'. Perz. '+(meta.estvKanton||'CH').toUpperCase()+' · CH: '+np+'% · ESTV 2025',ts,tp,'secondary');}
+    document.getElementById('secondary-grid').innerHTML=
+      makeMetricCard(t.m_solar,meta.solarKwh?Math.round(meta.solarKwh)+' kWh':t.m_no_data,meta.solarKwh?t.m_solar_detail:t.m_no_data,ss.s,ss.p,'secondary')+
+      makeMetricCard(t.m_safety,crime.h+'/1000',crime.l+' · PKS',cs.s,cs.p,'secondary')+
+      (propertyKind==='haus'?makeMetricCard(t.m_outdoor,'EFH',t.opt_garden||'Garten',5,'good','secondary'):makeMetricCard(t.m_outdoor,OUTDOOR_LABEL2[outdoor]||outdoor,'Etage '+floor,outScore,outPill,'secondary'))+
+      makeMetricCard(t.m_condition,COND_LABEL[condition]||condition,'',COND_SCORE[condition]||3,COND_PILL[condition]||'mid','secondary')+
+      taxCard2;
+
+    // ── POI ───────────────────────────────────────────────────────
+    const dotColors={Bildung:'#378ADD',Einkauf:'#2D7A4F',Gastro:'#C8371A',Parks:'#639922',Gesundheit:'#7F77DD'};
+    let poiHtml='<div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-light);margin-bottom:12px;">Umgebung</div>';
+    const amenities=parseAmenitySummary(meta.amenitySummary||'');
+    if(Object.keys(amenities).length){poiHtml+='<div class="poi-grid">';Object.entries(amenities).forEach(([g,items])=>{if(!items.length)return;const col=dotColors[g]||'#888';poiHtml+='<div><div class="poi-group-label">'+g+'</div>';items.sort((a,b)=>a.dist-b.dist).forEach(i=>{poiHtml+='<div class="poi-item"><div class="poi-dot" style="background:'+col+'"></div>'+i.name+'<span class="poi-dist">'+i.dist+'m</span></div>';});poiHtml+='</div>';});poiHtml+='</div>';}
+    else{poiHtml+='<p style="font-size:12px;color:var(--ink-light)">Keine Umgebungsdaten verfügbar.</p>';}
+    document.getElementById('poi-section').innerHTML=poiHtml;
+
+    // ── CHECKLIST ─────────────────────────────────────────────────
+    const isKaufUI=document.getElementById('type').value==='kauf';
+    const clTitle_de=isKaufUI?'Worauf du bei diesem Objekt achten solltest':'Worauf du bei dieser Wohnung achten solltest';
+    const clTitle_en=isKaufUI?'What to look out for in this property':'What to look out for in this apartment';
+    const clTitle_fr=isKaufUI?'À quoi faire attention pour ce bien':'À quoi faire attention pour cet appartement';
+    const clTitles={de:clTitle_de,en:clTitle_en,fr:clTitle_fr};
+    const clSub_de='Basierend auf Preis, Lage und den Angaben im Inserat.';
+    const ci_de_miete=['Lärmprobe zu Stosszeiten (Verkehr, Nachbarn, Gewerbe)',meta.noiseDay&&meta.noiseDay>58?'! Lärm erhöht ('+meta.noiseDay+' dB) — Verglasung & Schallschutz prüfen':'Fensterverglasung & Dichtigkeit kontrollieren',outdoor==='garten'?'Gartenfläche & Nutzungsrecht klären':'Balkon/Terrasse: Zustand & Ausrichtung','Heizungsart & Energieklasse erfragen','Zustand Küche, Bäder, Böden',meta.oevDist&&meta.oevDist>500?'! ÖV weit ('+meta.oevDist+'m) — Alltagstauglichkeit prüfen':'ÖV: '+(meta.oevName||'–')+' ('+(meta.oevDist||'–')+'m)','Nebenkosten letzte 2 Jahre erfragen','Vermieter/Verwaltung googeln & Bewertungen lesen','Mietvertrag auf Sonderbedingungen & Befristung prüfen','Übergabeprotokoll sorgfältig ausfüllen','Mobilfunk & Glasfaser/Internet prüfen'];
+    const ci_de_kauf=['Grundbuchauszug anfordern (alle Lasten & Dienstbarkeiten prüfen)','Amtliche Schätzung einholen & mit Kaufpreis vergleichen',isKaufUI&&propertyKind!=='haus'?'STWEG: Begründungsakt, Reglement, GV-Protokolle (3 Jahre), Erneuerungsfonds':'Baubewilligung & Zonenplan einsehen','GVG-Police (Gebäudeversicherung) & Prämien prüfen','! Unabhängige Baufachperson beiziehen (Heizung, Elektrik, Feuchte, Dach)','GEAK-Ausweis & Energiestrategie des Gebäudes','Tragbarkeit prüfen (Hypozins max. 33% Bruttoeinkommen)','Amortisationsplan & Säule-3a-Strategie festlegen','Nebenkosten: Grundstückgewinnsteuer, Handänderungssteuer, Notarkosten',meta.oevDist&&meta.oevDist>500?'! ÖV weit ('+meta.oevDist+'m) — Wertverlust-Risiko prüfen':'ÖV: '+(meta.oevName||'–')+' ('+(meta.oevDist||'–')+'m)','Mobilfunk & Glasfaser/Internet prüfen',meta.isTourismus?'Tourismusort: Zweitwohnungsstatus, Nutzungsbeschränkungen & Lex Koller klären':'Bebauungsplan: Verdichtung oder Veränderungen in der Umgebung?'];
+    const ci=isKaufUI?ci_de_kauf:ci_de_miete;
+    const isPrio=(t)=>t.startsWith('!');
+    document.getElementById('checklist-section').innerHTML='<div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(245,240,232,0.3);margin-bottom:4px;">Immoskop</div><div class="checklist-title">'+clTitles[currentLang||'de']+'</div><div style="font-size:12px;color:rgba(245,240,232,0.4);margin-bottom:14px;">'+clSub_de+'</div><div class="checklist-items">'+ci.map(i=>{const p=isPrio(i);const t=p?i.substring(2):i;return'<div class="checklist-item"><div class="check-icon"></div>'+t+'</div>';}).join('')+'</div>';
+    document.getElementById('sources-row').innerHTML=['swisstopo','OpenStreetMap','BFS PKS','Marktdaten CH','BAFU','ESTV'].map(s=>'<span class="source-tag">'+s+'</span>').join('');
+
+    // Track
+    const priceBracket = price < 1500 ? 'unter_1500' : price < 2500 ? '1500_2500' : price < 4000 ? '2500_4000' : 'ueber_4000';
+    const cityPart = (coords.label.match(/\d{4}\s+(.+)$/) || [])[1] || '';
+    const streetMatch2 = coords.label.match(/^([^0-9,]+)/);
+    const streetNameClean = streetMatch2 ? streetMatch2[1].trim() : null;
+    fetch('/api/track', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({
+      event_type: 'analysis', street_name: streetNameClean, city: cityPart.split(' ')[0] || '',
+      listing_type: document.getElementById('type').value, property_kind: propertyKind,
+      rooms: parseFloat(rooms) || null, area_sqm: parseInt(area), year_category: year,
+      delta_pct: meta.delta || 0, price_bracket: priceBracket,
+      used_paste: Boolean(window._usedPaste), price_db_eligible: Boolean(window._usedPaste),
+      used_report: false, befristet: Boolean(meta.befristet),
+      has_street_data: Boolean(meta.streetData), has_bafu_noise: (meta.noiseSource||'').includes('BAFU'),
+      has_solar: Boolean(meta.solarKwh), noise_db: meta.noiseDay || null,
+      session_id: window._sessionId
+    })}).catch(()=>{});
+
+    setStatus('Fertig.', true);
+    setTimeout(hideStatus, 1500);
+    document.getElementById('results-section').classList.add('visible');
+    document.getElementById('results-section').scrollIntoView({behavior:'smooth',block:'start'});
+
+  } catch(err) {
+    showError(err.message||'Fehler bei der Analyse.');
+    hideStatus();
+  }
+  document.getElementById('btn-analyse').disabled = false;
+}
+
+function translateTileLabels(container, lang) {
+  if (!container) return;
+  const LABELS = {
+    en: {
+      'Preisbewertung':'Price assessment','ÖV-Anbindung':'Public transport',
+      'Lärm':'Noise','Besonnung':'Solar','Sicherheit':'Safety',
+      'Aussenraum':'Outdoor space','Zustand':'Condition',
+      'Mietvertrag befristet':'Fixed-term lease','Standort ungenau':'Location approx.',
+      'Sehr günstig':'Very cheap','Marktpreis':'Market price','Sehr teuer':'Very expensive',
+      'Ref:':'Ref:','Haltestellen':'stops','Haltestelle':'stop',
+      'Strassenkategorie':'road category','BAFU Strassenlaerm':'BAFU road noise',
+      'BAFU (ruhige Lage)':'BAFU (quiet area)','Messdaten':'measured','Schätzung':'estimate',
+      'Gut':'Good','Sehr gut':'Very good','Schlecht':'Poor','Mittel':'Average',
+      'Neuwertig':'As new','Renovationsbedürftig':'Needs renovation',
+      'Kein Aussenraum':'No outdoor space','Balkon':'Balcony','Terrasse':'Terrace','Garten':'Garden',
+      'EFH (Aussenraum inbegriffen)':'SFH (outdoor included)',
+      'Keine Daten':'No data','Nicht verfügbar':'Not available',
+      'PKS':'crime stats','Delikte/1000 Einw.':'offences/1000 pop.',
+      'diese Gemeinde':'this municipality',
+    },
+    fr: {
+      'Preisbewertung':'Évaluation prix','ÖV-Anbindung':'Transports publics',
+      'Lärm':'Bruit','Besonnung':'Ensoleillement','Sicherheit':'Sécurité',
+      'Aussenraum':'Extérieur','Zustand':'État',
+      'Mietvertrag befristet':'Bail limité','Standort ungenau':'Localisation approx.',
+      'Sehr günstig':'Très bon marché','Marktpreis':'Prix marché','Sehr teuer':'Très cher',
+      'Ref:':'Réf:','Haltestellen':'arrêts','Haltestelle':'arrêt',
+      'BAFU Strassenlaerm':'OFEV bruit routier','BAFU (ruhige Lage)':'OFEV (calme)',
+      'Gut':'Bon','Sehr gut':'Très bon','Schlecht':'Mauvais','Mittel':'Moyen',
+      'Neuwertig':'Comme neuf','Renovationsbedürftig':'À rénover',
+      'Kein Aussenraum':'Pas d\'extérieur','Balkon':'Balcon','Terrasse':'Terrasse','Garten':'Jardin',
+      'EFH (Aussenraum inbegriffen)':'Maison (extérieur inclus)',
+      'Keine Daten':'Pas de données','Nicht verfügbar':'Non disponible',
+      'PKS':'stat. criminelle','Delikte/1000 Einw.':'infractions/1000 hab.',
+      'diese Gemeinde':'cette commune',
+    }
+  };
+  if (lang === 'de') return; // German is default, no translation needed
+  const map = LABELS[lang];
+  if (!map) return;
+  container.querySelectorAll('.score-card-label, .score-detail, .score-value, .meter-labels span').forEach(el => {
+    let text = el.innerHTML;
+    Object.entries(map).forEach(([de, tr]) => {
+      text = text.split(de).join(tr);
+    });
+    el.innerHTML = text;
+  });
+}
+
+function parseAmenitySummary(s) {
+  if (!s) return {};
+  const MAP = {Schulen:'Bildung',Einkauf:'Einkauf',Gastro:'Gastro',Parks:'Parks',Gesundheit:'Gesundheit'};
+  const groups = {};
+  s.split('\n').forEach(line => {
+    const ci = line.indexOf(':');
+    if (ci<0) return;
+    const key = line.substring(0,ci).trim();
+    const gname = MAP[key]||key;
+    const items = line.substring(ci+1).split(',').map(x=>{
+      const m=x.trim().match(/^(.+?)\s+(\d+)m?$/);
+      return m?{name:m[1].trim(),dist:parseInt(m[2])}:null;
+    }).filter(Boolean);
+    if (items.length) groups[gname]=items;
+  });
+  return groups;
+}
+
+// ─── PARSE INSERAT ────────────────────────────────────────────────
+async function parseInserat() {
+  const text = document.getElementById('insert-text').value.trim();
+  if (text.length < 50) { alert('Bitte mehr Text einfügen.'); return; }
+  const btn = document.getElementById('btn-parse');
+  const status = document.getElementById('parse-status');
+  btn.disabled = true; btn.textContent = {'de':'Wird analysiert...','en':'Analyzing...','fr':'Analyse en cours...'}[currentLang]||'Analyzing...';
+  status.style.display = 'block'; status.textContent = 'KI liest den Inseratstext...';
+  try {
+    const res = await fetch('/api/parse', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text}) });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    const p = data.parsed;
+    window._insertText = text; window._parsedInsert = p; window._usedPaste = true;
+    fetch('/api/track', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ event_type: 'parse', used_paste: true, session_id: window._sessionId })}).catch(()=>{});
+    if (p.adresse) document.getElementById('address').value = p.adresse;
+    if (p.preis) document.getElementById('price').value = p.preis;
+    if (p.preistyp) document.getElementById('type').value = p.preistyp;
+    if (p.flaeche) document.getElementById('area').value = p.flaeche;
+    if (p.etage!==null&&p.etage!==undefined) document.getElementById('floor').value = p.etage;
+    if (p.baujahr_kategorie) document.getElementById('year').value = p.baujahr_kategorie;
+    if (p.aussenraum) document.getElementById('outdoor').value = p.aussenraum;
+    if (p.zustand) document.getElementById('condition').value = p.zustand;
+    if (p.befristet) { status.style.color='#C8371A'; status.textContent='BEFRISTETER MIETVERTRAG: '+(p.befristet_details||'Details im Report'); }
+    else { status.style.color='rgba(245,240,232,0.5)'; status.textContent='Felder ausgefüllt.'; }
+    switchTab('form');
+    await runAnalysis();
+  } catch(e) { status.style.color='#C8371A'; status.textContent='Fehler: '+e.message; }
+  btn.disabled=false;
+  btn.textContent = TRANSLATIONS[currentLang]?.btn_parse || 'Inserat analysieren →';
+}
+
+// ─── REPORT ───────────────────────────────────────────────────────
+function renderReport(text) {
+  const sections = text.split(/^## /m).filter(Boolean);
+  let html = ''; let sectionNum = 0;
+  sections.forEach((section) => {
+    const lines = section.split('\n');
+    const title = lines[0].trim();
+    const body = lines.slice(1).join('\n').trim();
+    if (!title) return;
+    sectionNum++;
+    const num = String(sectionNum).padStart(2,'0');
+    const isBef = title.toLowerCase().includes('befristet') || title.toLowerCase().includes('achtung');
+    const col = isBef ? 'var(--red)' : 'var(--ink)';
+    html += `<div style="display:flex;align-items:baseline;gap:14px;margin:${sectionNum===1?'0':'30px'} 0 10px;padding-top:${sectionNum===1?'0':'20px'};border-top:${sectionNum===1?'none':'1px solid var(--rule)'};">
+      <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;color:var(--red);flex-shrink:0;margin-top:4px;">${num}</span>
+      <h2 style="font-family:var(--font-display);font-size:21px;font-weight:400;margin:0;color:${col};letter-spacing:-0.01em;">${title}</h2>
+    </div>`;
+    const bodyHtml = body
+      .replace(/^- (.+)$/gm, '<li style="margin:4px 0;">$1</li>')
+      .replace(/(<li[^>]*>.*<\/li>\n?)+/g, s => `<ul style="padding-left:18px;margin:10px 0;">${s}</ul>`)
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n\n/g, '</p><p style="margin:8px 0;">')
+      .replace(/\n/g, ' ');
+    html += `<div style="font-size:14px;line-height:1.85;color:#3A3835;"><p style="margin:0;">${bodyHtml}</p></div>`;
+  });
+  document.getElementById('report-content').innerHTML = html || `<p>${text}</p>`;
+  document.getElementById('report-address').textContent = document.getElementById('hero-address').textContent;
+  document.getElementById('report-tiles-summary').innerHTML = document.getElementById('score-grid').innerHTML;
+  translateTileLabels(document.getElementById('report-tiles-summary'), currentLang);
+  document.getElementById('report-section').style.display = 'block';
+  document.getElementById('report-section').setAttribute('data-lang', currentLang);
+  const rb = document.getElementById('btn-retranslate'); if (rb) rb.style.display = 'none';
+  document.getElementById('btn-report').textContent = 'KI-Report aktualisieren (kostenlos)';
+  document.getElementById('btn-report').classList.add('generated');
+  // Populate AI Insight Summary
+  const aiEl=document.getElementById('ai-insight'); const aiText=document.getElementById('ai-insight-text');
+  if(aiEl&&aiText){const fazitMatch=text.match(/(?:fazit|tldr|tl;dr|zusammenfassung)[:\s]*([^\n#]{40,300})/i);const firstPara=text.replace(/^##[^\n]+\n/m,'').replace(/\*\*/g,'').trim().split('\n\n')[0];const summary=fazitMatch?fazitMatch[1].trim():firstPara.substring(0,280).trim();if(summary){aiText.textContent=summary+(summary.length>=278?'…':'');aiEl.classList.add('visible');}}
+  setTimeout(() => document.getElementById('report-section').scrollIntoView({behavior:'smooth',block:'start'}), 100);
+}
+
+function printReport() {
+  const addr = document.getElementById('hero-address').textContent;
+  const main = document.getElementById('hero-verdict').textContent;
+  const grid = document.getElementById('score-grid').innerHTML;
+  const poi = document.getElementById('poi-section').innerHTML;
+  const checklist = document.getElementById('checklist-section').innerHTML;
+  const reportContent = document.getElementById('report-content').innerHTML;
+  const hasReport = document.getElementById('report-content').innerHTML.trim().length > 0;
+  const printWin = window.open('', '_blank');
+  printWin.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Immoskop — ${addr}</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+    <style>body{font-family:'Schibsted Grotesk',sans-serif;color:#1A1916;margin:0;padding:32px;max-width:900px;margin:0 auto;}
+    .logo{font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:24px;padding-bottom:16px;border-top:2px solid #1A1916;}
+    .logo em{font-style:italic;color:#C8371A;}.addr{font-family:'DM Mono',monospace;font-size:11px;color:#6A6864;margin-bottom:6px;}
+    .main{font-family:'DM Serif Display',serif;font-size:28px;margin-bottom:24px;}
+    .score-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
+    .score-card{border:1px solid rgba(26,25,22,0.12);padding:14px;}.score-card-label{font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;color:#6A6864;margin-bottom:6px;}
+    .score-value{font-family:'DM Serif Display',serif;font-size:22px;}.score-detail{font-size:11px;color:#6A6864;margin-top:3px;}
+    .score-bar{height:2px;margin-top:8px;background:rgba(26,25,22,0.12);}.score-bar-fill{height:100%;}
+    .score-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+    .score-pill{font-family:'DM Mono',monospace;font-size:9px;padding:2px 6px;}
+    h2{font-family:'DM Serif Display',serif;font-size:18px;margin:20px 0 6px;padding-top:16px;border-top:1px solid rgba(26,25,22,0.12);}
+    .print-footer{margin-top:32px;padding-top:12px;border-top:1px solid rgba(26,25,22,0.12);font-family:'DM Mono',monospace;font-size:9px;color:#6A6864;}
+    @media print{body{padding:16px;}}</style></head><body>
+    <div class="logo">immo<em>skop</em> — Inserat-Analyse</div>
+    <div class="addr">${addr}</div><div class="main">${main}</div>
+    <div class="score-grid">${grid}</div>
+    ${hasReport?`<div class="report-section"><div style="font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;color:#6A6864;margin-bottom:12px;">KI-generierter Report</div>${reportContent}</div>`:''}
+    <div class="print-footer">Erstellt mit Immoskop.ch — Alle Angaben ohne Gewähr. © 2026 Immoskop</div>
+  <\/body><\/html>`);
+  printWin.document.close();
+  setTimeout(() => printWin.print(), 500);
+}
+
+function shareReport() {
+  const addr = document.getElementById('hero-address').textContent;
+  const main = document.getElementById('hero-verdict').textContent;
+  const text = `Immoskop-Analyse: ${addr} — ${main}`;
+  if (navigator.share) { navigator.share({ title: 'Immoskop', text, url: window.location.href }); }
+  else { navigator.clipboard.writeText(`${text}
+${window.location.href}`); alert('Link kopiert!'); }
+}
+
+async function generateReport() {
+  const btn = document.getElementById('btn-report');
+  if (!window._lastAnalysis) return;
+  btn.disabled=true; btn.textContent={'de':'KI-Report wird generiert...','en':'Generating report...','fr':'Rapport en cours...'}[currentLang]||'Generating...';
+  try {
+    const r = await fetch('/api/report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...window._lastAnalysis, lang: currentLang})});
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    renderReport(d.report);
+    fetch('/api/track', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ event_type: 'report', used_report: true, session_id: window._sessionId })}).catch(()=>{});
+  } catch(e) { alert('Fehler: '+e.message); }
+  btn.disabled=false;
+}
+
+// ─── RESPONSIVE ───────────────────────────────────────────────────
+function handleResize() {
+  const grid = document.querySelector('.hero-grid');
+  if (!grid) return;
+  if (window.innerWidth < 900) { grid.style.gridTemplateColumns = '1fr'; grid.style.gap = '32px'; }
+  else { grid.style.gridTemplateColumns = '1fr 1fr'; grid.style.gap = '60px'; }
+}
+window.addEventListener('resize', handleResize);
+handleResize();
+
+// ─── INIT ─────────────────────────────────────────────────────────
+window._sessionId = Math.random().toString(36).substring(2,15);
+setLang(detectLang());
+</script>
+</body>
+</html>
