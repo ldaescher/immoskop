@@ -1,0 +1,17 @@
+# Grosse, regenerierbare Dateien – nicht committen
+data/plz_prices_raw.json
+data/street_prices_raw.json
+data/strassen_links.json
+data/plz_prices_merged.json
+data/street_prices_merged.json
+data/scrape_plz_log.json
+data/scrape_streets_log.json
+
+# Resume-Dateien (temporär)
+data/.plz_progress.json
+data/.streets_progress.json
+
+# Auf GitHub committen:
+# data/slugs.json           ← Gemeinde-Slugs
+# data/plz_overrides.json   ← Manuelle Korrekturen PLZ
+# data/street_overrides.json ← Manuelle Korrekturen Strassen
