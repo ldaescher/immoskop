@@ -254,15 +254,6 @@ export default async function handler(req, res) {
   const parkplatzFactor = (parkplatz !== null && parkplatz !== undefined) ? (PARKPLATZ_F[parkplatz] ?? 1.0) : 1.0;
   const parkplatzLabel = { 0:'Kein Parkplatz', 1:'Aussenparkplatz', 2:'Tiefgaragenplatz', 3:'2× Tiefgaragenplatz' }[parkplatz] ?? null;
 
-  // ── LÄRM-FAKTOR ──────────────────────────────────────────────────────────
-  // Quelle: Schweizer Hedonic-Studien (REGA/SNB): ~0.5% pro dB über 55dB
-  // Nur anwenden wenn BAFU-Daten vorhanden (noiseDay nicht null)
-  let noiseFactor = 1.0;
-  if (noiseDay !== null && noiseDay > 55) {
-    const dbOver = noiseDay - 55;
-    noiseFactor = Math.max(1 - dbOver * 0.005, 0.88); // max -12% bei 79dB+
-  }
-
   // ── EXTRAINFO-ADJUSTMENT (via parsedInsert) ───────────────────────────────
   // Claude extrahiert aus dem Inseratstext einen preis_adjustment-Wert
   // z.B. +0.05 für Seesicht, -0.03 für dunkle Nordhang-Lage
@@ -273,6 +264,8 @@ export default async function handler(req, res) {
     extraAdjustmentGrund = parsedInsert.preis_adjustment_grund || null;
     console.log('EXTRA ADJUSTMENT:', parsedInsert.preis_adjustment, '|', extraAdjustmentGrund);
   }
+
+  let noiseFactor = 1.0; // wird nach BAFU-Abfrage neu berechnet
 
   let expected, refPerSqmUsed;
   if (isKauf && refSalePerSqm) {
@@ -2795,6 +2788,19 @@ export default async function handler(req, res) {
     : isTourismus
     ? 'Ferienort: Bei Kauf Zweitwohnungsstatus und Nutzungsbeschränkungen prüfen.'
     : null;
+  // ── LÄRM-FAKTOR + EXPECTED NEU BERECHNEN (nach BAFU-Abfrage) ──────────────
+  if (noiseDay !== null && noiseDay > 55) {
+    const dbOver = noiseDay - 55;
+    noiseFactor = Math.max(1 - dbOver * 0.005, 0.88);
+    console.log('NOISE FACTOR:', noiseFactor.toFixed(3), '| noiseDay:', noiseDay, 'dB');
+    // expected mit noiseFactor neu berechnen
+    if (isKauf && refSalePerSqm) {
+      expected = Math.round(refSalePerSqm * area * yearFactor * floorFactor * outdoorFactor * conditionFactor * propertyFactor * parkplatzFactor * noiseFactor * extraAdjustment);
+    } else if (!isKauf && refRentPerSqm && refRentPerSqm < 500) {
+      expected = Math.round(refRentPerSqm * area * yearFactor * floorFactor * outdoorFactor * conditionFactor * propertyFactor * parkplatzFactor * noiseFactor * extraAdjustment);
+    }
+  }
+
   // ── AUTOBAHN-AUSWERTUNG ──────────────────────────────────────────────────
   try {
     const autobahnData = await autobahnPromise;
