@@ -70,15 +70,29 @@ export default async function handler(req, res) {
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 
-    // Gemeinde-Preise via PLZ
-    const priceRes = await fetch(
-      `${supabaseUrl}/rest/v1/plz_prices?plz=eq.${plz}&limit=1`,
+    // Preise laden: Priorität PLZ-Locality (spezifischer) → Gemeinde (aggregiert)
+    // 1. Versuch: PLZ-spezifische Locality (typ=locality, plz=X)
+    const localityRes = await fetch(
+      `${supabaseUrl}/rest/v1/plz_prices?plz=eq.${plz}&typ=eq.locality&limit=1`,
       { headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` } }
     );
-    const priceRows = await priceRes.json();
-    if (priceRows?.length) {
-      priceData = priceRows[0];
-      console.log('PRICE ok:', JSON.stringify(priceData));
+    const localityRows = await localityRes.json();
+    if (localityRows?.length) {
+      priceData = localityRows[0];
+      console.log('PRICE ok (locality):', plz, JSON.stringify(priceData).substring(0, 200));
+    }
+
+    // 2. Fallback: Gemeinde-Aggregat (typ=gemeinde, plz=X)
+    if (!priceData) {
+      const priceRes = await fetch(
+        `${supabaseUrl}/rest/v1/plz_prices?plz=eq.${plz}&typ=eq.gemeinde&limit=1`,
+        { headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` } }
+      );
+      const priceRows = await priceRes.json();
+      if (priceRows?.length) {
+        priceData = priceRows[0];
+        console.log('PRICE ok (gemeinde):', plz, JSON.stringify(priceData).substring(0, 200));
+      }
     }
 
     // Strassen-Preise (falls Tabelle existiert)
@@ -88,7 +102,7 @@ export default async function handler(req, res) {
 
     if (streetName) {
       const streetRes = await fetch(
-        `${supabaseUrl}/rest/v1/street_prices?plz=eq.${plz}&street_name_lower=ilike.*${encodeURIComponent(streetName)}*&limit=1`,
+        `${supabaseUrl}/rest/v1/street_prices?plz=eq.${plz}&strasse_name_lower=ilike.*${encodeURIComponent(streetName)}*&limit=1`,
         { headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` } }
       );
       if (streetRes.ok) {
@@ -112,18 +126,32 @@ export default async function handler(req, res) {
   let priceSource = 'Modell';
 
   if (priceData) {
-    refRentPerSqm = priceData.median_price_sqm;
-    refRentP10 = priceData.rent_p10;
-    refRentP90 = priceData.rent_p90;
-    refSalePerSqm = priceData.median_sale_price_sqm;
-    refSaleP10 = priceData.sale_p10;
-    refSaleP90 = priceData.sale_p90;
-    priceSource = 'RealAdvisor';
+    // Neue Spaltennamen (nach Schema-Migration April 2026)
+    // Wohnung bevorzugt, Haus als Fallback
+    refRentPerSqm = priceData.miete_whg_median ?? priceData.miete_haus_median ?? priceData.median_price_sqm;
+    refRentP10    = priceData.miete_whg_p10    ?? priceData.miete_haus_p10    ?? priceData.rent_p10;
+    refRentP90    = priceData.miete_whg_p90    ?? priceData.miete_haus_p90    ?? priceData.rent_p90;
+    refSalePerSqm = priceData.kauf_whg_median  ?? priceData.kauf_haus_median  ?? priceData.median_sale_price_sqm;
+    refSaleP10    = priceData.kauf_whg_p10     ?? priceData.kauf_haus_p10     ?? priceData.sale_p10;
+    refSaleP90    = priceData.kauf_whg_p90     ?? priceData.kauf_haus_p90     ?? priceData.sale_p90;
+    // Haus-spezifische Preise falls propertyKind === 'haus'
+    if (propertyKind === 'haus') {
+      refRentPerSqm = priceData.miete_haus_median ?? refRentPerSqm;
+      refRentP10    = priceData.miete_haus_p10    ?? refRentP10;
+      refRentP90    = priceData.miete_haus_p90    ?? refRentP90;
+      refSalePerSqm = priceData.kauf_haus_median  ?? refSalePerSqm;
+      refSaleP10    = priceData.kauf_haus_p10     ?? refSaleP10;
+      refSaleP90    = priceData.kauf_haus_p90     ?? refSaleP90;
+    }
+    priceSource = priceData.typ === 'locality'
+      ? `RealAdvisor (PLZ ${priceData.plz})`
+      : 'RealAdvisor';
     nComparables = priceData.n_listings || priceData.n_rent || priceData.n_comparables || null;
 
     // Strassen-Perzentile berechnen falls Strassendaten vorhanden
     if (streetData && refSalePerSqm && refSaleP10 && refSaleP90) {
-      const streetSale = streetData.median_sale_price_sqm;
+      // Neue Spalte: kauf_median (war: median_sale_price_sqm)
+      const streetSale = streetData.kauf_median ?? streetData.median_sale_price_sqm;
       // Lineare Interpolation: wo liegt die Strasse in der Gemeinde-Range?
       // P10 = 10. Perzentile, Median = 50., P90 = 90.
       let pct;
@@ -2686,7 +2714,7 @@ export default async function handler(req, res) {
       crime, steuerfuss, estvNatPctVal, estvKtPctVal, estvKanton, taxBurdenCHF, taxBurdenPct, estvKanton, estvNatPctVal, estvKtPctVal, estvBfsnr, taxBurdenSource, delta, expected, priceRangeText, priceSource,
       outdoor, outdoorFactor, condition, conditionFactor,
       befristet: false, befristetDetails: null,
-      streetData: streetData ? { name: streetData.street_name, salePerSqm: streetData.median_sale_price_sqm, percentile: streetPercentile } : null,
+      streetData: streetData ? { name: streetData.strasse_name ?? streetData.street_name, salePerSqm: streetData.kauf_median ?? streetData.median_sale_price_sqm, percentile: streetPercentile } : null,
       nComparables,
       matchQuality: streetData ? 'street' : priceData ? 'plz' : 'model',
       noiseSource: noiseSource || null,
