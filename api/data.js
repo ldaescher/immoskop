@@ -8,7 +8,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Kein Request-Body empfangen.' });
   }
   console.log('DATA start:', JSON.stringify(req.body).substring(0, 200));
-  const { address, rooms, area, price, type, year, floor, outdoor, condition, propertyKind } = req.body;
+  const { address, rooms, area, price, type, year, floor, outdoor, condition, propertyKind, extraInfo, parsedInsert } = req.body;
+  const parkplatz = parsedInsert?.parkplatz ?? req.body.parkplatz ?? null;  // 0=kein, 1=aussen, 2=TG, 3=2xTG
   const isKauf = type === 'kauf';
 
   // ── 1. GEOCODE ──────────────────────────────────────────────────
@@ -241,14 +242,46 @@ export default async function handler(req, res) {
   const floorFactorRaw = floorNum === 0 ? 0.95 : 1 + (floorNum - 1) * 0.015;
   const floorFactor = hasRealData ? 1 + (floorFactorRaw - 1) * 0.3 : floorFactorRaw;
 
+  // ── PARKPLATZ-FAKTOR ─────────────────────────────────────────────────────
+  // Werte basieren auf CH-Marktdaten: TGP ~CHF 30-50k in Städten
+  // Als relativer Faktor zum Median: Stadtzürcher 70m² Whg = CHF 1.2 Mio → TGP ~3-4%
+  const PARKPLATZ_F = {
+    0: isUrban ? 0.97 : 1.0,   // kein PP: -3% urban, neutral ländlich
+    1: 1.01,                    // Aussenparkplatz: +1%
+    2: isUrban ? 1.03 : 1.02,  // TGP: +3% urban, +2% ländlich
+    3: isUrban ? 1.05 : 1.03,  // 2x TGP: +5% urban, +3% ländlich
+  };
+  const parkplatzFactor = (parkplatz !== null && parkplatz !== undefined) ? (PARKPLATZ_F[parkplatz] ?? 1.0) : 1.0;
+  const parkplatzLabel = { 0:'Kein Parkplatz', 1:'Aussenparkplatz', 2:'Tiefgaragenplatz', 3:'2× Tiefgaragenplatz' }[parkplatz] ?? null;
+
+  // ── LÄRM-FAKTOR ──────────────────────────────────────────────────────────
+  // Quelle: Schweizer Hedonic-Studien (REGA/SNB): ~0.5% pro dB über 55dB
+  // Nur anwenden wenn BAFU-Daten vorhanden (noiseDay nicht null)
+  let noiseFactor = 1.0;
+  if (noiseDay !== null && noiseDay > 55) {
+    const dbOver = noiseDay - 55;
+    noiseFactor = Math.max(1 - dbOver * 0.005, 0.88); // max -12% bei 79dB+
+  }
+
+  // ── EXTRAINFO-ADJUSTMENT (via parsedInsert) ───────────────────────────────
+  // Claude extrahiert aus dem Inseratstext einen preis_adjustment-Wert
+  // z.B. +0.05 für Seesicht, -0.03 für dunkle Nordhang-Lage
+  let extraAdjustment = 1.0;
+  let extraAdjustmentGrund = null;
+  if (parsedInsert?.preis_adjustment && Math.abs(parsedInsert.preis_adjustment) <= 0.15) {
+    extraAdjustment = 1 + parsedInsert.preis_adjustment;
+    extraAdjustmentGrund = parsedInsert.preis_adjustment_grund || null;
+    console.log('EXTRA ADJUSTMENT:', parsedInsert.preis_adjustment, '|', extraAdjustmentGrund);
+  }
+
   let expected, refPerSqmUsed;
   if (isKauf && refSalePerSqm) {
     refPerSqmUsed = refSalePerSqm;
-    expected = Math.round(refSalePerSqm * area * yearFactor * floorFactor * outdoorFactor * conditionFactor * propertyFactor);
+    expected = Math.round(refSalePerSqm * area * yearFactor * floorFactor * outdoorFactor * conditionFactor * propertyFactor * parkplatzFactor * noiseFactor * extraAdjustment);
   } else if (!isKauf && refRentPerSqm && refRentPerSqm < 500) {
     // Sanity check: rent per m²/month should be between 5 and 500 CHF
     refPerSqmUsed = refRentPerSqm;
-    expected = Math.round(refRentPerSqm * area * yearFactor * floorFactor * outdoorFactor * conditionFactor * propertyFactor);
+    expected = Math.round(refRentPerSqm * area * yearFactor * floorFactor * outdoorFactor * conditionFactor * propertyFactor * parkplatzFactor * noiseFactor * extraAdjustment);
   } else if (!isKauf && !refRentPerSqm && refSalePerSqm) {
     // Estimate rent from sale price (gross yield ~4-5% for CH)
     const estRentPerSqm = Math.round(refSalePerSqm * 0.045 / 12 * 10) / 10;
@@ -308,7 +341,11 @@ export default async function handler(req, res) {
   // Autobahnausfahrten via Overpass (parallel, 15km Radius)
   const autobahnPromise = (async () => {
     try {
-      const q = `[out:json][timeout:10];node[highway=motorway_junction](around:15000,${lat},${lon});out 20;`;
+      // Kombinierte Query: Ausfahrten (Nodes) + Autobahn-Ways (für Ref-Tag)
+      const q = `[out:json][timeout:10];(
+        node[highway=motorway_junction](around:15000,${lat},${lon});
+        way[highway=motorway](around:10000,${lat},${lon});
+      );out body 30;`;
       const r = await fetch('https://overpass-api.de/api/interpreter', {
         method: 'POST', body: q, signal: AbortSignal.timeout(10000)
       });
@@ -2761,9 +2798,19 @@ export default async function handler(req, res) {
   // ── AUTOBAHN-AUSWERTUNG ──────────────────────────────────────────────────
   try {
     const autobahnData = await autobahnPromise;
-    const junctions = autobahnData?.elements || [];
+    const elements = autobahnData?.elements || [];
+    const junctions = elements.filter(e => e.type === 'node' && e.tags?.highway === 'motorway_junction');
+    const ways      = elements.filter(e => e.type === 'way'  && e.tags?.highway === 'motorway');
+
+    // Autobahn-Refs aus Ways sammeln (zuverlässiger als Junction-Nodes)
+    const wayRefs = new Set();
+    for (const w of ways) {
+      const ref = w.tags?.ref || '';
+      ref.split(';').forEach(r => { const t = r.trim().toUpperCase(); if (t.startsWith('A')) wayRefs.add(t); });
+    }
+
     if (junctions.length > 0) {
-      // Distanz zu jeder Ausfahrt berechnen (Luftlinie)
+      // Nächste Ausfahrt berechnen (Luftlinie)
       let nearest = null, nearestDist = Infinity;
       for (const j of junctions) {
         if (!j.lat || !j.lon) continue;
@@ -2775,22 +2822,25 @@ export default async function handler(req, res) {
       }
       if (nearest) {
         autobahnDist = nearestDist;
-        // Autobahn-Ref aus OSM-Tags lesen (z.B. "A3", "A1;A3")
         const tags = nearest.tags || {};
-        const junctionRef = tags['motorway:ref'] || tags['ref'] || '';
-        // Ersten Autobahn-Ref extrahieren (manchmal "A3;A4")
-        const firstRef = junctionRef.split(';')[0].trim().toUpperCase();
-        const highway = AUTOBAHNEN[firstRef];
-        if (highway) {
-          autobahnName = firstRef;
-          autobahnRichtungen = highway.richtungen;
-        } else if (firstRef.startsWith('A')) {
-          autobahnName = firstRef;
-          autobahnRichtungen = null;
+
+        // Ref-Reihenfolge: Junction-Node → motorway:ref → Way-Refs → null
+        const jRef = (tags['motorway:ref'] || tags['ref'] || '').split(';')[0].trim().toUpperCase();
+        const bestRef = (jRef.startsWith('A') ? jRef : null) || [...wayRefs][0] || null;
+
+        if (bestRef) {
+          autobahnName = bestRef;
+          autobahnRichtungen = AUTOBAHNEN[bestRef]?.richtungen || null;
         }
         const junctionName = tags.name || tags.ref || nearest.id;
-        console.log('AUTOBAHN:', autobahnName, '| Ausfahrt:', junctionName, '| Dist:', autobahnDist + 'm');
+        console.log('AUTOBAHN:', autobahnName, '| Ausfahrt:', junctionName, '| Dist:', autobahnDist + 'm | Ways:', [...wayRefs].join(','));
       }
+    } else if (wayRefs.size > 0) {
+      // Keine Junction gefunden aber Autobahn-Ways in der Nähe
+      autobahnName = [...wayRefs][0];
+      autobahnRichtungen = AUTOBAHNEN[autobahnName]?.richtungen || null;
+      autobahnDist = 10000; // Schätzung: innerhalb 10km
+      console.log('AUTOBAHN (way only):', autobahnName, '| Ways:', [...wayRefs].join(','));
     } else {
       console.log('AUTOBAHN: keine Ausfahrt in 15km gefunden');
     }
@@ -2804,6 +2854,8 @@ export default async function handler(req, res) {
       solarKwh, oevDist, oevName, oevCount, amenitySummary,
       crime, steuerfuss, estvNatPctVal, estvKtPctVal, estvKanton, taxBurdenCHF, taxBurdenPct, estvKanton, estvNatPctVal, estvKtPctVal, estvBfsnr, taxBurdenSource, delta, expected, priceRangeText, priceSource,
       outdoor, outdoorFactor, condition, conditionFactor,
+      parkplatz, parkplatzFactor, parkplatzLabel,
+      noiseFactor, extraAdjustment, extraAdjustmentGrund,
       befristet: false, befristetDetails: null,
       streetData: streetData ? { name: streetData.strasse_name ?? streetData.street_name, salePerSqm: streetData.kauf_median ?? streetData.median_sale_price_sqm, percentile: streetPercentile } : null,
       nComparables,

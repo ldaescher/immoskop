@@ -25,6 +25,22 @@ AUSSENRAUM — KRITISCH:
 - Kein Aussenraum erwähnt → null (nicht "none"!)
 - Im Zweifel: null
 
+PARKPLATZ — KRITISCH:
+- 0: explizit kein Parkplatz / kein PP inbegriffen
+- 1: ein Aussenparkplatz / Aussenabstellplatz / PP im Freien
+- 2: ein Tiefgaragenplatz / Einstellhalle / Garagenplatz
+- 3: zwei oder mehr Tiefgaragenplätze
+- null: nicht erwähnt (am häufigsten!)
+- Im Zweifel: null
+
+PREIS-ADJUSTMENT — KRITISCH:
+- NUR für klare, wertrelevante Merkmale die WÖRTLICH im Text stehen
+- Positive Faktoren (+): Seesicht, Bergsicht, Alpenblick (+3-8%), Minergie/LEED (+3-5%), Dachterrasse (+3-5%), Concierge/Portier (+2-3%), Lift in kleinem Haus (+1-2%), neuwertige Küche/Bad (+2-4%)
+- Negative Faktoren (-): Hanglage mit schwierigem Zugang (-2-5%), sehr dunkle Lage/Nordhang (-3-5%), Durchgangszimmer (-2-3%)
+- Kombinationen: mehrere Faktoren addieren, Maximum ±15%
+- Marketing-Begriffe wie "sonnig", "ruhig", "zentral" → KEIN Adjustment (nicht verifizierbar)
+- Im Zweifel: null (kein Adjustment)
+
 BAUJAHR — KRITISCH:
 - NUR wenn eine Jahreszahl explizit als Baujahr, Erstellungsjahr oder Renovationsjahr vorkommt
 - Beispiele die ZÄHLEN: "Baujahr 1998", "erbaut 2005", "renoviert 2018", "Neubau 2023", "Year built: 2024", "Built in 2020", "Construction year: 2019"
@@ -51,6 +67,9 @@ Antworte NUR mit einem JSON-Objekt, ohne Markdown-Backticks, ohne Erklärungen:
   "verfuegbar_ab": "Datum oder Text falls vorhanden, sonst null",
   "besonderheiten": ["Liste", "von", "Besonderheiten", "max 5"],
   "marketing_flags": ["Begriffe die kritisch zu hinterfragen sind, z.B. 'sonnig' 'ruhig' 'zentral'"],
+  "parkplatz": 0 wenn kein Parkplatz, 1 wenn ein Aussenparkplatz, 2 wenn ein Tiefgaragenplatz, 3 wenn zwei oder mehr Tiefgaragenplätze, oder null wenn nicht erwähnt,
+  "preis_adjustment": Zahl zwischen -0.15 und +0.15 (Preiskorrektur als Dezimalanteil, z.B. +0.05 für 5% Aufschlag wegen Seesicht), oder null wenn keine klaren Qualitätsmerkmale vorhanden,
+  "preis_adjustment_grund": "Kurze Begründung des Adjustments, z.B. 'Seesicht + Minergie-Standard', oder null",
   "zusammenfassung": "2-3 Sätze Zusammenfassung des Inserats auf Deutsch"
 }`;
 

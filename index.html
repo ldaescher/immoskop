@@ -697,6 +697,16 @@
                 <option value="renovationsbed" data-i18n="opt_reno">Renov.bed.</option>
               </select>
             </div>
+            <div class="field">
+              <div class="field-label" data-i18n="lbl_parking">Parkplatz</div>
+              <select id="parking">
+                <option value="" selected data-i18n="opt_parking_unknown">Unbekannt</option>
+                <option value="0" data-i18n="opt_parking_none">Kein</option>
+                <option value="1" data-i18n="opt_parking_outdoor">Aussen</option>
+                <option value="2" data-i18n="opt_parking_tg">Tiefgarage</option>
+                <option value="3" data-i18n="opt_parking_tg2">2× Tiefgarage</option>
+              </select>
+            </div>
           </div>
           <div class="field">
             <div class="field-label" data-i18n="lbl_year">Baujahr</div>
@@ -1055,8 +1065,8 @@ const TRANSLATIONS = {
     lbl_address: 'Adresse', ph_address: 'z.B. Seestrasse 12, Zürich oder nur «Kilchberg»',
     lbl_type: 'Typ', opt_rent: 'Miete', opt_buy: 'Kauf',
     lbl_price_rent: 'Mietzins CHF/Mt.', lbl_price_buy: 'Kaufpreis CHF',
-    lbl_rooms: 'Zimmer', lbl_area: 'Fläche m²', lbl_floor: 'Etage',
-    lbl_outdoor: 'Aussenraum', opt_none: 'Kein', opt_balcony: 'Balkon', opt_terrace: 'Terrasse', opt_garden: 'Garten',
+    lbl_rooms: 'Zimmer', lbl_area: 'Fläche m²', lbl_floor: 'Etage', lbl_parking: 'Parkplatz',
+    lbl_outdoor: 'Aussenraum', opt_none: 'Kein', opt_balcony: 'Balkon', opt_terrace: 'Terrasse', opt_garden: 'Garten', opt_parking_unknown: 'Unbekannt', opt_parking_none: 'Kein', opt_parking_outdoor: 'Aussen', opt_parking_tg: 'Tiefgarage', opt_parking_tg2: '2× Tiefgarage',
     lbl_condition: 'Zustand', opt_new: 'Neuwertig', opt_good: 'Gut', opt_medium: 'Mittel', opt_reno: 'Renov.bed.',
     lbl_year: 'Baujahr', opt_2020: 'ab 2020', opt_2010: '2010–2019', opt_2000: '2000–2009', opt_1990: '1990–1999', opt_1980: '1980–1989', opt_alt: 'vor 1980',
     free_badge: '100% Kostenlos',
@@ -1151,8 +1161,8 @@ const TRANSLATIONS = {
     lbl_address: 'Address', ph_address: 'e.g. Seestrasse 12, Zurich or just «Kilchberg»',
     lbl_type: 'Type', opt_rent: 'Rent', opt_buy: 'Buy',
     lbl_price_rent: 'Rent CHF/mo.', lbl_price_buy: 'Purchase price CHF',
-    lbl_rooms: 'Rooms', lbl_area: 'Area m²', lbl_floor: 'Floor',
-    lbl_outdoor: 'Outdoor', opt_none: 'None', opt_balcony: 'Balcony', opt_terrace: 'Terrace', opt_garden: 'Garden',
+    lbl_rooms: 'Rooms', lbl_area: 'Area m²', lbl_floor: 'Floor', lbl_parking: 'Parking',
+    lbl_outdoor: 'Outdoor', opt_none: 'None', opt_balcony: 'Balcony', opt_terrace: 'Terrace', opt_garden: 'Garden', opt_parking_unknown: 'Unknown', opt_parking_none: 'None', opt_parking_outdoor: 'Outdoor', opt_parking_tg: 'Underground', opt_parking_tg2: '2× Underground',
     lbl_condition: 'Condition', opt_new: 'New/renovated', opt_good: 'Good', opt_medium: 'Average', opt_reno: 'Needs work',
     lbl_year: 'Built', opt_2020: 'from 2020', opt_2010: '2010–2019', opt_2000: '2000–2009', opt_1990: '1990–1999', opt_1980: '1980–1989', opt_alt: 'before 1980',
     free_badge: '100% Free',
@@ -1244,7 +1254,7 @@ const TRANSLATIONS = {
     lbl_type: "Type", opt_rent: "Location", opt_buy: "Achat",
     lbl_price_rent: "Loyer CHF/mois", lbl_price_buy: "Prix achat CHF",
     lbl_rooms: "Pièces", lbl_area: "Surface m²", lbl_floor: "Étage",
-    lbl_outdoor: "Extérieur", opt_none: "Aucun", opt_balcony: "Balcon", opt_terrace: "Terrasse", opt_garden: "Jardin",
+    lbl_outdoor: "Extérieur", opt_none: "Aucun", opt_balcony: "Balcon", opt_terrace: "Terrasse", opt_garden: "Jardin", opt_parking_unknown: "Inconnu", opt_parking_none: "Aucune", opt_parking_outdoor: "Extérieur", opt_parking_tg: "Souterrain", opt_parking_tg2: "2× Souterrain",
     lbl_condition: "État", opt_new: "Neuf/rénové", opt_good: "Bon état", opt_medium: "Moyen", opt_reno: "À rénover",
     lbl_year: "Construit", opt_2020: "dès 2020", opt_2010: "2010–2019", opt_2000: "2000–2009", opt_1990: "1990–1999", opt_1980: "1980–1989", opt_alt: "avant 1980",
     free_badge: "100% Gratuit",
@@ -2671,6 +2681,8 @@ async function runAnalysis() {
   const rooms = document.getElementById('rooms').value || null;
   const propertyKind = document.getElementById('propertyKind').value;
   const extraInfo = document.getElementById('extra-info')?.value?.trim() || null;
+  const parkingVal = document.getElementById('parking')?.value;
+  const parkplatz = (parkingVal !== '' && parkingVal !== null && parkingVal !== undefined) ? parseInt(parkingVal) : null;
 
   try {
     setStatus('Adresse wird geocodiert...');
@@ -2689,7 +2701,7 @@ async function runAnalysis() {
     if (!coords) coords = { lat: null, lon: null, label: addressInput };
 
     const addressForApi = addressInput; // send raw input to backend — backend does its own geocoding
-    window._lastAnalysis = { address: addressForApi, rooms, area, price: price||2400, type: document.getElementById('type').value, propertyKind, year, floor, outdoor, condition, insertText: window._insertText||null, parsedInsert: window._parsedInsert||null, extraInfo, reportDate: new Date().toLocaleDateString('de-CH', {day:'2-digit',month:'long',year:'numeric'}), geoFallback: false, noPriceInserat };
+    window._lastAnalysis = { address: addressForApi, rooms, area, price: price||2400, type: document.getElementById('type').value, propertyKind, year, floor, outdoor, condition, parkplatz, insertText: window._insertText||null, parsedInsert: window._parsedInsert||null, extraInfo, reportDate: new Date().toLocaleDateString('de-CH', {day:'2-digit',month:'long',year:'numeric'}), geoFallback: false, noPriceInserat };
 
     setStatus('Marktpreise & Umgebung werden abgerufen...');
     let fetchBody;
