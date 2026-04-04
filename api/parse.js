@@ -19,6 +19,12 @@ ZIMMER — KRITISCH:
 - Beispiele die NICHT zählen: "Wohnzimmer", "Schlafzimmer", "Küche", "living room", "bedroom" → diese sind Raumnamen, KEINE Zimmeranzahl
 - Im Zweifel: null
 
+AUSSENRAUM — KRITISCH:
+- NUR wenn Balkon, Loggia, Terrasse, Sitzplatz oder Garten explizit erwähnt wird
+- Merkmale wie "rollstuhlgängig", "Lift", "modern" → kein Aussenraum
+- Kein Aussenraum erwähnt → null (nicht "none"!)
+- Im Zweifel: null
+
 BAUJAHR — KRITISCH:
 - NUR wenn eine Jahreszahl explizit als Baujahr, Erstellungsjahr oder Renovationsjahr vorkommt
 - Beispiele die ZÄHLEN: "Baujahr 1998", "erbaut 2005", "renoviert 2018", "Neubau 2023", "Year built: 2024", "Built in 2020", "Construction year: 2019"
@@ -37,7 +43,7 @@ Antworte NUR mit einem JSON-Objekt, ohne Markdown-Backticks, ohne Erklärungen:
   "zimmer": Zahl oder null,
   "etage": Zahl oder null (0 = Erdgeschoss),
   "baujahr_kategorie": "2020" oder "2010" oder "2000" oder "1990" oder "1980" oder "alt" oder null,
-  "aussenraum": "none" oder "balkon" oder "terrasse" oder "garten" oder null,
+  "aussenraum": "none" wenn explizit kein Aussenraum erwähnt, "balkon" NUR wenn Balkon/Loggia wörtlich steht, "terrasse" NUR wenn Terrasse wörtlich steht, "garten" NUR wenn Garten/Sitzplatz wörtlich steht, null wenn unklar oder nicht erwähnt,
   "zustand": "neuwertig" oder "gut" oder "mittel" oder "renovationsbed" oder null,
   "befristet": true oder false,
   "befristet_details": "Details zur Befristung falls vorhanden, sonst null",
