@@ -44,17 +44,30 @@ Nutzer geben eine Adresse ein (oder fügen einen Inseratstext ein), und erhalten
 ├── datenschutz.html
 ├── impressum.html
 ├── kontakt.html
-├── logo.png                # Neues Logo (Icon + IMMOSKOP Text, transparenter Hintergrund)
+├── logo.png
 ├── favicon.ico
-├── favicon-32.png
-├── favicon-16.png
-├── apple-touch-icon.png
-└── api/
-    ├── data.js             # Hauptendpunkt: Geocoding, Preise, Lärm, Solar, ÖV
-    ├── parse.js            # Claude liest Inseratstext → strukturierte Daten
-    ├── report.js           # Claude generiert KI-Report
-    ├── contact.js          # Kontaktformular → Protonmail SMTP
-    └── track.js            # Analytics → Supabase
+├── IMMOSKOP_SYSTEM.md      # Projektgedächtnis (dieses Dokument)
+├── api/
+│   ├── data.js             # Hauptendpunkt: Geocoding, Preise, Lärm, Solar, ÖV
+│   ├── parse.js            # Claude liest Inseratstext → strukturierte Daten
+│   ├── report.js           # Claude generiert KI-Report
+│   ├── contact.js          # Kontaktformular → Protonmail SMTP
+│   └── track.js            # Analytics → Supabase
+└── scraper/                # Datenerhebung (lokal ausführen, nicht auf Vercel)
+    ├── run_all.js          # Master-Scraper (empfohlen)
+    ├── 1_harvest_slugs.js  # Kantonsseiten → slugs.json
+    ├── 1b_find_missing.js  # OpenPLZ → fehlende Gemeinden
+    ├── 2_scrape_plz.js     # RSC-Endpoint → PLZ + Strassen
+    ├── 3_scrape_streets.js # OBSOLET (in 2_scrape_plz.js integriert)
+    ├── 4_merge_and_upload.js # Merge + Supabase-Upload
+    ├── README.md
+    ├── .gitignore
+    └── data/
+        ├── slugs.json          # ✅ committen – 2109 Gemeinden
+        ├── plz_overrides.json  # ✅ committen – manuelle Korrekturen
+        └── street_overrides.json # ✅ committen
+        # plz_prices_raw.json   ← NICHT committen (gross, regenerierbar)
+        # street_prices_raw.json ← NICHT committen
 ```
 
 ---
@@ -79,38 +92,58 @@ Diese müssen in Vercel → Settings → Environment Variables gesetzt sein:
 ### Tabellen
 
 #### `plz_prices` – PLZ-Marktpreise (Haupt-Preistabelle)
-Befüllt durch `scraper.js`. Enthält ~155 Schweizer Gemeinden (die grössten/bevölkerungsreichsten).
+Befüllt durch `scraper/2_scrape_plz.js` (RSC-Endpoint). Enthält **2109 Gemeinden + 3936 PLZ-Localities** (fast alle CH-PLZ).
 
 | Spalte | Typ | Beschreibung |
 |---|---|---|
-| `plz` | text (PK) | Schweizer PLZ |
-| `median_price_sqm` | numeric | Median Mietpreis CHF/m²/Monat |
-| `rent_p10` | numeric | 10. Perzentile Miete |
-| `rent_p90` | numeric | 90. Perzentile Miete |
-| `median_sale_price_sqm` | numeric | Median Kaufpreis CHF/m² |
-| `sale_p10` | numeric | 10. Perzentile Kauf |
-| `sale_p90` | numeric | 90. Perzentile Kauf |
-| `source` | text | z.B. `realadvisor:stadt-zurich` |
-| `scraped_at` | timestamptz | Zeitstempel des Scraping |
-
-**Wichtig:** Für PLZ ohne Eintrag verwendet `api/data.js` ein statisches Fallback-Modell (BASE_QM nach PLZ-Prefix).
-
-#### `street_prices` – Strassengenaue Preise
-Befüllt durch `street_scraper.js`. Erlaubt präzisere Preisschätzung wenn Adresse bekannt.
-
-| Spalte | Typ | Beschreibung |
-|---|---|---|
-| `plz` | text | PLZ der Gemeinde |
-| `street_name` | text | Strassenname (Original-Schreibweise) |
-| `street_name_lower` | text | Kleinschreibung (für ILIKE-Suche) |
-| `street_slug` | text | URL-Slug von RealAdvisor |
-| `median_sale_price_sqm` | numeric | Median Kaufpreis der Strasse CHF/m² |
-| `sale_p15` | numeric | 15. Perzentile Kauf |
-| `sale_p85` | numeric | 85. Perzentile Kauf |
-| `transaction_count` | int | Anzahl erfasster Transaktionen |
-| `lat`, `lng` | numeric | Koordinaten der Strasse |
+| `slug` | text | RealAdvisor-Slug (z.B. `stadt-zurich`, `8001-zurich`) |
+| `typ` | text | `gemeinde` (aggregiert) oder `locality` (PLZ-spezifisch) |
+| `name` | text | Gemeinde-/Ortsname |
+| `plz` | text | Schweizer PLZ (nullable) |
+| `kanton` | text | Kantonskürzel (z.B. `ZH`) |
+| `gemeinde_slug` | text | Verweis auf Eltern-Gemeinde (nur bei typ=locality) |
+| `kauf_whg_median` | numeric | Kaufpreis Wohnung Median CHF/m² |
+| `kauf_whg_p10` | numeric | Kaufpreis Wohnung P10 |
+| `kauf_whg_p90` | numeric | Kaufpreis Wohnung P90 |
+| `kauf_haus_median` | numeric | Kaufpreis Haus Median CHF/m² |
+| `kauf_haus_p10/p90` | numeric | Kaufpreis Haus Perzentile |
+| `miete_whg_median` | numeric | Miete Wohnung Median CHF/m²/Monat |
+| `miete_whg_p10/p90` | numeric | Miete Wohnung Perzentile |
+| `miete_haus_median` | numeric | Miete Haus Median CHF/m²/Monat |
+| `miete_haus_p10/p90` | numeric | Miete Haus Perzentile |
+| `has_override` | boolean | Manuell korrigiert |
+| `override_note` | text | Begründung der Korrektur |
 | `source` | text | `realadvisor` |
 | `scraped_at` | timestamptz | Zeitstempel |
+
+**Priorität in api/data.js:** locality (PLZ-spezifisch) → gemeinde (aggregiert) → Fallback-Modell
+
+**Wichtig:** Localities haben nur Median (kein P10/P90). P10/P90 nur bei typ=gemeinde.
+
+#### `street_prices` – Strassengenaue Preise
+Befüllt durch `scraper/2_scrape_plz.js` (gleicher RSC-Request wie PLZ). Enthält **25241 Strassen**.
+
+| Spalte | Typ | Beschreibung |
+|---|---|---|
+| `gemeinde_slug` | text | RealAdvisor Gemeinde-Slug |
+| `strasse_slug` | text | URL-Slug der Strasse |
+| `strasse_name` | text | Strassenname (Original) |
+| `strasse_name_lower` | text | Kleinschreibung (für ILIKE-Suche) |
+| `plz` | text | PLZ (aus Locality-Slug, nullable) |
+| `lat`, `lng` | numeric | Koordinaten |
+| `is_cross_locality` | boolean | Strasse über mehrere PLZ |
+| `kauf_median` | numeric | Kaufpreis Median CHF/m² (kombiniert, kein Typ-Split) |
+| `kauf_p15` | numeric | 15. Perzentile Kauf |
+| `kauf_p85` | numeric | 85. Perzentile Kauf |
+| `transaction_count` | int | Anzahl Transaktionen (RealAdvisor-Makler, nicht repräsentativ) |
+| `has_override` | boolean | Manuell korrigiert |
+| `source` | text | `realadvisor` |
+| `scraped_at` | timestamptz | Zeitstempel |
+
+**Kein Mietpreis auf Strassenebene** – RealAdvisor liefert nur Kaufpreis pro Strasse.
+Für Mietpreisschätzung: Strassen-Percentile berechnen und auf PLZ-Mietpreis anwenden.
+
+**Suche in api/data.js:** Zuerst via `plz`, Fallback via `gemeinde_slug` (wichtig für Zürich).
 
 **Wie street_prices in api/data.js verwendet wird:**
 1. Strassenname wird aus der Adresse extrahiert (alles vor der Hausnummer)
@@ -161,29 +194,41 @@ Geplant: Einkommenssteuer pro Gemeinde (ESTV-Daten).
 
 ## 6. DATEN – MARKTPREISE (REALADVISOR)
 
-### Wie die Daten entstehen
+### Wie die Daten entstehen (April 2026)
 
-**Schritt 1: PLZ-Preise** (`scraper.js`)
-- Scrapt `https://realadvisor.ch/de/immobilienpreise-pro-m2/{slug}`
-- Extrahiert: yearly_rent_m2 (P10/P50/P90) + sale_price_m2 (P10/P50/P90)
-- Konvertiert Jahresmiete → Monatsmiete (÷12)
-- Schreibt in `plz_prices` (Supabase) + `realadvisor_data.json` (lokal)
-- ~155 Gemeinden, manuell definiert in der `GEMEINDEN`-Liste
+**Methode:** React Server Components (RSC) Endpoint – ein Request pro Gemeinde liefert alles.
+URL: `GET https://realadvisor.ch/de/immobilienpreise-pro-m2/{slug}` mit Header `RSC: 1`
 
-**Schritt 2: Strassenpreise** (`street_scraper.js`)
-- Liest `realadvisor_data.json` (Output von Schritt 1)
-- Scrapt detailliertere Strassenseite derselben URLs
-- Extrahiert `street_places` Array mit Median/P15/P85 pro Strasse
-- Schreibt in `street_prices` (Supabase) + `street_data.json` (lokal)
+**Was ein Request liefert:**
+- Kaufpreise Whg + Haus (Median, P10, P90) pro Gemeinde
+- Jahresmiete Whg + Haus (Median, P10, P90) → ÷12 = CHF/m²/Monat
+- PLZ-Localities (z.B. 8001, 8002... für Stadt Zürich) mit PLZ-spezifischen Medianen
+- Alle Strassen mit Kaufpreis (Median, P15, P85)
 
-### Scraper ausführen (lokal, Node.js erforderlich)
+**Scraper-Ablauf:**
+1. `1_harvest_slugs.js` → Kantonsseiten (Top-75 pro Kanton)
+2. `1b_find_missing.js` → OpenPLZ API → fehlende Gemeinden
+3. Merge → ~2109 Gemeinden in `data/slugs.json`
+4. `2_scrape_plz.js` → RSC-Endpoint → PLZ + Strassen in einem Durchgang
+5. `4_merge_and_upload.js` → Merge mit Overrides → Supabase (atomar)
+
+**Skript 3 (`3_scrape_streets.js`) ist obsolet** – Strassendaten kommen aus Schritt 4.
+
+### Master-Scraper (empfohlen)
 ```bash
-# PLZ-Preise
+cd immoskop/scraper
+export SUPABASE_URL=https://clwdxufyeiznyhrfrysl.supabase.co
 export SUPABASE_SERVICE_KEY=eyJ...
-node scraper.js
+node run_all.js
+```
 
-# Strassenpreise (braucht realadvisor_data.json vom PLZ-Scraper)
-node street_scraper.js realadvisor_data.json
+### Einzelne Schritte
+```bash
+node 1_harvest_slugs.js          # ~3 Min
+node 1b_find_missing.js          # ~5 Min
+# Merge: node /tmp/merge_missing.js (siehe HOW TO)
+node 2_scrape_plz.js             # ~90 Min (--resume, --kanton ZH)
+node 4_merge_and_upload.js       # ~5 Min (--dry-run, --plz-only)
 ```
 
 ### Fehlende PLZ manuell nachtragen
@@ -343,72 +388,81 @@ Quelle: `priceSource = 'Modell (keine Supabase-Daten für diese PLZ)'`
 - [ ] **PLZ-Landingpages** für SEO (z.B. `/plz/8001`, `/plz/3000`)
 
 ### Mittel
-- [ ] Fehlende PLZ in `plz_prices` prüfen und ggf. nachtragen (SQL: `SELECT COUNT(*) FROM plz_prices;`)
 - [ ] `checker.html` hat kein i18n-System
 - [ ] FAQ-Sektion auf Hauptseite
+- [ ] User-Inserate als Preis-Signale verwenden (inserat_signals.json)
 
 ### Niedrig
 - [ ] PWA (Progressive Web App)
 - [ ] Italienisch (IT) für Tessin
-- [ ] Admin-UI für `price_signals`
+- [ ] Kanton-Median als zweite Fallback-Ebene in api/data.js
+
+### Erledigt ✅
+- [x] Alle ~2109 CH-Gemeinden gescrapt (April 2026)
+- [x] 3936 PLZ-Localities mit PLZ-spezifischen Preisen
+- [x] 25241 Strassen mit Kaufpreisen
+- [x] api/data.js auf neue Spalten migriert
+- [x] Street-Matching Fallback via gemeinde_slug (wichtig für Zürich)
+- [x] parse.js Aussenraum-Bug gefixt
 
 ---
 
 ## 12. DATEN-QUALITÄT PRÜFEN
 
-### Wie viele PLZ sind in der DB?
+### Aktueller Stand (April 2026)
 ```sql
-SELECT COUNT(*) FROM plz_prices;
--- Erwartet: ~155-170 (nur grosse Gemeinden)
--- Für alle anderen greift das Fallback-Modell
+SELECT typ, COUNT(*) FROM plz_prices GROUP BY typ;
+-- gemeinde: 2109
+-- locality: 3920
+
+SELECT COUNT(*) FROM street_prices;
+-- 25241
 ```
 
-### Welche PLZ fehlen für eine Region?
+### PLZ-Daten für eine Region prüfen
 ```sql
-SELECT plz, source FROM plz_prices WHERE plz LIKE '74%' ORDER BY plz;
--- Zeigt alle Graubündner PLZ 74xx
+-- Alle PLZ-Localities für Zürich
+SELECT plz, name, kauf_whg_median, miete_whg_median 
+FROM plz_prices WHERE gemeinde_slug = 'stadt-zurich' ORDER BY plz;
+
+-- Gemeinde-Daten für Graubünden
+SELECT slug, name, kauf_whg_median FROM plz_prices 
+WHERE kanton = 'GR' AND typ = 'gemeinde' ORDER BY name;
 ```
 
-### PLZ manuell nachtragen (Beispiel Bonaduz 7402):
-Daten von realadvisor.ch/de/immobilienpreise-pro-m2/bonaduz ablesen, dann:
-```sql
-INSERT INTO plz_prices (plz, median_price_sqm, rent_p10, rent_p90, 
-  median_sale_price_sqm, sale_p10, sale_p90, source, scraped_at)
-VALUES ('7402', 18.0, 12.0, 26.0, 7800, 3079, 17674, 'manual:bonaduz', NOW())
-ON CONFLICT (plz) DO UPDATE SET 
-  median_sale_price_sqm = EXCLUDED.median_sale_price_sqm,
-  source = EXCLUDED.source,
-  scraped_at = NOW();
+### PLZ manuell korrigieren (via plz_overrides.json)
+Nicht direkt in Supabase eintragen – stattdessen in `scraper/data/plz_overrides.json`:
+```json
+{
+  "_note": "Korrektur April 2026",
+  "_date": "2026-04-04",
+  "slug": "gemeinde-bonaduz",
+  "plz": "7402",
+  "kauf_whg_median": 7800,
+  "miete_whg_median": 18.0
+}
 ```
-*(Werte laut Screenshot April 2026: Median Wohnung CHF 7'243/m², Range 3'079–17'674)*
+Dann: `node 4_merge_and_upload.js` (kein Re-Scrape nötig)
 
 ---
 
 ## 13. SCRAPER VERWENDEN (falls Daten veraltet)
 
-### Voraussetzungen
-- Node.js installiert
-- Supabase Service Key
+Siehe Abschnitt 17 (HOW TO) für den vollständigen Ablauf.
 
-### PLZ-Preise neu scrapen
+### Kurzversion
 ```bash
-export SUPABASE_SERVICE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-node scraper.js
-# Output: realadvisor_data.json + Daten in Supabase plz_prices
+cd immoskop/scraper
+export SUPABASE_URL=https://clwdxufyeiznyhrfrysl.supabase.co
+export SUPABASE_SERVICE_KEY=eyJ...
+node run_all.js
 ```
 
-### Strassenpreise neu scrapen  
-```bash
-node street_scraper.js realadvisor_data.json
-# Output: street_data.json + Daten in Supabase street_prices
-```
+### Neue Gemeinde hinzufügen
+Falls eine Gemeinde fehlt: Slug auf RealAdvisor suchen, dann in
+`scraper/data/plz_overrides.json` eintragen und `node 4_merge_and_upload.js` ausführen.
 
-### Neue Gemeinde zum Scraper hinzufügen
-In `scraper.js` in der `GEMEINDEN`-Liste eintragen:
-```javascript
-{slug:'gemeinde-bonaduz', plz:['7402'], name:'Bonaduz'},
-```
-Slug kommt von der RealAdvisor-URL: `realadvisor.ch/de/immobilienpreise-pro-m2/**gemeinde-bonaduz**`
+Für kompletten Re-Scrape: `node run_all.js` (überschreibt alles).
 
 ---
 
@@ -451,32 +505,27 @@ Slug kommt von der RealAdvisor-URL: `realadvisor.ch/de/immobilienpreise-pro-m2/*
 → Service Key verwendet RLS-Bypass → sollte nie ein Problem sein
 → Anon Key (im Frontend) braucht explizite Policies
 
+
 ---
 
 ## 16. PERIODISCHE AUFGABEN (TO DO)
 
 ### Monatlich
 - [ ] **Preisdaten neu scrapen** – RealAdvisor aktualisiert Preise monatlich
-  → Anleitung: siehe Abschnitt 17
-- [ ] **Supabase-Datenqualität prüfen** – nach jedem Upload
+  → `cd immoskop/scraper && node run_all.js`
+- [ ] **Supabase-Datenqualität prüfen** nach jedem Upload:
   ```sql
-  SELECT COUNT(*) FROM plz_prices;                          -- erwartet: >500
-  SELECT COUNT(*) FROM plz_prices WHERE kauf_whg_median IS NOT NULL; -- erwartet: >400
-  SELECT COUNT(*) FROM street_prices;                       -- erwartet: >5000
+  SELECT typ, COUNT(*) FROM plz_prices GROUP BY typ;
+  -- gemeinde: ~2109, locality: ~3920
+  SELECT COUNT(*) FROM street_prices;
+  -- ~25241
   ```
 
 ### Bei Bedarf
-- [ ] **Manuelle Overrides nachführen** – wenn Scraper-Daten für eine Gemeinde falsch sind
-  → `scraper/data/plz_overrides.json` bearbeiten, dann Skript 4 neu ausführen
-- [ ] **Neue Gemeinden hinzufügen** – falls RealAdvisor neue Seiten hat
-  → Skript 1 neu ausführen, dann 2–4
+- [ ] **Manuelle Korrekturen** – wenn Scraper-Daten falsch sind
+  → `scraper/data/plz_overrides.json` bearbeiten, dann `node 4_merge_and_upload.js`
 - [ ] **Admin-Passwort in Supabase ändern** ⚠️ (noch offen!)
-- [ ] **`municipality_tax_burden` befüllen** (ESTV-Daten, noch offen)
-
-### Einmalig (noch offen)
-- [ ] Supabase-Schema migrieren (neue Spalten für Typ-Split Whg/Haus)
-  → SQL-Migration: siehe `scraper/README.md` Abschnitt "Migration"
-- [ ] PLZ-Landingpages für SEO aufbauen
+- [ ] **`municipality_tax_burden` befüllen** (ESTV-Daten)
 
 ---
 
@@ -485,75 +534,34 @@ Slug kommt von der RealAdvisor-URL: `realadvisor.ch/de/immobilienpreise-pro-m2/*
 ### Preisdaten scrapen und Supabase aktualisieren
 
 **Voraussetzungen:**
-- Node.js installiert (`node --version` → v18+)
+- Node.js v18+ installiert
 - Repo geklont: `git clone https://github.com/ldaescher/immoskop.git`
-- Supabase Service Key bereit (in Vercel → Settings → Environment Variables)
-
-**Ablauf:**
+- Supabase Service Key (in Vercel → Settings → Environment Variables)
 
 ```bash
-# 1. In den Scraper-Ordner wechseln
+# Empfohlen: Master-Scraper
 cd immoskop/scraper
-
-# 2. Alle Gemeinde-Slugs harvesten (~3 Min)
-node 1_harvest_slugs.js
-# → data/slugs.json wird erstellt/aktualisiert
-
-# 3. PLZ-Preise scrapen (~90 Min)
-node 2_scrape_plz.js
-# → data/plz_prices_raw.json + data/strassen_links.json
-
-# Bei Unterbruch fortsetzen:
-node 2_scrape_plz.js --resume
-
-# Nur einen Kanton testen:
-node 2_scrape_plz.js --kanton ZH
-
-# 4. Strassenpreise scrapen (~4 Std)
-node 3_scrape_streets.js
-# → data/street_prices_raw.json
-
-# Bei Unterbruch fortsetzen:
-node 3_scrape_streets.js --resume
-
-# 5. Merge prüfen ohne Upload (empfohlen vor erstem echten Upload)
-node 4_merge_and_upload.js --dry-run
-# → data/plz_prices_merged.json + data/street_prices_merged.json zur Kontrolle
-
-# 6. Upload zu Supabase (atomar: alte Daten werden vollständig ersetzt)
-export SUPABASE_URL=https://clwdxufyeiznyhrfrysl.supabase.co
-export SUPABASE_SERVICE_KEY=eyJ...   # aus Vercel Settings kopieren
-node 4_merge_and_upload.js
-```
-
----
-
-### Manuelle Korrektur einer Gemeinde
-
-Wenn der Scraper für eine PLZ falsche oder fehlende Daten liefert:
-
-```bash
-# 1. scraper/data/plz_overrides.json öffnen und Eintrag hinzufügen:
-{
-  "_note": "Korrektur – Scraper-Wert war falsch",
-  "_date": "2026-04-04",
-  "plz": "8001",
-  "kauf_whg_median": 16500,
-  "miete_whg_median": 28.5
-}
-
-# 2. Nur Merge + Upload (kein Re-Scrape nötig!)
 export SUPABASE_URL=https://clwdxufyeiznyhrfrysl.supabase.co
 export SUPABASE_SERVICE_KEY=eyJ...
-node 4_merge_and_upload.js
+node run_all.js
+# Dauer: ~2 Stunden
+
+# Optionen:
+node run_all.js --skip-harvest   # Slugs nicht neu harvesten (slugs.json vorhanden)
+node run_all.js --skip-scrape    # Scraping überspringen (Rohdaten vorhanden)
+node run_all.js --dry-run        # Kein Upload (nur Merge prüfen)
+
+# Einzelschritte:
+node 1_harvest_slugs.js          # Kantonsseiten → slugs.json (~3 Min)
+node 1b_find_missing.js          # OpenPLZ → fehlende Gemeinden (~5 Min)
+node 2_scrape_plz.js             # PLZ + Strassen (~90 Min)
+node 2_scrape_plz.js --resume    # Nach Unterbruch fortsetzen
+node 2_scrape_plz.js --kanton ZG # Nur Kanton ZG testen (11 Gemeinden)
+node 4_merge_and_upload.js --dry-run  # Merge prüfen ohne Upload
+node 4_merge_and_upload.js       # Upload zu Supabase
 ```
 
----
-
-### slugs.json nach GitHub pushen (nach Skript 1)
-
-`slugs.json` sollte nach jedem Harvesting-Lauf committed werden,
-damit sie als Referenz verfügbar bleibt:
+### slugs.json nach GitHub pushen (nach Harvesting)
 
 ```bash
 cd immoskop
@@ -562,23 +570,44 @@ git commit -m "Update slugs.json"
 git push
 ```
 
----
+### Manuelle Korrektur einer Gemeinde
+
+```bash
+# 1. scraper/data/plz_overrides.json bearbeiten:
+{
+  "_note": "Korrektur – falscher Wert",
+  "_date": "2026-04-04",
+  "slug": "stadt-zug",
+  "kauf_whg_median": 18500
+}
+
+# 2. Nur Merge + Upload (kein Re-Scrape nötig)
+export SUPABASE_URL=https://clwdxufyeiznyhrfrysl.supabase.co
+export SUPABASE_SERVICE_KEY=eyJ...
+cd immoskop/scraper
+node 4_merge_and_upload.js
+```
 
 ### Neues Feature deployen
 
 ```bash
-# Dateien lokal ändern, dann:
 cd immoskop
 git add .
-git commit -m "Beschreibung der Änderung"
-git push
-# → Vercel deployed automatisch (Free Plan: max 100 Deployments/Tag!)
+git commit -m "Beschreibung"
+git pull --no-rebase && git push
+# → Vercel deployed automatisch (max 100 Deployments/Tag!)
 ```
 
-**Tipp:** Mehrere Änderungen in einem Commit bündeln (`.`-Taste im GitHub Web-Editor
-öffnet den Editor für Multi-File-Commits) um Deployments zu sparen.
+### Bei Git-Konflikten
+
+```bash
+git config pull.rebase false
+git pull --no-rebase
+# Merge-Editor öffnet sich → Ctrl+X → Y → Enter
+git push
+```
 
 ---
 
 *Dieses Dokument soll bei jedem Entwicklungsgespräch als erste Referenz dienen.*  
-*Bei Änderungen am System: Dieses Dokument aktualisieren!*
+*Stand: April 2026 | Bei Änderungen am System: Dieses Dokument aktualisieren!*
