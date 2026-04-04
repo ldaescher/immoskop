@@ -101,15 +101,35 @@ export default async function handler(req, res) {
     const streetName = streetMatch ? streetMatch[1].trim().toLowerCase() : null;
 
     if (streetName) {
-      const streetRes = await fetch(
+      // Strassensuche: zuerst via PLZ, Fallback via gemeinde_slug
+      // (Viele Strassen sind cross-locality und haben keine PLZ zugeordnet)
+      const gemeindeSlug = priceData?.gemeinde_slug || null;
+
+      // Versuch 1: PLZ-basiert
+      const streetRes1 = await fetch(
         `${supabaseUrl}/rest/v1/street_prices?plz=eq.${plz}&strasse_name_lower=ilike.*${encodeURIComponent(streetName)}*&limit=1`,
         { headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` } }
       );
-      if (streetRes.ok) {
-        const streetRows = await streetRes.json();
-        if (streetRows?.length) {
-          streetData = streetRows[0];
-          console.log('STREET ok:', JSON.stringify(streetData));
+      if (streetRes1.ok) {
+        const streetRows1 = await streetRes1.json();
+        if (streetRows1?.length) {
+          streetData = streetRows1[0];
+          console.log('STREET ok (plz):', JSON.stringify(streetData).substring(0, 150));
+        }
+      }
+
+      // Versuch 2: Fallback via gemeinde_slug (z.B. stadt-zurich für alle Zürcher PLZ)
+      if (!streetData && gemeindeSlug) {
+        const streetRes2 = await fetch(
+          `${supabaseUrl}/rest/v1/street_prices?gemeinde_slug=eq.${gemeindeSlug}&strasse_name_lower=ilike.*${encodeURIComponent(streetName)}*&limit=1`,
+          { headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` } }
+        );
+        if (streetRes2.ok) {
+          const streetRows2 = await streetRes2.json();
+          if (streetRows2?.length) {
+            streetData = streetRows2[0];
+            console.log('STREET ok (gemeinde_slug):', JSON.stringify(streetData).substring(0, 150));
+          }
         }
       }
     }
@@ -213,10 +233,13 @@ export default async function handler(req, res) {
   const outdoorFactor = isHaus ? 1.0 : (OUTDOOR_F_WOHNUNG[outdoor] || 1.0);
   const CONDITION_LABEL = {'neuwertig':'Neuwertig/kürzl. renoviert','gut':'Guter Zustand','mittel':'Normaler Unterhalt','renovationsbed':'Renovationsbedürftig'};
   const conditionNote = isNeubau ? ' (Neubau — Zustandsfaktor nicht angewendet)' : '';
-  const yearFactor = YEAR_F[yearCat] || 1.0;
+  const hasRealData = !!priceData;
+  const yearFactorRaw = YEAR_F[yearCat] || 1.0;
+  const yearFactor = hasRealData ? 1 + (yearFactorRaw - 1) * 0.3 : yearFactorRaw;
   // EG = -5%, 1.OG = Basis (0%), höher = +1.5% pro Etage
   const floorNum = parseInt(floor) || 0;
-  const floorFactor = floorNum === 0 ? 0.95 : 1 + (floorNum - 1) * 0.015;
+  const floorFactorRaw = floorNum === 0 ? 0.95 : 1 + (floorNum - 1) * 0.015;
+  const floorFactor = hasRealData ? 1 + (floorFactorRaw - 1) * 0.3 : floorFactorRaw;
 
   let expected, refPerSqmUsed;
   if (isKauf && refSalePerSqm) {
