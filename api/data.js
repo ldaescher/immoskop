@@ -287,6 +287,36 @@ export default async function handler(req, res) {
 
   const GEOAPIFY_KEY = process.env.GEOAPIFY_API_KEY || '';
 
+  // ── AUTOBAHN-TABELLE (Schweizer Nationalstrassen) ──────────────────────────
+  const AUTOBAHNEN = {
+    'A1':  { richtungen: ['Genf / Lausanne', 'St. Gallen / Grenze D/A'] },
+    'A2':  { richtungen: ['Basel', 'Lugano / Gotthard / Grenze I'] },
+    'A3':  { richtungen: ['Basel', 'Chur'] },
+    'A4':  { richtungen: ['Zürich', 'Luzern / Brunnen'] },
+    'A5':  { richtungen: ['Yverdon', 'Solothurn / Biel'] },
+    'A6':  { richtungen: ['Bern', 'Spiez / Kandersteg'] },
+    'A7':  { richtungen: ['Zürich', 'Kreuzlingen / Deutschland'] },
+    'A8':  { richtungen: ['Bern', 'Interlaken / Brünig'] },
+    'A9':  { richtungen: ['Lausanne / Genf', 'Brig / Simplon'] },
+    'A12': { richtungen: ['Bern', 'Vevey / Freiburg'] },
+    'A13': { richtungen: ['Bad Ragaz / Chur', 'San Bernardino / Bellinzona'] },
+    'A14': { richtungen: ['Luzern', 'Zug / Zürich'] },
+    'A16': { richtungen: ['Biel', 'Porrentruy / Frankreich'] },
+  };
+  let autobahnDist = null, autobahnName = null, autobahnRichtungen = null;
+
+  // Autobahnausfahrten via Overpass (parallel, 15km Radius)
+  const autobahnPromise = (async () => {
+    try {
+      const q = `[out:json][timeout:10];node[highway=motorway_junction](around:15000,${lat},${lon});out 20;`;
+      const r = await fetch('https://overpass-api.de/api/interpreter', {
+        method: 'POST', body: q, signal: AbortSignal.timeout(10000)
+      });
+      if (!r.ok) return null;
+      return await r.json();
+    } catch(e) { console.log('AUTOBAHN error:', e.message); return null; }
+  })();
+
   const [placesResult, solarResult] = await Promise.allSettled([
     // GEOAPIFY Places (OEV + Amenities)
     (async () => {
@@ -2728,6 +2758,44 @@ export default async function handler(req, res) {
     : isTourismus
     ? 'Ferienort: Bei Kauf Zweitwohnungsstatus und Nutzungsbeschränkungen prüfen.'
     : null;
+  // ── AUTOBAHN-AUSWERTUNG ──────────────────────────────────────────────────
+  try {
+    const autobahnData = await autobahnPromise;
+    const junctions = autobahnData?.elements || [];
+    if (junctions.length > 0) {
+      // Distanz zu jeder Ausfahrt berechnen (Luftlinie)
+      let nearest = null, nearestDist = Infinity;
+      for (const j of junctions) {
+        if (!j.lat || !j.lon) continue;
+        const dLat = (j.lat - lat) * Math.PI / 180;
+        const dLon = (j.lon - lon) * Math.PI / 180;
+        const a = Math.sin(dLat/2)**2 + Math.cos(lat*Math.PI/180)*Math.cos(j.lat*Math.PI/180)*Math.sin(dLon/2)**2;
+        const dist = Math.round(6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+        if (dist < nearestDist) { nearestDist = dist; nearest = j; }
+      }
+      if (nearest) {
+        autobahnDist = nearestDist;
+        // Autobahn-Ref aus OSM-Tags lesen (z.B. "A3", "A1;A3")
+        const tags = nearest.tags || {};
+        const junctionRef = tags['motorway:ref'] || tags['ref'] || '';
+        // Ersten Autobahn-Ref extrahieren (manchmal "A3;A4")
+        const firstRef = junctionRef.split(';')[0].trim().toUpperCase();
+        const highway = AUTOBAHNEN[firstRef];
+        if (highway) {
+          autobahnName = firstRef;
+          autobahnRichtungen = highway.richtungen;
+        } else if (firstRef.startsWith('A')) {
+          autobahnName = firstRef;
+          autobahnRichtungen = null;
+        }
+        const junctionName = tags.name || tags.ref || nearest.id;
+        console.log('AUTOBAHN:', autobahnName, '| Ausfahrt:', junctionName, '| Dist:', autobahnDist + 'm');
+      }
+    } else {
+      console.log('AUTOBAHN: keine Ausfahrt in 15km gefunden');
+    }
+  } catch(e) { console.log('AUTOBAHN auswertung error:', e.message); }
+
   console.log('SUMMARY → noise:', noiseDay, '| solar:', solarKwh, '| oev:', oevDist, '| crime:', crime.hzahl, '| tax:', steuerfuss, '(nat:', estvNatPctVal, 'kt:', estvKtPctVal, ')| delta:', delta+'%', '| tourismus:', isTourismus);
 
   return res.status(200).json({
@@ -2741,6 +2809,7 @@ export default async function handler(req, res) {
       nComparables,
       matchQuality: streetData ? 'street' : priceData ? 'plz' : 'model',
       noiseSource: noiseSource || null,
+      autobahnDist, autobahnName, autobahnRichtungen,
       lat: lat?.toFixed(4), lon: lon?.toFixed(4), geoAccuracy, isTourismus, priceNote
     }
   });
