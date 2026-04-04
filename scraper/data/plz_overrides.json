@@ -1,0 +1,38 @@
+{
+  "_info": "Manuelle Korrekturen für PLZ-Preise. Wird beim Merge (Skript 4) auf die Rohdaten angewendet. AUF GITHUB COMMITTEN!",
+  "_felder": {
+    "plz": "Schweizer PLZ (Pflicht, ausser slug ist gesetzt)",
+    "slug": "RealAdvisor-Slug (z. B. 'stadt-zurich') – Pflicht wenn keine PLZ",
+    "kauf_whg_median": "Kaufpreis Wohnung Median CHF/m²",
+    "kauf_whg_p10": "Kaufpreis Wohnung 10. Perzentile",
+    "kauf_whg_p90": "Kaufpreis Wohnung 90. Perzentile",
+    "kauf_haus_median": "Kaufpreis Haus Median",
+    "kauf_haus_p10": "Kaufpreis Haus P10",
+    "kauf_haus_p90": "Kaufpreis Haus P90",
+    "miete_whg_median": "Miete Wohnung Median CHF/m²/Monat",
+    "miete_whg_p10": "Miete Wohnung P10",
+    "miete_whg_p90": "Miete Wohnung P90",
+    "miete_haus_median": "Miete Haus Median",
+    "miete_haus_p10": "Miete Haus P10",
+    "miete_haus_p90": "Miete Haus P90",
+    "_note": "Freitext: Begründung der Korrektur / Quelle",
+    "_date": "Datum der Korrektur"
+  },
+  "_hinweis": "Nur die Felder setzen, die korrigiert werden sollen. Nicht gesetzte Felder bleiben aus den Rohdaten.",
+  "overrides": [
+    {
+      "_note": "Beispiel: Bonaduz GR – nicht auf RealAdvisor, Werte aus Marktbeobachtung April 2026",
+      "_date": "2026-04-04",
+      "plz": "7402",
+      "slug": "gemeinde-bonaduz",
+      "name": "Bonaduz",
+      "kanton": "GR",
+      "kauf_whg_median": 7243,
+      "kauf_whg_p10": 3079,
+      "kauf_whg_p90": 17674,
+      "miete_whg_median": null,
+      "miete_whg_p10": null,
+      "miete_whg_p90": null
+    }
+  ]
+}
