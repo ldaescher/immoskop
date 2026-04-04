@@ -66,7 +66,7 @@ function headRequest(url) {
       resolve({ status: res.statusCode, location: null });
     });
     req.on('error', () => resolve({ status: 0, location: null }));
-    req.on('timeout', () => { req.destroy(); resolve({ status: 0, location: null })); });
+    req.on('timeout', () => { req.destroy(); resolve({ status: 0, location: null }); });
     req.end();
   });
 }
