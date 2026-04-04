@@ -2725,6 +2725,13 @@ async function runAnalysis() {
     // Use backend-resolved label if available (more precise than frontend geocoding)
     if (meta.lat && meta.lon) coords = { lat: parseFloat(meta.lat), lon: parseFloat(meta.lon), label: coords?.label || addressInput };
 
+    // _lastAnalysis mit meta-Werten von data.js updaten (für konsistenten Report)
+    window._lastAnalysis.expectedFromData = meta.expected || null;
+    window._lastAnalysis.deltaFromData = meta.delta ?? null;
+    window._lastAnalysis.priceSourceFromData = meta.priceSource || null;
+    window._lastAnalysis.autobahnName = meta.autobahnName || null;
+    window._lastAnalysis.autobahnRichtungen = meta.autobahnRichtungen || null;
+    window._lastAnalysis.autobahnDist = meta.autobahnDist || null;
     window._insertText = null; window._parsedInsert = null;
 
     const expected = meta.expected || 0;

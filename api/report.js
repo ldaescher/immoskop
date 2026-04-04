@@ -3,7 +3,8 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { address, rooms, area, price, type, year, floor, outdoor, condition, insertText, parsedInsert, propertyKind, reportDate, extraInfo, lang } = req.body;
+  const { address, rooms, area, price, type, year, floor, outdoor, condition, insertText, parsedInsert, propertyKind, reportDate, extraInfo, lang,
+    expectedFromData, deltaFromData, priceSourceFromData, autobahnName, autobahnRichtungen, autobahnDist } = req.body;
   const isKauf = type === 'kauf';
 
   // ── 1. GEOCODE ──────────────────────────────────────────────────
@@ -175,27 +176,32 @@ export default async function handler(req, res) {
   const floorNum = parseInt(floor) || 0;
   const floorFactor = floorNum === 0 ? 0.95 : 1 + (floorNum - 1) * 0.015;
 
+  // Preisberechnung: Werte von api/data.js übernehmen falls vorhanden (konsistenz!)
+  // Fallback: eigene Berechnung (falls Report direkt aufgerufen wird)
   let expected, refPerSqmUsed;
-  if (isKauf && refSalePerSqm) {
-    refPerSqmUsed = refSalePerSqm;
-    expected = Math.round(refSalePerSqm * area * yearFactor * floorFactor * outdoorFactor * conditionFactor * propertyFactor);
-  } else if (!isKauf && refRentPerSqm && refRentPerSqm < 500) {
-    // Sanity check: rent per m²/month should be between 5 and 500 CHF
-    refPerSqmUsed = refRentPerSqm;
-    expected = Math.round(refRentPerSqm * area * yearFactor * floorFactor * outdoorFactor * conditionFactor * propertyFactor);
-  } else if (!isKauf && !refRentPerSqm && refSalePerSqm) {
-    // Estimate rent from sale price (gross yield ~4-5% for CH)
-    const estRentPerSqm = Math.round(refSalePerSqm * 0.045 / 12 * 10) / 10;
-    refPerSqmUsed = estRentPerSqm;
-    expected = Math.round(estRentPerSqm * area * yearFactor * floorFactor * outdoorFactor * conditionFactor * propertyFactor);
-    priceSource = priceSource + ' (Miete aus Kaufpreis geschätzt, 4.5% Bruttorendite)';
+  if (expectedFromData && deltaFromData !== undefined) {
+    expected = expectedFromData;
+    if (priceSourceFromData) priceSource = priceSourceFromData;
+    console.log('REPORT: using expected from data.js:', expected);
   } else {
-    // Last fallback
-    refPerSqmUsed = 17;
-    expected = isKauf ? Math.round(8000 * area * outdoorFactor * conditionFactor) : Math.round(17 * area * outdoorFactor * conditionFactor);
+    if (isKauf && refSalePerSqm) {
+      refPerSqmUsed = refSalePerSqm;
+      expected = Math.round(refSalePerSqm * area * yearFactor * floorFactor * outdoorFactor * conditionFactor * propertyFactor);
+    } else if (!isKauf && refRentPerSqm && refRentPerSqm < 500) {
+      refPerSqmUsed = refRentPerSqm;
+      expected = Math.round(refRentPerSqm * area * yearFactor * floorFactor * outdoorFactor * conditionFactor * propertyFactor);
+    } else if (!isKauf && !refRentPerSqm && refSalePerSqm) {
+      const estRentPerSqm = Math.round(refSalePerSqm * 0.045 / 12 * 10) / 10;
+      refPerSqmUsed = estRentPerSqm;
+      expected = Math.round(estRentPerSqm * area * yearFactor * floorFactor * outdoorFactor * conditionFactor * propertyFactor);
+      priceSource = priceSource + ' (Miete aus Kaufpreis geschätzt, 4.5% Bruttorendite)';
+    } else {
+      refPerSqmUsed = 17;
+      expected = isKauf ? Math.round(8000 * area * outdoorFactor * conditionFactor) : Math.round(17 * area * outdoorFactor * conditionFactor);
+    }
   }
 
-  const delta = Math.round((price - expected) / expected * 100);
+  const delta = (deltaFromData !== undefined && deltaFromData !== null) ? deltaFromData : Math.round((price - expected) / expected * 100);
   const pricePerQm = (price / area).toFixed(1);
 
   // Preis-Range für den Report
