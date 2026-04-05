@@ -10,6 +10,10 @@ export default async function handler(req, res) {
   console.log('DATA start:', JSON.stringify(req.body).substring(0, 200));
   const { address, rooms, area, price, type, year, floor, outdoor, condition, propertyKind, extraInfo, parsedInsert } = req.body;
   const parkplatz = parsedInsert?.parkplatz ?? req.body.parkplatz ?? null;  // 0=kein, 1=aussen, 2=TG, 3=2xTG
+  const parkingAussen = req.body.parkingAussen ?? 0;  // Anzahl Aussenparkplätze
+  const parkingTg     = req.body.parkingTg     ?? 0;  // Anzahl Tiefgaragenplätze
+  const outdoorKombiniert   = req.body.outdoorKombiniert   || null;
+  const parkplatzKombiniert = req.body.parkplatzKombiniert || null;
   const isKauf = type === 'kauf';
 
   // ── 1. GEOCODE ──────────────────────────────────────────────────
@@ -251,8 +255,15 @@ export default async function handler(req, res) {
     2: isUrban ? 1.03 : 1.02,  // TGP: +3% urban, +2% ländlich
     3: isUrban ? 1.05 : 1.03,  // 2x TGP: +5% urban, +3% ländlich
   };
-  const parkplatzFactor = (parkplatz !== null && parkplatz !== undefined) ? (PARKPLATZ_F[parkplatz] ?? 1.0) : 1.0;
-  const parkplatzLabel = { 0:'Kein Parkplatz', 1:'Aussenparkplatz', 2:'Tiefgaragenplatz', 3:'2× Tiefgaragenplatz' }[parkplatz] ?? null;
+  // Präziserer Faktor wenn Anzahl bekannt
+  let parkplatzFactor = (parkplatz !== null && parkplatz !== undefined) ? (PARKPLATZ_F[parkplatz] ?? 1.0) : 1.0;
+  if (parkingAussen > 0 || parkingTg > 0) {
+    // Detaillierte Berechnung: Aussen +1% pro PP, TG +2.5% pro PP (urban) / +1.5% (ländlich)
+    const tgFactor = isUrban ? 0.025 : 0.015;
+    parkplatzFactor = 1 + (parkingAussen * 0.01) + (parkingTg * tgFactor);
+    parkplatzFactor = Math.min(parkplatzFactor, 1.12); // max +12%
+  }
+  const parkplatzLabel = parkplatzKombiniert || ({ 0:'Kein Parkplatz', 1:'Aussenparkplatz', 2:'Tiefgaragenplatz', 3:'2× Tiefgaragenplatz' }[parkplatz] ?? null);
 
   // ── EXTRAINFO-ADJUSTMENT (via parsedInsert) ───────────────────────────────
   // Claude extrahiert aus dem Inseratstext einen preis_adjustment-Wert

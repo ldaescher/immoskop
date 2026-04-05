@@ -545,7 +545,7 @@
         "name": "Funktioniert Immoskop für alle Schweizer Gemeinden?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Immoskop hat Marktpreisdaten für 155+ Schweizer Gemeinden und strassengenaue Daten für über 5800 Strassen. Für alle anderen Gemeinden wird ein statistisches Modell verwendet."
+          "text": "Immoskop hat Marktpreisdaten für 6000+ Schweizer Gemeinden und PLZ-Ortschaften — strassengenau für über 25'000 Strassen."
         }
       }
     ]
@@ -680,15 +680,6 @@
               <input type="number" id="floor" value="2" min="0" max="30">
             </div>
             <div class="field">
-              <div class="field-label" data-i18n="lbl_outdoor">Aussenraum</div>
-              <select id="outdoor">
-                <option value="none" data-i18n="opt_none">Kein</option>
-                <option value="balkon" selected data-i18n="opt_balcony">Balkon</option>
-                <option value="terrasse" data-i18n="opt_terrace">Terrasse</option>
-                <option value="garten" data-i18n="opt_garden">Garten</option>
-              </select>
-            </div>
-            <div class="field">
               <div class="field-label" data-i18n="lbl_condition">Zustand</div>
               <select id="condition">
                 <option value="neuwertig" data-i18n="opt_new">Neuwertig</option>
@@ -697,15 +688,41 @@
                 <option value="renovationsbed" data-i18n="opt_reno">Renov.bed.</option>
               </select>
             </div>
-            <div class="field">
+            <div class="field" style="grid-column:1/-1">
+              <div class="field-label" data-i18n="lbl_outdoor">Aussenraum</div>
+              <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;">
+                <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--cream);opacity:0.85;">
+                  <input type="checkbox" id="outdoor_balkon" style="width:14px;height:14px;cursor:pointer;accent-color:var(--red);"> <span data-i18n="opt_balcony">Balkon/Loggia</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--cream);opacity:0.85;">
+                  <input type="checkbox" id="outdoor_terrasse" style="width:14px;height:14px;cursor:pointer;accent-color:var(--red);"> <span data-i18n="opt_terrace">Terrasse</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--cream);opacity:0.85;">
+                  <input type="checkbox" id="outdoor_garten" style="width:14px;height:14px;cursor:pointer;accent-color:var(--red);"> <span data-i18n="opt_garden">Garten/Sitzplatz</span>
+                </label>
+              </div>
+            </div>
+            <div class="field" style="grid-column:1/-1">
               <div class="field-label" data-i18n="lbl_parking">Parkplatz</div>
-              <select id="parking">
-                <option value="" selected data-i18n="opt_parking_unknown">Unbekannt</option>
-                <option value="0" data-i18n="opt_parking_none">Kein</option>
-                <option value="1" data-i18n="opt_parking_outdoor">Aussen</option>
-                <option value="2" data-i18n="opt_parking_tg">Tiefgarage</option>
-                <option value="3" data-i18n="opt_parking_tg2">2× Tiefgarage</option>
-              </select>
+              <div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:6px;align-items:center;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-size:12px;color:var(--cream);opacity:0.85;" data-i18n="opt_parking_outdoor">Aussen</span>
+                  <select id="parking_aussen" style="font-size:12px;padding:3px 8px;background:rgba(245,240,232,0.07);border:1px solid rgba(245,240,232,0.14);color:var(--cream);outline:none;">
+                    <option value="0">0</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                  </select>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-size:12px;color:var(--cream);opacity:0.85;" data-i18n="opt_parking_tg">Tiefgarage</span>
+                  <select id="parking_tg" style="font-size:12px;padding:3px 8px;background:rgba(245,240,232,0.07);border:1px solid rgba(245,240,232,0.14);color:var(--cream);outline:none;">
+                    <option value="0">0</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3+</option>
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
           <div class="field">
@@ -937,11 +954,11 @@
       <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;color:rgba(245,240,232,0.45);text-transform:uppercase;margin-top:4px;" data-i18n="stat_kantone">Kantone abgedeckt</div>
     </div>
     <div style="padding:24px 16px;border-right:1px solid rgba(245,240,232,0.1);">
-      <div style="font-family:var(--font-display);font-size:32px;color:var(--cream);">155+</div>
+      <div style="font-family:var(--font-display);font-size:32px;color:var(--cream);">6000+</div>
       <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;color:rgba(245,240,232,0.45);text-transform:uppercase;margin-top:4px;" data-i18n="stat_gemeinden">Gemeinden mit Marktdaten</div>
     </div>
     <div style="padding:24px 16px;border-right:1px solid rgba(245,240,232,0.1);">
-      <div style="font-family:var(--font-display);font-size:32px;color:var(--cream);">5800+</div>
+      <div style="font-family:var(--font-display);font-size:32px;color:var(--cream);">25'000+</div>
       <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;color:rgba(245,240,232,0.45);text-transform:uppercase;margin-top:4px;" data-i18n="stat_strassen">Strassen mit Preisdaten</div>
     </div>
     <div style="padding:24px 16px;">
@@ -983,7 +1000,7 @@
     <div class="section-tag" data-i18n="data_tag">Datenquellen</div>
     <h2 class="section-title" data-i18n="data_title">Offizielle Daten, <em>keine Werbung</em></h2>
     <div class="sources-grid">
-      <div class="source-card"><div class="source-name" data-i18n="src_name_markt">Marktdaten</div><div class="source-desc" data-i18n="src_realadvisor">Aktuelle Marktpreise pro m² für Miete und Kauf — PLZ- und strassengenau für 155+ Schweizer Gemeinden.</div></div>
+      <div class="source-card"><div class="source-name" data-i18n="src_name_markt">Marktdaten</div><div class="source-desc" data-i18n="src_realadvisor">Aktuelle Marktpreise pro m² für Miete und Kauf — PLZ- und strassengenau für 6000+ Schweizer Gemeinden und Ortschaften.</div></div>
       <div class="source-card"><div class="source-name">BAFU</div><div class="source-desc" data-i18n="src_bafu">Offizielle Strassenlärmdaten des Bundesamts für Umwelt (sonBASE).</div></div>
       <div class="source-card"><div class="source-name">swisstopo BFE</div><div class="source-desc" data-i18n="src_solar">Solareignung der Fassaden und Dächer aus der nationalen Sonnendach-Datenbank.</div></div>
       <div class="source-card"><div class="source-name">OpenStreetMap</div><div class="source-desc" data-i18n="src_osm">ÖV-Haltestellen, Schulen, Supermärkte, Parks und weitere Infrastruktur im Umkreis.</div></div>
@@ -1084,7 +1101,7 @@ const TRANSLATIONS = {
     step2_title: 'Daten werden abgerufen', step2_text: 'Immoskop ruft automatisch Marktpreise, Lärmdaten (BAFU), Besonnung (swisstopo), ÖV-Anbindung, Kriminalitätsstatistiken und Umgebungsinfos ab.',
     step3_title: 'Analyse erhalten', step3_text: 'Sofortige Übersicht mit Preisbewertung, Lage-Score und optionalem KI-Report mit detaillierter Einschätzung und Besichtigungs-Checkliste.',
     data_tag: 'Datenquellen', data_title: 'Offizielle Daten, <em>keine Werbung</em>',
-    src_realadvisor: 'Aktuelle Marktpreise pro m² für Miete und Kauf — PLZ- und strassengenau für 155+ Schweizer Gemeinden.',
+    src_realadvisor: 'Aktuelle Marktpreise pro m² für Miete und Kauf — PLZ- und strassengenau für 6000+ Schweizer Gemeinden und Ortschaften.',
     src_bafu: 'Offizielle Strassenlärmdaten des Bundesamts für Umwelt (sonBASE).',
     src_solar: 'Solareignung aus der nationalen Sonnendach-Datenbank (swisstopo/BFE).',
     src_osm: 'ÖV-Haltestellen, Schulen, Supermärkte, Parks und weitere Infrastruktur im Umkreis.',
@@ -1180,7 +1197,7 @@ const TRANSLATIONS = {
     step2_title: 'Data is retrieved', step2_text: 'Immoskop automatically retrieves market prices, noise data (BAFU), solar data (swisstopo), public transport, crime statistics and neighbourhood info.',
     step3_title: 'Get your analysis', step3_text: 'Instant overview with price assessment, location score and optional AI report with detailed commentary and a viewing checklist.',
     data_tag: 'Data sources', data_title: 'Official data, <em>no advertising</em>',
-    src_realadvisor: 'Current market prices per m² for rent and purchase — at postcode and street level for 155+ Swiss municipalities.',
+    src_realadvisor: 'Current market prices per m² for rent and purchase — at postcode and street level for 6000+ Swiss municipalities and localities.',
     src_bafu: 'Official road noise data from the Federal Office for the Environment (sonBASE).',
     src_solar: 'Solar suitability from the national Sonnendach database (swisstopo/BFE).',
     src_osm: 'Public transport stops, schools, supermarkets, parks and other local infrastructure.',
@@ -1272,7 +1289,7 @@ const TRANSLATIONS = {
     step2_title: "Les données sont récupérées", step2_text: "Immoskop récupère automatiquement les prix du marché, données acoustiques, ensoleillement, transports et criminalité.",
     step3_title: "Recevoir l'analyse", step3_text: "Aperçu immédiat avec évaluation du prix et rapport IA optionnel avec liste de contrôle pour la visite.",
     data_tag: "Sources", data_title: "Données officielles, <em>sans publicité</em>",
-    src_realadvisor: "Prix actuels par m² pour 155+ communes suisses.",
+    src_realadvisor: "Prix actuels par m² pour 6000+ communes et localités suisses.",
     src_bafu: "Données officielles sur le bruit routier (OFEV/sonBASE).",
     src_solar: "Aptitude solaire nationale (swisstopo/OFEN).",
     src_osm: "Transports publics, écoles, supermarchés, parcs et infrastructures.",
@@ -2695,13 +2712,23 @@ async function runAnalysis() {
   const area = parseInt(document.getElementById('area').value) || 75;
   const year = document.getElementById('year').value;
   const floor = parseInt(document.getElementById('floor').value) || 0;
-  const outdoor = document.getElementById('outdoor').value;
+  // Aussenraum: beste Kategorie aus Checkboxen ableiten
+  const _outBalkon = document.getElementById('outdoor_balkon')?.checked;
+  const _outTerrasse = document.getElementById('outdoor_terrasse')?.checked;
+  const _outGarten = document.getElementById('outdoor_garten')?.checked;
+  const outdoor = _outGarten ? 'garten' : _outTerrasse ? 'terrasse' : _outBalkon ? 'balkon' : 'none';
+  // Kombinierte Beschreibung für Report
+  const outdoorKombiniert = [_outBalkon&&'Balkon',_outTerrasse&&'Terrasse',_outGarten&&'Garten'].filter(Boolean).join('+') || null;
   const condition = document.getElementById('condition').value;
   const rooms = document.getElementById('rooms').value || null;
   const propertyKind = document.getElementById('propertyKind').value;
   const extraInfo = document.getElementById('extra-info')?.value?.trim() || null;
-  const parkingVal = document.getElementById('parking')?.value;
-  const parkplatz = (parkingVal !== '' && parkingVal !== null && parkingVal !== undefined) ? parseInt(parkingVal) : null;
+  const _parkAussen = parseInt(document.getElementById('parking_aussen')?.value || '0');
+  const _parkTg = parseInt(document.getElementById('parking_tg')?.value || '0');
+  // Parkplatz-Wert: TG hat Vorrang, kombiniert für Score
+  // 0=kein, 1=1 Aussen, 2=1 TG, 3=2+ TG
+  const parkplatz = _parkTg >= 2 ? 3 : _parkTg === 1 ? 2 : _parkAussen >= 1 ? 1 : 0;
+  const parkplatzKombiniert = [_parkAussen>0&&_parkAussen+'× Aussen', _parkTg>0&&_parkTg+'× TG'].filter(Boolean).join(' + ') || null;
 
   try {
     setStatus('Adresse wird geocodiert...');
@@ -2720,7 +2747,7 @@ async function runAnalysis() {
     if (!coords) coords = { lat: null, lon: null, label: addressInput };
 
     const addressForApi = addressInput; // send raw input to backend — backend does its own geocoding
-    window._lastAnalysis = { address: addressForApi, rooms, area, price: price||2400, type: document.getElementById('type').value, propertyKind, year, floor, outdoor, condition, parkplatz, insertText: window._insertText||null, parsedInsert: window._parsedInsert||null, extraInfo, reportDate: new Date().toLocaleDateString('de-CH', {day:'2-digit',month:'long',year:'numeric'}), geoFallback: false, noPriceInserat };
+    window._lastAnalysis = { address: addressForApi, rooms, area, price: price||2400, type: document.getElementById('type').value, propertyKind, year, floor, outdoor, condition, parkplatz, outdoorKombiniert: outdoorKombiniert||null, parkplatzKombiniert: parkplatzKombiniert||null, parkingAussen: _parkAussen, parkingTg: _parkTg, insertText: window._insertText||null, parsedInsert: window._parsedInsert||null, extraInfo, reportDate: new Date().toLocaleDateString('de-CH', {day:'2-digit',month:'long',year:'numeric'}), geoFallback: false, noPriceInserat };
 
     setStatus('Marktpreise & Umgebung werden abgerufen...');
     let fetchBody;
@@ -2917,11 +2944,23 @@ async function runAnalysis() {
     const outPill=outdoor==='none'?'bad':outdoor==='balkon'?'mid':'good';
     let taxCard2='';
     if(meta.taxBurdenCHF){const np=meta.estvNatPctVal||50;const cp=meta.estvKtPctVal||50;const ts=np<=5?5:np<=20?4:np<=45?3:np<=80?2:1;const tp=np<=20?'good':np<=60?'mid':'bad';const tl=np<=5?t.m_tax_cheap:np<=20?t.m_tax_good:np<=45?t.m_tax_mid:np<=80?t.m_tax_exp:t.m_tax_vexp;taxCard2=makeMetricCard(t.m_tax,'CHF '+meta.taxBurdenCHF.toLocaleString('de-CH')+'/J',tl+' · '+cp+'. Perz. '+(meta.estvKanton||'CH').toUpperCase()+' · CH: '+np+'% · ESTV 2025',ts,tp,'secondary');}
+    const autoKachel2 = (() => {
+      if (!meta.autobahnName) return '';
+      const km2 = meta.autobahnDist ? (Math.round(meta.autobahnDist/100)/10).toFixed(1)+' km' : '–';
+      const min2 = meta.autobahnFahrzeit ? meta.autobahnFahrzeit+' Min' : null;
+      const richt2 = meta.autobahnRichtungen ? meta.autobahnRichtungen.join(' ↔ ') : '';
+      const val2 = meta.autobahnName + (min2 ? ' · '+min2 : ' · '+km2);
+      const detail2 = richt2 || km2;
+      const score2 = !meta.autobahnFahrzeit ? 3 : meta.autobahnFahrzeit<=5 ? 5 : meta.autobahnFahrzeit<=10 ? 4 : meta.autobahnFahrzeit<=20 ? 3 : 2;
+      const pill2  = !meta.autobahnFahrzeit ? 'mid' : meta.autobahnFahrzeit<=5 ? 'good' : meta.autobahnFahrzeit<=15 ? 'mid' : 'bad';
+      return makeMetricCard(t.m_autobahn, val2, detail2, score2, pill2, 'secondary');
+    })();
     document.getElementById('secondary-grid').innerHTML=
       makeMetricCard(t.m_solar,meta.solarKwh?Math.round(meta.solarKwh)+' kWh':t.m_no_data,meta.solarKwh?t.m_solar_detail:t.m_no_data,ss.s,ss.p,'secondary')+
       makeMetricCard(t.m_safety,crime.h+'/1000',crime.l+' · PKS',cs.s,cs.p,'secondary')+
       (propertyKind==='haus'?makeMetricCard(t.m_outdoor,'EFH',t.opt_garden||'Garten',5,'good','secondary'):makeMetricCard(t.m_outdoor,OUTDOOR_LABEL2[outdoor]||outdoor,'Etage '+floor,outScore,outPill,'secondary'))+
       makeMetricCard(t.m_condition,COND_LABEL[condition]||condition,'',COND_SCORE[condition]||3,COND_PILL[condition]||'mid','secondary')+
+      autoKachel2+
       taxCard2;
 
     // ── POI ───────────────────────────────────────────────────────
@@ -3080,7 +3119,11 @@ async function parseInserat() {
         document.getElementById('year').value = p.baujahr_kategorie;
       }
     }
-    if (p.aussenraum) document.getElementById('outdoor').value = p.aussenraum;
+    if (p.aussenraum) {
+      document.getElementById('outdoor_balkon').checked = ['balkon'].includes(p.aussenraum);
+      document.getElementById('outdoor_terrasse').checked = ['terrasse'].includes(p.aussenraum);
+      document.getElementById('outdoor_garten').checked = ['garten'].includes(p.aussenraum);
+    }
     if (p.zustand) document.getElementById('condition').value = p.zustand;
     if (p.befristet) { status.style.color='#C8371A'; status.textContent='BEFRISTETER MIETVERTRAG: '+(p.befristet_details||'Details im Report'); }
     else { status.style.color='rgba(245,240,232,0.5)'; status.textContent='Felder ausgefüllt.'; }
