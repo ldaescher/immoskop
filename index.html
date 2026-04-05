@@ -2274,11 +2274,15 @@ function runDealEngine(delta, insights, noise, oevDist, cond, outdoor, crimeH) {
   if      (delta < -15) score += 20;
   else if (delta <  -5) score += 10;
   else if (delta <=  5) score +=  0;
-  else if (delta <= 10) score -=  5;
-  else if (delta <= 20) score -= 15;
-  else                  score -= 25;
+  else if (delta <= 10) score -= 15;
+  else if (delta <= 20) score -= 25;
+  else                  score -= 35;
 
   score -= Math.min(critical.length * 15, 30);
+
+  // Hard Cap: bei hohem delta kann Score nie "Attraktiv" sein
+  if (delta >= 10) score = Math.min(score, 59);
+  if (delta >= 20) score = Math.min(score, 44);
 
   if      (noise && noise >  65) score -= 10;
   else if (noise && noise >= 55) score -=  5;
