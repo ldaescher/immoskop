@@ -1,6 +1,19 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
+<script>
+// Preview protection – remove before launch
+(function(){
+  var stored = sessionStorage.getItem('immo_auth');
+  if (stored === 'ok') return;
+  var pw = prompt('Passwort:');
+  if (pw !== 'Easypeazy78') {
+    document.documentElement.innerHTML = '<body style="font-family:sans-serif;padding:40px;"><h2>Zugang verweigert.</h2></body>';
+    throw new Error('Unauthorized');
+  }
+  sessionStorage.setItem('immo_auth', 'ok');
+})();
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Immoskop – Immobilien-Entscheider</title>
