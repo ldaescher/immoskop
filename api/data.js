@@ -329,7 +329,7 @@ export default async function handler(req, res) {
     'A14': { richtungen: ['Luzern', 'Zug / Zürich'] },
     'A16': { richtungen: ['Biel', 'Porrentruy / Frankreich'] },
   };
-  let autobahnDist = null, autobahnName = null, autobahnRichtungen = null;
+  let autobahnDist = null, autobahnName = null, autobahnRichtungen = null, autobahnFahrzeit = null, autobahnJunctionLat = null, autobahnJunctionLon = null;
 
   // Autobahnausfahrten via Overpass (parallel, 15km Radius)
   const autobahnPromise = (async () => {
@@ -2828,6 +2828,8 @@ export default async function handler(req, res) {
       }
       if (nearest) {
         autobahnDist = nearestDist;
+        autobahnJunctionLat = nearest.lat;
+        autobahnJunctionLon = nearest.lon;
         const tags = nearest.tags || {};
 
         // Ref-Reihenfolge: Junction-Node → motorway:ref → Way-Refs → null
@@ -2852,6 +2854,23 @@ export default async function handler(req, res) {
     }
   } catch(e) { console.log('AUTOBAHN auswertung error:', e.message); }
 
+  // ── OSRM FAHRZEIT ZUR AUTOBAHNAUSFAHRT ──────────────────────────────────
+  if (autobahnJunctionLat && autobahnJunctionLon) {
+    try {
+      const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${lon},${lat};${autobahnJunctionLon},${autobahnJunctionLat}?overview=false`;
+      const osrmRes = await fetch(osrmUrl, { signal: AbortSignal.timeout(5000) });
+      if (osrmRes.ok) {
+        const osrmData = await osrmRes.json();
+        const route = osrmData?.routes?.[0];
+        if (route) {
+          autobahnFahrzeit = Math.round(route.duration / 60); // Sekunden → Minuten
+          autobahnDist = Math.round(route.distance); // exakte Strassendistanz statt Luftlinie
+          console.log('OSRM Autobahn:', autobahnFahrzeit + ' Min |', Math.round(autobahnDist/100)/10 + ' km');
+        }
+      }
+    } catch(e) { console.log('OSRM error:', e.message); }
+  }
+
   console.log('SUMMARY → noise:', noiseDay, '| solar:', solarKwh, '| oev:', oevDist, '| crime:', crime.hzahl, '| tax:', steuerfuss, '(nat:', estvNatPctVal, 'kt:', estvKtPctVal, ')| delta:', delta+'%', '| tourismus:', isTourismus);
 
   return res.status(200).json({
@@ -2867,7 +2886,7 @@ export default async function handler(req, res) {
       nComparables,
       matchQuality: streetData ? 'street' : priceData ? 'plz' : 'model',
       noiseSource: noiseSource || null,
-      autobahnDist, autobahnName, autobahnRichtungen,
+      autobahnDist, autobahnName, autobahnRichtungen, autobahnFahrzeit,
       lat: lat?.toFixed(4), lon: lon?.toFixed(4), geoAccuracy, isTourismus, priceNote
     }
   });

@@ -4,7 +4,7 @@ export default async function handler(req, res) {
   }
 
   const { address, rooms, area, price, type, year, floor, outdoor, condition, insertText, parsedInsert, propertyKind, reportDate, extraInfo, lang,
-    expectedFromData, deltaFromData, priceSourceFromData, autobahnName, autobahnRichtungen, autobahnDist } = req.body;
+    expectedFromData, deltaFromData, priceSourceFromData, autobahnName, autobahnRichtungen, autobahnDist, autobahnFahrzeit } = req.body;
   const isKauf = type === 'kauf';
 
   // ── 1. GEOCODE ──────────────────────────────────────────────────
@@ -2750,6 +2750,7 @@ BEHÖRDEN-DATEN:
 Lärm (${noiseSource}): ${noiseDay ? noiseDay+' dB' : 'nicht verfügbar'}
 Besonnung: ${solarKwh?Math.round(solarKwh)+' kWh/Jahr':'nicht verfügbar'}
 ÖV: ${oevDist?oevDist+'m → '+oevName+' ('+oevCount+' Haltestellen/800m)':'nicht verfügbar'}
+Autoanbindung: ${autobahnName ? autobahnName+(autobahnFahrzeit?' · '+autobahnFahrzeit+' Min zur Ausfahrt':'')+' ('+Math.round((autobahnDist||0)/100)/10+' km)'+(autobahnRichtungen?' Richtung '+autobahnRichtungen.join(' ↔ '):'') : 'keine Autobahn in 15km'}
 Sicherheit: ${crime.hzahl} Delikte/1000 Einw. in ${crime.label}${steuerfuss?`
 Steuerfuss: ${steuerfuss}%`:''}
 

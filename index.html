@@ -1142,7 +1142,7 @@ const TRANSLATIONS = {
     r_new: 'Neuwertig / kürzlich renoviert', r_good: 'Guter Zustand',
     r_terrace: 'Terrasse vorhanden', r_garden: 'Garten vorhanden', r_solar: 'Sehr gute Besonnung',
     // Metric cards
-    m_price: 'Preisbewertung', m_noise: 'Lärmsituation', m_oev: 'ÖV-Anbindung',
+    m_price: 'Preisbewertung', m_noise: 'Lärmsituation', m_oev: 'ÖV-Anbindung', m_autobahn: 'Autoanbindung',
     m_solar: 'Besonnung', m_safety: 'Sicherheit', m_outdoor: 'Aussenraum',
     m_condition: 'Zustand', m_tax: 'Einkommenssteuer',
     m_quiet: 'Ruhige Lage', m_moderate: 'Moderate Belastung', m_loud: 'Erhöhte Lärmbelastung',
@@ -1234,7 +1234,7 @@ const TRANSLATIONS = {
     r_reno: 'Property needs renovation',
     r_new: 'New / recently renovated', r_good: 'Good condition',
     r_terrace: 'Terrace available', r_garden: 'Garden available', r_solar: 'Excellent solar exposure',
-    m_price: 'Price assessment', m_noise: 'Noise', m_oev: 'Public transport',
+    m_price: 'Price assessment', m_noise: 'Noise', m_oev: 'Public transport', m_autobahn: 'Road access',
     m_solar: 'Solar', m_safety: 'Safety', m_outdoor: 'Outdoor space',
     m_condition: 'Condition', m_tax: 'Income tax',
     m_quiet: 'Quiet location', m_moderate: 'Moderate noise', m_loud: 'Elevated noise',
@@ -1325,7 +1325,7 @@ const TRANSLATIONS = {
     r_reno: "Bien à rénover",
     r_new: "Neuf / récemment rénové", r_good: "Bon état",
     r_terrace: "Terrasse disponible", r_garden: "Jardin disponible", r_solar: "Très bon ensoleillement",
-    m_price: "Évaluation prix", m_noise: "Bruit", m_oev: "Transports publics",
+    m_price: "Évaluation prix", m_noise: "Bruit", m_oev: "Transports publics", m_autobahn: "Accès routier",
     m_solar: "Ensoleillement", m_safety: "Sécurité", m_outdoor: "Extérieur",
     m_condition: "État", m_tax: "Impôt revenu",
     m_quiet: "Emplacement calme", m_moderate: "Bruit modéré", m_loud: "Bruit élevé",
@@ -1893,6 +1893,17 @@ function renderEnginesOnly() {
       ? makeMetricCard(t.m_outdoor, efhLabel, gardenLabel, 5, 'good', 'secondary')
       : makeMetricCard(t.m_outdoor, ol[outdoor]||outdoor, floorLabel+' '+floor, outScore2, outPill2, 'secondary')) +
     makeMetricCard(t.m_condition, cl[condition]||condition, '', COND_SCORE2[condition]||3, COND_PILL2[condition]||'mid', 'secondary') +
+    (() => {
+      if (!meta.autobahnName) return '';
+      const km = meta.autobahnDist ? (Math.round(meta.autobahnDist/100)/10).toFixed(1)+' km' : '–';
+      const min = meta.autobahnFahrzeit ? meta.autobahnFahrzeit+' Min' : null;
+      const richt = meta.autobahnRichtungen ? meta.autobahnRichtungen.join(' ↔ ') : '';
+      const val = meta.autobahnName + (min ? ' · '+min : ' · '+km);
+      const detail = richt || km;
+      const score = meta.autobahnFahrzeit<=5 ? 5 : meta.autobahnFahrzeit<=10 ? 4 : meta.autobahnFahrzeit<=20 ? 3 : 2;
+      const pill  = meta.autobahnFahrzeit<=5 ? 'good' : meta.autobahnFahrzeit<=15 ? 'mid' : 'bad';
+      return makeMetricCard(t.m_autobahn, val, detail, score, pill, 'secondary');
+    })() +
     taxCard2b;
 
   // Re-render checklist
@@ -2520,7 +2531,15 @@ function runVerdictEngine(delta, insights, dealScore, noise, fl, outdoor, isKauf
     const step = isKauf ? 5000 : 50;
     const lo = Math.round(over * 0.4 / step) * step;
     const hi = Math.round(over * 0.7 / step) * step;
-    if (lo >= step) negotiationHint = V.neg_hint(lo.toLocaleString('de-CH'), hi.toLocaleString('de-CH'));
+    if (lo >= step) {
+      if (lo === hi) {
+        // Wenn lo und hi identisch: nur einen Wert anzeigen
+        const singleLabel = { de: `Verhandlungsspielraum: CHF ${lo.toLocaleString('de-CH')}`, en: `Negotiation range: CHF ${lo.toLocaleString('de-CH')}`, fr: `Marge de négociation\u00a0: CHF ${lo.toLocaleString('de-CH')}` };
+        negotiationHint = singleLabel[currentLang] || singleLabel.de;
+      } else {
+        negotiationHint = V.neg_hint(lo.toLocaleString('de-CH'), hi.toLocaleString('de-CH'));
+      }
+    }
   }
 
   let heroWarning = null;
@@ -2732,6 +2751,7 @@ async function runAnalysis() {
     window._lastAnalysis.autobahnName = meta.autobahnName || null;
     window._lastAnalysis.autobahnRichtungen = meta.autobahnRichtungen || null;
     window._lastAnalysis.autobahnDist = meta.autobahnDist || null;
+    window._lastAnalysis.autobahnFahrzeit = meta.autobahnFahrzeit || null;
     window._insertText = null; window._parsedInsert = null;
 
     const expected = meta.expected || 0;
