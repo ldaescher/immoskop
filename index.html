@@ -1835,7 +1835,7 @@ function renderEnginesOnly() {
   // Re-run verdict/deal/conversion labels (text-only, no API)
   const insights   = runInsightEngine(delta, meta.noiseDay, meta.oevDist, floor, outdoor, condition, meta.solarKwh, crime.h, window._parsedInsert);
   const deal       = runDealEngine(delta, insights, meta.noiseDay, meta.oevDist, condition, outdoor, crime.h);
-  const verdict    = runVerdictEngine(delta, insights, deal.score, meta.noiseDay, floor, outdoor, isKauf, price);
+  const verdict    = runVerdictEngine(delta, insights, deal.score, meta.noiseDay, floor, outdoor, isKauf, price, meta.lwz, meta.marktlage);
   const conversion = runConversionEngine(deal.score, insights.critical);
 
   // Hero
@@ -2396,7 +2396,7 @@ function runDealEngine(delta, insights, noise, oevDist, cond, outdoor, crimeH) {
 }
 
 // ── C: VERDICT ENGINE (with Consistency) ──────────────────
-function runVerdictEngine(delta, insights, dealScore, noise, fl, outdoor, isKauf, price) {
+function runVerdictEngine(delta, insights, dealScore, noise, fl, outdoor, isKauf, price, lwz, marktlage) {
   const { neg, pos, critical } = insights;
   const hasCritical  = critical.length > 0;
   const hasRisks     = neg.length >= 2 || hasCritical;
@@ -2406,6 +2406,8 @@ function runVerdictEngine(delta, insights, dealScore, noise, fl, outdoor, isKauf
   // C2+D. Suffix + Labels — i18n-aware
   const vl = currentLang || 'de';
   const canBePositive = dealScore >= 65 && !hasCritical;
+  // Bei angespanntem Markt: Preisschwellen nach oben verschieben
+  const lwzDeltaBonus = marktlage === 'extrem_angespannt' ? 8 : marktlage === 'angespannt' ? 4 : 0;
 
   const VT = {
     de: {
@@ -2556,18 +2558,31 @@ function runVerdictEngine(delta, insights, dealScore, noise, fl, outdoor, isKauf
   }
 
   let negotiationHint = null;
-  if (delta >= 4) {
+  // Verhandlungsschwelle abhängig von Marktlage (LWZ)
+  // Extrem angespannt (<0.5%): kein Hinweis unter +20%
+  // Angespannt (0.5-1%): kein Hinweis unter +12%
+  // Normal (1-2%): Standard ab +4%
+  // Entspannt (>2%): schon ab +2%
+  const negThreshold = marktlage === 'extrem_angespannt' ? 20
+    : marktlage === 'angespannt' ? 12
+    : marktlage === 'entspannt'  ? 2
+    : 4; // normal
+  if (delta >= negThreshold) {
     const over = Math.round(price - price / (1 + delta/100));
     const step = isKauf ? 5000 : 50;
     const lo = Math.round(over * 0.4 / step) * step;
     const hi = Math.round(over * 0.7 / step) * step;
     if (lo >= step) {
       if (lo === hi) {
-        // Wenn lo und hi identisch: nur einen Wert anzeigen
         const singleLabel = { de: `Verhandlungsspielraum: CHF ${lo.toLocaleString('de-CH')}`, en: `Negotiation range: CHF ${lo.toLocaleString('de-CH')}`, fr: `Marge de négociation\u00a0: CHF ${lo.toLocaleString('de-CH')}` };
         negotiationHint = singleLabel[currentLang] || singleLabel.de;
       } else {
         negotiationHint = V.neg_hint(lo.toLocaleString('de-CH'), hi.toLocaleString('de-CH'));
+      }
+      // Marktlage-Hinweis bei angespanntem Markt hinzufügen
+      if (marktlage === 'angespannt' || marktlage === 'extrem_angespannt') {
+        const mktHint = { de: ` (angespannter Markt, LWZ ${lwz}%)`, en: ` (tight market, vacancy ${lwz}%)`, fr: ` (marché tendu, taux ${lwz}%)` };
+        negotiationHint += mktHint[currentLang] || mktHint.de;
       }
     }
   }
@@ -2792,6 +2807,8 @@ async function runAnalysis() {
     window._lastAnalysis.autobahnRichtungen = meta.autobahnRichtungen || null;
     window._lastAnalysis.autobahnDist = meta.autobahnDist || null;
     window._lastAnalysis.autobahnFahrzeit = meta.autobahnFahrzeit || null;
+    window._lastAnalysis.lwz = meta.lwz || null;
+    window._lastAnalysis.marktlage = meta.marktlage || null;
     window._insertText = null; window._parsedInsert = null;
 
     const expected = meta.expected || 0;
@@ -2822,7 +2839,7 @@ async function runAnalysis() {
     // ── RUN ALL ENGINES ───────────────────────────────────────
     const insights   = runInsightEngine(delta, meta.noiseDay, meta.oevDist, floor, outdoor, condition, meta.solarKwh, crime.h, window._parsedInsert);
     const deal       = runDealEngine(delta, insights, meta.noiseDay, meta.oevDist, condition, outdoor, crime.h);
-    const verdict    = runVerdictEngine(delta, insights, deal.score, meta.noiseDay, floor, outdoor, isKauf, price);
+    const verdict    = runVerdictEngine(delta, insights, deal.score, meta.noiseDay, floor, outdoor, isKauf, price, meta.lwz, meta.marktlage);
     const conversion = runConversionEngine(deal.score, insights.critical);
 
     // ── RENDER DEAL SCORE ─────────────────────────────────────

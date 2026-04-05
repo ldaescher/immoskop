@@ -270,10 +270,36 @@ export default async function handler(req, res) {
   // z.B. +0.05 für Seesicht, -0.03 für dunkle Nordhang-Lage
   let extraAdjustment = 1.0;
   let extraAdjustmentGrund = null;
+
   if (parsedInsert?.preis_adjustment && Math.abs(parsedInsert.preis_adjustment) <= 0.15) {
+    // Adjustment aus parsedInsert (via Parse-Button)
     extraAdjustment = 1 + parsedInsert.preis_adjustment;
     extraAdjustmentGrund = parsedInsert.preis_adjustment_grund || null;
-    console.log('EXTRA ADJUSTMENT:', parsedInsert.preis_adjustment, '|', extraAdjustmentGrund);
+    console.log('EXTRA ADJUSTMENT (parsed):', parsedInsert.preis_adjustment, '|', extraAdjustmentGrund);
+  } else if (extraInfo && extraInfo.length > 10 && process.env.ANTHROPIC_API_KEY) {
+    // Adjustment aus extraInfo-Textfeld via Claude
+    try {
+      const _aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 150,
+          messages: [{ role: 'user', content:
+            `Analysiere Zusatzinfos zu einer Immobilie und gib einen Preisadjustment-Faktor zurück.\n\nZusatzinfos: ${extraInfo}\n\nRegeln:\n- Klare Werttreiber (Seesicht, Bergsicht, Ski-in/out, Panorama, Dachterrasse, Minergie, komplett renoviert): +3-8% pro Faktor\n- Mehrere Faktoren addieren, max +15%\n- Negative Faktoren (Nordhang, kein Tageslicht, Durchgangszimmer): -3-8%\n- Marketing ohne Substanz (ruhig, zentral, schön): 0%\n- Im Zweifel: 0\n\nAntworte NUR mit JSON ohne Erklärung: {"adjustment": 0.05, "grund": "Bergsicht + Ski-in/out"}` }]
+        })
+      });
+      if (_aiRes.ok) {
+        const _aiData = await _aiRes.json();
+        const _aiText = _aiData.content?.[0]?.text || '{}';
+        const _aiJson = JSON.parse(_aiText.replace(/```json|```/g, '').trim());
+        if (_aiJson.adjustment && Math.abs(_aiJson.adjustment) <= 0.15) {
+          extraAdjustment = 1 + _aiJson.adjustment;
+          extraAdjustmentGrund = _aiJson.grund || null;
+          console.log('EXTRA ADJUSTMENT (extraInfo):', _aiJson.adjustment, '|', extraAdjustmentGrund);
+        }
+      }
+    } catch(_e) { console.log('extraInfo adjustment error:', _e.message); }
   }
 
   let noiseFactor = 1.0; // wird nach BAFU-Abfrage neu berechnet
@@ -346,9 +372,10 @@ export default async function handler(req, res) {
   const autobahnPromise = (async () => {
     try {
       // Kombinierte Query: Ausfahrten (Nodes) + Autobahn-Ways (für Ref-Tag)
-      const q = `[out:json][timeout:10];(
-        node[highway=motorway_junction](around:15000,${lat},${lon});
-        way[highway=motorway](around:10000,${lat},${lon});
+      const q = `[out:json][timeout:15];(
+        node[highway=motorway_junction](around:25000,${lat},${lon});
+        way[highway=motorway](around:20000,${lat},${lon});
+        way[highway=motorway_link](around:5000,${lat},${lon});
       );out body 30;`;
       const r = await fetch('https://overpass-api.de/api/interpreter', {
         method: 'POST', body: q, signal: AbortSignal.timeout(10000)
@@ -2756,6 +2783,27 @@ export default async function handler(req, res) {
     return null;
   }
 
+  // ── LEERWOHNUNGSZIFFER (BFS 2024, per 1. Juni) ─────────────────────────────
+  // Quelle: Bundesamt für Statistik, Leerwohnungszählung 2024
+  // Update jährlich im September nach BFS-Publikation!
+  // Auf Gemeindeebene: Kantonsziffer als Proxy verwenden.
+  // TODO: Gemeindespezifische Ziffern via BFS STAT-TAB ergänzen.
+  const LWZ_KANTON = {
+    'ZH': 0.56, 'BE': 1.43, 'LU': 0.83, 'UR': 1.12, 'SZ': 0.62,
+    'OW': 0.44, 'NW': 0.51, 'GL': 1.98, 'ZG': 0.39, 'FR': 1.38,
+    'SO': 2.37, 'BS': 0.71, 'BL': 1.06, 'SH': 1.52, 'AR': 1.45,
+    'AI': 0.94, 'SG': 1.21, 'GR': 1.41, 'AG': 1.74, 'TG': 1.89,
+    'TI': 2.08, 'VD': 0.89, 'VS': 1.15, 'NE': 1.87, 'GE': 0.46,
+    'JU': 2.98,
+  };
+  // Kantonskürzel aus Gemeindedaten
+  const lwzKanton = priceData?.kanton || null;
+  const lwz = lwzKanton ? (LWZ_KANTON[lwzKanton] ?? 1.08) : 1.08; // CH-Schnitt als Fallback
+  // Marktlage basierend auf LWZ
+  // < 0.5%: extrem angespannt | 0.5-1%: angespannt | 1-2%: normal | > 2%: entspannt
+  const marktlage = lwz < 0.5 ? 'extrem_angespannt' : lwz < 1.0 ? 'angespannt' : lwz < 2.0 ? 'normal' : 'entspannt';
+  console.log('LWZ:', lwz + '%', '(' + lwzKanton + ') → Marktlage:', marktlage);
+
   function estvNatPct(chf) {
     const n = ESTV_CHF_SORTED.length;
     let lo = 0, hi = n - 1;
@@ -2819,11 +2867,16 @@ export default async function handler(req, res) {
     const junctions = elements.filter(e => e.type === 'node' && e.tags?.highway === 'motorway_junction');
     const ways      = elements.filter(e => e.type === 'way'  && e.tags?.highway === 'motorway');
 
-    // Autobahn-Refs aus Ways sammeln (zuverlässiger als Junction-Nodes)
+    // Autobahn-Refs aus Ways sammeln (motorway + motorway_link)
     const wayRefs = new Set();
-    for (const w of ways) {
-      const ref = w.tags?.ref || '';
-      ref.split(';').forEach(r => { const t = r.trim().toUpperCase(); if (t.startsWith('A')) wayRefs.add(t); });
+    for (const w of elements.filter(e => e.type === 'way' && (e.tags?.highway === 'motorway' || e.tags?.highway === 'motorway_link'))) {
+      const ref = w.tags?.ref || w.tags?.['destination:ref'] || '';
+      ref.split(';').forEach(r => { const t = r.trim().toUpperCase(); if (t.match(/^A\d/)) wayRefs.add(t); });
+    }
+    // Fallback: Junction-Node 'motorway:ref' Tag
+    for (const j of elements.filter(e => e.type === 'node')) {
+      const r = j.tags?.['motorway:ref'] || '';
+      r.split(';').forEach(r2 => { const t = r2.trim().toUpperCase(); if (t.match(/^A\d/)) wayRefs.add(t); });
     }
 
     if (junctions.length > 0) {
@@ -2898,6 +2951,7 @@ export default async function handler(req, res) {
       matchQuality: streetData ? 'street' : priceData ? 'plz' : 'model',
       noiseSource: noiseSource || null,
       autobahnDist, autobahnName, autobahnRichtungen, autobahnFahrzeit,
+      lwz, marktlage,
       lat: lat?.toFixed(4), lon: lon?.toFixed(4), geoAccuracy, isTourismus, priceNote
     }
   });

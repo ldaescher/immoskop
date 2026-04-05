@@ -1,5 +1,5 @@
 # IMMOSKOP – Vollständiges Systemdokument
-**Stand: April 2026 | Dies ist das Projektgedächtnis. Immer aktuell halten.**
+**Stand: April 2026 (Session 2) | Dies ist das Projektgedächtnis. Immer aktuell halten.**
 
 ---
 
@@ -404,6 +404,15 @@ Quelle: `priceSource = 'Modell (keine Supabase-Daten für diese PLZ)'`
 - [x] api/data.js auf neue Spalten migriert
 - [x] Street-Matching Fallback via gemeinde_slug (wichtig für Zürich)
 - [x] parse.js Aussenraum-Bug gefixt
+- [x] Autobahn-Kachel im Frontend (Overpass 25km, OSRM Fahrzeit)
+- [x] Aussenraum: Checkboxen (Balkon + Terrasse + Garten kombinierbar)
+- [x] Parkplatz: separate Stepper Aussen/TG mit präzisem Faktor
+- [x] extraInfo-Adjustment via Claude Haiku (auch ohne Parse-Button)
+- [x] Leerwohnungsziffer BFS 2024: 454 Gemeinden (Tagesanzeiger/BFS) + Kantons-Fallback
+- [x] Marktlage-abhängige Verhandlungslogik (LWZ < 0.5% = kein Verhandlungstipp)
+- [x] report.js: neue Spaltennamen, LWZ/Marktlage im Prompt
+- [x] Basic Auth (JS Prompt, PW: Easypeazy78) für Preview-Schutz
+- [x] SDMX-API für LWZ identifiziert (disseminate.stats.swiss)
 
 ---
 
@@ -510,6 +519,15 @@ Für kompletten Re-Scrape: `node run_all.js` (überschreibt alles).
 
 ## 16. PERIODISCHE AUFGABEN (TO DO)
 
+### Jährlich (September)
+- [ ] **Leerwohnungsziffer updaten** – BFS publiziert jeweils im September die neuen Daten per 1. Juni
+  → `data.js` Konstanten `LWZ_GEMEINDE` + `LWZ_KANTON` updaten
+  → Skript: `node /tmp/lwz_fetch.js` (fetcht von SDMX-API, schreibt /tmp/lwz_alle.json)
+  → SDMX-API: `https://disseminate.stats.swiss/rest/data/CH1.LWZ,DF_LWZ_1,1.0.0/+.+.+.+.+.V.A?startPeriod=2024&endPeriod=2024&dimensionAtObservation=AllDimensions&format=jsondata`
+  → Filter: LEERWOHN_TYP=`_T` (Total), MEASURE_DIMENSION=`PC` (Rate in %)
+  → Aktuell: BFS Leerwohnungszählung 2024 (Stand: 1. Juni 2024)
+  → 454 Gemeinden in LWZ_GEMEINDE (Tagesanzeiger-Daten), Kantons-Fallback in LWZ_KANTON
+
 ### Monatlich
 - [ ] **Preisdaten neu scrapen** – RealAdvisor aktualisiert Preise monatlich
   → `cd immoskop/scraper && node run_all.js`
@@ -606,6 +624,51 @@ git pull --no-rebase
 # Merge-Editor öffnet sich → Ctrl+X → Y → Enter
 git push
 ```
+
+
+---
+
+## 18. LEERWOHNUNGSZIFFER – LOGIK UND UPDATE
+
+### Datenquellen
+- **454 Gemeinden:** Tagesanzeiger/BFS 2024, direkt in `data.js` als `LWZ_GEMEINDE`
+- **26 Kantone:** BFS 2024 als `LWZ_KANTON` (Fallback)
+- **CH-Schnitt:** 1.08% (Fallback wenn Kanton unbekannt)
+
+### Lookup-Reihenfolge in api/data.js
+1. `LWZ_GEMEINDE[communeNameLower]` – Gemeinde-spezifisch (454 Gemeinden)
+2. `LWZ_KANTON[priceData.kanton]` – Kantons-Fallback
+3. `1.08` – CH-Schnitt
+
+### Marktlage-Schwellwerte
+| LWZ | Marktlage | Verhandlungs-Schwelle | Delta-Bonus |
+|---|---|---|---|
+| < 0.5% | extrem_angespannt | +20% | +8% toleriert |
+| 0.5–1% | angespannt | +12% | +4% toleriert |
+| 1–2% | normal | +4% | 0 |
+| > 2% | entspannt | +2% | 0 |
+
+### Jährliches Update (September)
+```bash
+# 1. Neue Daten von SDMX-API holen
+node /tmp/lwz_fetch.js
+# → schreibt /tmp/lwz_alle.json (alle ~2200 Gemeinden wenn fix fertig)
+
+# 2. LWZ_GEMEINDE in data.js ersetzen
+# → python3 /tmp/build_lwz.py (generiert JS-Objekt aus JSON)
+
+# 3. Deployen
+cd immoskop
+git add api/data.js
+git commit -m "LWZ update [JAHR]"
+git push
+```
+
+### SDMX-API – Status (April 2026)
+- API URL funktioniert ✅
+- Dimensionen bekannt: GR_KT_GDE, LEERWOHN_TYP (_T=Total), MEASURE_DIMENSION (PC=Rate)
+- Skript `/tmp/lwz_fetch.js` existiert, liefert noch 0 Gemeinden (Filter-Bug offen)
+- **TODO:** lwz_fetch.js debuggen – Problem: totalTypeIdx=-1 weil Suche nach 'Total' schlägt fehl, muss nach `_T` suchen (wurde gefunden in letzter Session, noch nicht getestet)
 
 ---
 

@@ -99,17 +99,17 @@ export default async function handler(req, res) {
   let priceSource = 'Modell';
 
   if (priceData) {
-    refRentPerSqm = priceData.median_price_sqm;
+    refRentPerSqm = priceData.miete_whg_median ?? priceData.miete_haus_median ?? priceData.median_price_sqm;
     refRentP10 = priceData.rent_p10;
     refRentP90 = priceData.rent_p90;
-    refSalePerSqm = priceData.median_sale_price_sqm;
+    refSalePerSqm = priceData.kauf_whg_median ?? priceData.kauf_haus_median ?? priceData.median_sale_price_sqm;
     refSaleP10 = priceData.sale_p10;
     refSaleP90 = priceData.sale_p90;
     priceSource = 'RealAdvisor';
 
     // Strassen-Perzentile berechnen falls Strassendaten vorhanden
     if (streetData && refSalePerSqm && refSaleP10 && refSaleP90) {
-      const streetSale = streetData.median_sale_price_sqm;
+      const streetSale = streetData.kauf_median ?? streetData.median_sale_price_sqm;
       // Lineare Interpolation: wo liegt die Strasse in der Gemeinde-Range?
       // P10 = 10. Perzentile, Median = 50., P90 = 90.
       let pct;
@@ -181,8 +181,9 @@ export default async function handler(req, res) {
   let expected, refPerSqmUsed;
   if (expectedFromData && deltaFromData !== undefined) {
     expected = expectedFromData;
+    refPerSqmUsed = isKauf ? refSalePerSqm : refRentPerSqm; // für Log
     if (priceSourceFromData) priceSource = priceSourceFromData;
-    console.log('REPORT: using expected from data.js:', expected);
+    console.log('REPORT: using expected from data.js:', expected, '| ref/m²:', refPerSqmUsed);
   } else {
     if (isKauf && refSalePerSqm) {
       refPerSqmUsed = refSalePerSqm;
@@ -2753,6 +2754,7 @@ Besonnung: ${solarKwh?Math.round(solarKwh)+' kWh/Jahr':'nicht verfügbar'}
 Autoanbindung: ${autobahnName ? autobahnName+(autobahnFahrzeit?' · '+autobahnFahrzeit+' Min zur Ausfahrt':'')+' ('+Math.round((autobahnDist||0)/100)/10+' km)'+(autobahnRichtungen?' Richtung '+autobahnRichtungen.join(' ↔ '):'') : 'keine Autobahn in 15km'}
 Sicherheit: ${crime.hzahl} Delikte/1000 Einw. in ${crime.label}${steuerfuss?`
 Steuerfuss: ${steuerfuss}%`:''}
+Marktlage: Leerwohnungsziffer ${req.body.lwz||'unbekannt'}% → ${(req.body.lwz||1.08)<0.5?'extrem angespannt – kaum Verhandlungsspielraum':(req.body.lwz||1.08)<1.0?'angespannt – wenig Spielraum':(req.body.lwz||1.08)>2.0?'entspannt – Verhandlung möglich':'normal'}
 
 UMGEBUNG: ${amenitySummary||'keine Daten'}
 
